@@ -54,5 +54,4 @@ func main() {
 		fmt.Println("Invalid operation")
 		os.Exit(0)
 	}
-
 }
