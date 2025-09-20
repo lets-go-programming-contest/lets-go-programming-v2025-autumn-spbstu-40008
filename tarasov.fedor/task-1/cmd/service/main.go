@@ -6,9 +6,10 @@ import (
 )
 
 func main() {
-	var a, b int
-	var operation string
-
+	var (
+		a, b      int
+		operation string
+	)
 	_, err := fmt.Scanln(&a)
 	if err != nil {
 		fmt.Println("Invalid first operand")
@@ -27,28 +28,22 @@ func main() {
 		os.Exit(0)
 	}
 
-	var result int
-
 	switch operation {
 	case "+":
-		result = a + b
-		fmt.Println(result)
+		fmt.Println(a + b)
 
 	case "-":
-		result = a - b
-		fmt.Println(result)
+		fmt.Println(a - b)
 
 	case "*":
-		result = a * b
-		fmt.Println(result)
+		fmt.Println(a * b)
 
 	case "/":
 		if b == 0 {
 			fmt.Println("Division by zero")
 			os.Exit(0)
 		}
-		result = a / b
-		fmt.Println(result)
+		fmt.Println(a / b)
 
 	default:
 		fmt.Println("Invalid operation")
