@@ -5,21 +5,20 @@ import (
 )
 
 func main() {
-	var first int
-	var second int
+	var first, second int
 	var operator string
-	_, err1 := fmt.Scan(&first)
-	if err1 != nil {
+	_, err := fmt.Scan(&first)
+	if err != nil {
 		fmt.Println("Invalid first operand")
 		return
 	}
-	_, err2 := fmt.Scan(&second)
-	if err2 != nil {
+	_, err = fmt.Scan(&second)
+	if err != nil {
 		fmt.Println("Invalid second operand")
 		return
 	}
-	_, err3 := fmt.Scan(&operator)
-	if err3 != nil {
+	_, err = fmt.Scan(&operator)
+	if err != nil {
 		fmt.Println("Invalid input operation")
 		return
 	}
