@@ -5,15 +5,15 @@ import (
 )
 
 func add(a float64, b float64) {
-	fmt.Print(a + b)
+	fmt.Println(a + b)
 }
 
 func sub(a float64, b float64) {
-	fmt.Print(a - b)
+	fmt.Println(a - b)
 }
 
 func mult(a float64, b float64) {
-	fmt.Print(a * b)
+	fmt.Println(a * b)
 }
 
 func div(a float64, b float64) {
@@ -21,7 +21,7 @@ func div(a float64, b float64) {
 		fmt.Println("Division by zero")
 		return
 	}
-	fmt.Print(a / b)
+	fmt.Println(a / b)
 }
 
 func main() {
