@@ -43,7 +43,10 @@ func main() {
 		fmt.Println("Invalid second operand")
 		return
 	}
-	fmt.Scan(&op)
+	_, err = fmt.Scan(&op)
+	if err != nil{
+		fmt.Println("Invalid operation")
+	}
 	switch op {
 	case "+":
 		add(a, b)
