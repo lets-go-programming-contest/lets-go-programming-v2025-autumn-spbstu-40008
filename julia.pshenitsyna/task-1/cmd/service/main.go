@@ -2,21 +2,17 @@ package main
 
 import (
 	"fmt"
-	"time"
 )
 
 func add(a float64, b float64) {
-	time.Sleep(1 * time.Second)
 	fmt.Print(a + b)
 }
 
 func sub(a float64, b float64) {
-	time.Sleep(1 * time.Second)
 	fmt.Print(a - b)
 }
 
 func mult(a float64, b float64) {
-	time.Sleep(1 * time.Second)
 	fmt.Print(a * b)
 }
 
@@ -25,7 +21,6 @@ func div(a float64, b float64) {
 		fmt.Println("Division by zero")
 		return
 	}
-	time.Sleep(1 * time.Second)
 	fmt.Print(a / b)
 }
 
@@ -44,8 +39,9 @@ func main() {
 		return
 	}
 	_, err = fmt.Scan(&op)
-	if err != nil{
+	if err != nil {
 		fmt.Println("Invalid operation")
+		return
 	}
 	switch op {
 	case "+":
