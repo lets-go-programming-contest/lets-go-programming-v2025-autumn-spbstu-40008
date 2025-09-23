@@ -10,6 +10,7 @@ func main() {
 		a, b      int
 		operation string
 	)
+
 	_, err := fmt.Scanln(&a)
 	if err != nil {
 		fmt.Println("Invalid first operand")
