@@ -4,21 +4,17 @@ import (
 	"fmt"
 )
 
-
 func add(a float64, b float64) {
 	fmt.Println(a + b)
 }
-
 
 func sub(a float64, b float64) {
 	fmt.Println(a - b)
 }
 
-
 func mult(a float64, b float64) {
 	fmt.Println(a * b)
 }
-
 
 func div(a float64, b float64) {
 	if b == 0 {
@@ -28,15 +24,11 @@ func div(a float64, b float64) {
 	fmt.Println(a / b)
 }
 
-
 func main() {
-
 	var (
-		a float64
-		b float64
-		op string
+			a, b float64
+			op   string
 	)
-
 
 	_, err := fmt.Scan(&a)
 	if err != nil {
@@ -44,20 +36,17 @@ func main() {
 		return
 	}
 
-
 	_, err = fmt.Scan(&b)
 	if err != nil {
 		fmt.Println("Invalid second operand")
 		return
 	}
 
-
 	_, err = fmt.Scan(&op)
 	if err != nil {
 		fmt.Println("Invalid operation")
 		return
 	}
-
 
 	switch op {
 	case "+":
