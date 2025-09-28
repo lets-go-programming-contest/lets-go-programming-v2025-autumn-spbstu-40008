@@ -26,8 +26,8 @@ func div(a float64, b float64) {
 
 func main() {
 	var (
-			a, b float64
-			op   string
+		a, b float64
+		op   string
 	)
 
 	_, err := fmt.Scan(&a)
