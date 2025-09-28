@@ -5,23 +5,25 @@ import (
 )
 
 func main() {
-	var num1, num2 int
-	var sign string
+	var (
+		num1, num2 int
+		sign       string
+	)
 
-	_, err1 := fmt.Scan(&num1)
-	if err1 != nil {
+	_, err := fmt.Scan(&num1)
+	if err != nil {
 		fmt.Println("Invalid first operand")
 		return
 	}
 
-	_, err2 := fmt.Scan(&num2)
-	if err2 != nil {
+	_, err = fmt.Scan(&num2)
+	if err != nil {
 		fmt.Println("Invalid second operand")
 		return
 	}
 
-	_, err3 := fmt.Scan(&sign)
-	if err3 != nil {
+	_, err = fmt.Scan(&sign)
+	if err != nil {
 		fmt.Println("Invalid operation")
 		return
 	}
