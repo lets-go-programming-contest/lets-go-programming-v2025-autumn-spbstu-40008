@@ -10,8 +10,11 @@ import (
 )
 
 var (
-	ErrInvalidOperation = errors.New("invalid operation")
-	ErrInvalidNumber    = errors.New("invalid number")
+	ErrInvalidOperation      = errors.New("invalid operation")
+	ErrInvalidNumber         = errors.New("invalid number")
+	ErrReadEmployeesCount    = errors.New("could not read employees count")
+	ErrParsingEmployeesCount = errors.New("failed to parse employees count")
+	ErrProcessEmployeesData  = errors.New("minTemp exceeded maxTemp")
 )
 
 func parseInputLine(input string) (string, int, error) {
@@ -42,16 +45,24 @@ func parseInputLine(input string) (string, int, error) {
 
 func parseEmployeesCount(scanner *bufio.Scanner) (int, error) {
 	if !scanner.Scan() {
-		return 0, fmt.Errorf("could not read employees count")
+
+		return 0, ErrReadEmployeesCount
 	}
 
-	return strconv.Atoi(scanner.Text())
+	employeesCount, err := strconv.Atoi(scanner.Text())
+	if err != nil {
+
+		return 0, ErrParsingEmployeesCount
+	}
+
+	return employeesCount, nil
 }
 
 func processEmployeeData(input string, minTemp, maxTemp int) (int, int, error) {
 	operation, val, err := parseInputLine(input)
 	if err != nil || val < 15 || val > 30 {
-		return minTemp, maxTemp, fmt.Errorf("invalid input line")
+
+		return minTemp, maxTemp, err
 	}
 
 	switch operation {
@@ -66,7 +77,8 @@ func processEmployeeData(input string, minTemp, maxTemp int) (int, int, error) {
 	}
 
 	if minTemp > maxTemp {
-		return minTemp, maxTemp, fmt.Errorf("minTemp exceeded maxTemp")
+
+		return minTemp, maxTemp, ErrProcessEmployeesData
 	}
 
 	return minTemp, maxTemp, nil
@@ -76,6 +88,7 @@ func processDepartment(scanner *bufio.Scanner) {
 	employeesCount, err := parseEmployeesCount(scanner)
 	if err != nil {
 		fmt.Println(-1)
+
 		return
 	}
 
@@ -86,6 +99,7 @@ func processDepartment(scanner *bufio.Scanner) {
 	for range employeesCount {
 		if !scanner.Scan() {
 			fail = true
+
 			break
 		}
 
@@ -93,6 +107,7 @@ func processDepartment(scanner *bufio.Scanner) {
 		newMinTemp, newMaxTemp, err := processEmployeeData(input, minTemp, maxTemp)
 		if err != nil {
 			fail = true
+
 			continue
 		}
 
