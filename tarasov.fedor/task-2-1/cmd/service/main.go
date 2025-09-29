@@ -9,22 +9,28 @@ import (
 	"strings"
 )
 
-func parseInputLine(input string) (string, int, error) {
-	var op, numStr string
+var (
+	ErrInvalidOperation = errors.New("invalid operation")
+	ErrInvalidNumber    = errors.New("invalid number")
+)
 
-	if strings.HasPrefix(input, ">=") {
+func parseInputLine(input string) (op string, val int, err error) {
+	var numStr string
+
+	switch {
+	case strings.HasPrefix(input, ">="):
 		op = ">="
 		numStr = strings.TrimSpace(strings.TrimPrefix(input, ">="))
-	} else if strings.HasPrefix(input, "<=") {
+	case strings.HasPrefix(input, "<="):
 		op = "<="
 		numStr = strings.TrimSpace(strings.TrimPrefix(input, "<="))
-	} else {
-		return "", 0, errors.New("invalid operation")
+	default:
+		return "", 0, ErrInvalidOperation
 	}
 
-	val, err := strconv.Atoi(numStr)
+	val, err = strconv.Atoi(numStr)
 	if err != nil {
-		return "", 0, errors.New("invalid number")
+		return "", 0, ErrInvalidNumber
 	}
 
 	return op, val, nil
@@ -33,14 +39,12 @@ func parseInputLine(input string) (string, int, error) {
 func processDepartment(scanner *bufio.Scanner) {
 	if !scanner.Scan() {
 		fmt.Println(-1)
-
 		return
 	}
 	employeesCountStr := scanner.Text()
 	employeesCount, err := strconv.Atoi(employeesCountStr)
 	if err != nil {
 		fmt.Println(-1)
-
 		return
 	}
 
@@ -53,6 +57,7 @@ func processDepartment(scanner *bufio.Scanner) {
 			fail = true
 			break
 		}
+
 		input := scanner.Text()
 		op, val, err := parseInputLine(input)
 		if err != nil || val < 15 || val > 30 {
@@ -85,13 +90,13 @@ func processDepartment(scanner *bufio.Scanner) {
 }
 
 func main() {
-
 	scanner := bufio.NewScanner(os.Stdin)
 
 	if !scanner.Scan() {
 		fmt.Println("Invalid number of departments")
 		return
 	}
+
 	departmentsCount, err := strconv.Atoi(scanner.Text())
 	if err != nil {
 		fmt.Println("Invalid number of departments")
