@@ -36,7 +36,6 @@ func parseInputLine(input string) (string, int, error) {
 
 	val, err := strconv.Atoi(numStr)
 	if err != nil {
-
 		return "", 0, ErrInvalidNumber
 	}
 
@@ -45,13 +44,11 @@ func parseInputLine(input string) (string, int, error) {
 
 func parseEmployeesCount(scanner *bufio.Scanner) (int, error) {
 	if !scanner.Scan() {
-
 		return 0, ErrReadEmployeesCount
 	}
 
 	employeesCount, err := strconv.Atoi(scanner.Text())
 	if err != nil {
-
 		return 0, ErrParsingEmployeesCount
 	}
 
@@ -61,7 +58,6 @@ func parseEmployeesCount(scanner *bufio.Scanner) (int, error) {
 func processEmployeeData(input string, minTemp, maxTemp int) (int, int, error) {
 	operation, val, err := parseInputLine(input)
 	if err != nil || val < 15 || val > 30 {
-
 		return minTemp, maxTemp, err
 	}
 
@@ -77,7 +73,6 @@ func processEmployeeData(input string, minTemp, maxTemp int) (int, int, error) {
 	}
 
 	if minTemp > maxTemp {
-
 		return minTemp, maxTemp, ErrProcessEmployeesData
 	}
 
