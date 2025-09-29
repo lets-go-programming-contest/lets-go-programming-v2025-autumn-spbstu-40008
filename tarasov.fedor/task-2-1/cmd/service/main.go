@@ -40,18 +40,42 @@ func parseInputLine(input string) (string, int, error) {
 	return operation, val, nil
 }
 
-func processDepartment(scanner *bufio.Scanner) {
+func parseEmployeesCount(scanner *bufio.Scanner) (int, error) {
 	if !scanner.Scan() {
-		fmt.Println(-1)
-
-		return
+		return 0, fmt.Errorf("could not read employees count")
 	}
 
-	employeesCountStr := scanner.Text()
-	employeesCount, err := strconv.Atoi(employeesCountStr)
+	return strconv.Atoi(scanner.Text())
+}
+
+func processEmployeeData(input string, minTemp, maxTemp int) (int, int, error) {
+	operation, val, err := parseInputLine(input)
+	if err != nil || val < 15 || val > 30 {
+		return minTemp, maxTemp, fmt.Errorf("invalid input line")
+	}
+
+	switch operation {
+	case ">=":
+		if val > minTemp {
+			minTemp = val
+		}
+	case "<=":
+		if val < maxTemp {
+			maxTemp = val
+		}
+	}
+
+	if minTemp > maxTemp {
+		return minTemp, maxTemp, fmt.Errorf("minTemp exceeded maxTemp")
+	}
+
+	return minTemp, maxTemp, nil
+}
+
+func processDepartment(scanner *bufio.Scanner) {
+	employeesCount, err := parseEmployeesCount(scanner)
 	if err != nil {
 		fmt.Println(-1)
-
 		return
 	}
 
@@ -62,36 +86,18 @@ func processDepartment(scanner *bufio.Scanner) {
 	for range employeesCount {
 		if !scanner.Scan() {
 			fail = true
-
 			break
 		}
 
 		input := scanner.Text()
-		op, val, err := parseInputLine(input)
-
-		if err != nil || val < 15 || val > 30 {
+		newMinTemp, newMaxTemp, err := processEmployeeData(input, minTemp, maxTemp)
+		if err != nil {
 			fail = true
-
 			continue
 		}
 
-		switch op {
-		case ">=":
-			if val > minTemp {
-				minTemp = val
-			}
-		case "<=":
-			if val < maxTemp {
-				maxTemp = val
-			}
-		}
-
-		if minTemp > maxTemp {
-			fail = true
-
-			continue
-		}
-
+		minTemp = newMinTemp
+		maxTemp = newMaxTemp
 		fmt.Println(minTemp)
 	}
 
