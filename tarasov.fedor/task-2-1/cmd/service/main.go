@@ -88,30 +88,25 @@ func processDepartment(scanner *bufio.Scanner) {
 
 	minTemp := 15
 	maxTemp := 30
-	fail := false
 
 	for range employeesCount {
 		if !scanner.Scan() {
-			fail = true
+			fmt.Println(-1)
 
-			break
+			return
 		}
 
 		newMinTemp, newMaxTemp, err := processEmployeeData(scanner.Text(), minTemp, maxTemp)
 		if err != nil {
-			fail = true
+			fmt.Println(-1)
 
-			break
+			return
 		}
 
 		minTemp = newMinTemp
 		maxTemp = newMaxTemp
 
 		fmt.Println(minTemp)
-	}
-
-	if fail {
-		fmt.Println(-1)
 	}
 }
 
