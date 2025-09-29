@@ -100,6 +100,7 @@ func processDepartment(scanner *bufio.Scanner) {
 
 		input := scanner.Text()
 		newMinTemp, newMaxTemp, err := processEmployeeData(input, minTemp, maxTemp)
+
 		if err != nil {
 			fail = true
 
@@ -108,6 +109,7 @@ func processDepartment(scanner *bufio.Scanner) {
 
 		minTemp = newMinTemp
 		maxTemp = newMaxTemp
+
 		fmt.Println(minTemp)
 	}
 
