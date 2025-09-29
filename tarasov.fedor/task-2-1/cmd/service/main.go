@@ -29,6 +29,7 @@ func parseInputLine(input string) (string, int, error) {
 	case strings.HasPrefix(input, "<="):
 		operation = "<="
 		numStr = strings.TrimSpace(strings.TrimPrefix(input, "<="))
+
 	default:
 
 		return "", 0, ErrInvalidOperation
