@@ -32,14 +32,14 @@ func parseInputLine(input string) (string, int, error) {
 
 func processDepartment(scanner *bufio.Scanner) {
 	if !scanner.Scan() {
-		fmt.Println("Invalid number of employees")
+		fmt.Println(-1)
 
 		return
 	}
 	employeesCountStr := scanner.Text()
 	employeesCount, err := strconv.Atoi(employeesCountStr)
 	if err != nil {
-		fmt.Println("Invalid number of employees")
+		fmt.Println(-1)
 
 		return
 	}
@@ -50,9 +50,8 @@ func processDepartment(scanner *bufio.Scanner) {
 
 	for range employeesCount {
 		if !scanner.Scan() {
-			fmt.Println("Invalid temperature")
-
-			return
+			fail = true
+			break
 		}
 		input := scanner.Text()
 		op, val, err := parseInputLine(input)
@@ -74,7 +73,7 @@ func processDepartment(scanner *bufio.Scanner) {
 
 		if minTemp > maxTemp {
 			fail = true
-			break
+			continue
 		}
 
 		fmt.Println(minTemp)
