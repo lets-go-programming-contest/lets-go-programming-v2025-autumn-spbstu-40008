@@ -29,9 +29,7 @@ func parseInputLine(input string) (string, int, error) {
 	case strings.HasPrefix(input, "<="):
 		operation = "<="
 		numStr = strings.TrimSpace(strings.TrimPrefix(input, "<="))
-
 	default:
-
 		return "", 0, ErrInvalidOperation
 	}
 
@@ -101,7 +99,6 @@ func processDepartment(scanner *bufio.Scanner) {
 
 		input := scanner.Text()
 		newMinTemp, newMaxTemp, err := processEmployeeData(input, minTemp, maxTemp)
-
 		if err != nil {
 			fail = true
 
