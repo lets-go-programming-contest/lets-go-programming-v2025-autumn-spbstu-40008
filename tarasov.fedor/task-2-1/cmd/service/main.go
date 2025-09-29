@@ -8,90 +8,90 @@ import (
 	"strings"
 )
 
-func main() {
-	var (
-		n int
-		k int
-	)
-
-	_, err := fmt.Scanln(&n)
+func processDepartment(scanner *bufio.Scanner) {
+	if !scanner.Scan() {
+		fmt.Println("Invalid number of employees")
+		return
+	}
+	employeesCount, err := strconv.Atoi(scanner.Text())
 	if err != nil {
-		fmt.Println("Invalid number of departments")
-		os.Exit(0)
+		fmt.Println("Invalid number of employees")
+		return
 	}
 
-	for i := 0; i < n; i++ {
-		_, err := fmt.Scanln(&k)
-		if err != nil {
-			fmt.Println("Invalid number of employees")
+	minTemp := 15
+	maxTemp := 30
+	fail := false
+
+	for range employeesCount {
+		if !scanner.Scan() {
+			fmt.Println("Invalid temperature")
+			os.Exit(0)
+		}
+		input := scanner.Text()
+
+		var newTemp int
+		var parseErr error
+
+		switch {
+		case strings.HasPrefix(input, ">="):
+			numberStr := strings.TrimSpace(strings.TrimPrefix(input, ">="))
+			newTemp, parseErr = strconv.Atoi(numberStr)
+			if parseErr == nil {
+				if newTemp > minTemp {
+					minTemp = newTemp
+				}
+			} else {
+				fmt.Println("Invalid number")
+				os.Exit(0)
+			}
+
+		case strings.HasPrefix(input, "<="):
+			numberStr := strings.TrimSpace(strings.TrimPrefix(input, "<="))
+			newTemp, parseErr = strconv.Atoi(numberStr)
+			if parseErr == nil {
+				if newTemp < maxTemp {
+					maxTemp = newTemp
+				}
+			} else {
+				fmt.Println("Invalid number")
+				os.Exit(0)
+			}
+
+		default:
+			fmt.Println("Invalid operation")
 			os.Exit(0)
 		}
 
-		var (
-			optTemp  = 0
-			highTemp = 30
-			fail     = false
-		)
-
-		for j := 0; j < k; j++ {
-			reader := bufio.NewReader(os.Stdin)
-			input, err := reader.ReadString('\n')
-			if err != nil {
-				fmt.Println("Invalid temperature")
-				os.Exit(0)
-			}
-
-			switch {
-			case strings.HasPrefix(input, ">="):
-				var numberStr = strings.TrimSpace(strings.TrimPrefix(input, ">="))
-				number, err := strconv.Atoi(numberStr)
-				if err != nil {
-					fmt.Println("Invalid number")
-					os.Exit(0)
-				}
-				if number < 15 || number > 30 {
-					fail = true
-					break
-				}
-
-				if optTemp == 0 || number > optTemp && number <= highTemp {
-					optTemp = number
-					fmt.Println(optTemp)
-				} else {
-					fail = true
-					break
-				}
-
-			case strings.HasPrefix(input, "<="):
-				var numberStr = strings.TrimSpace(strings.TrimPrefix(input, "<="))
-				number, err := strconv.Atoi(numberStr)
-				if err != nil {
-					fmt.Println("Invalid number")
-					os.Exit(0)
-				}
-				if number < 15 || number > 30 {
-					fail = true
-					break
-				}
-
-				if optTemp == 0 {
-					highTemp = number
-					optTemp = 15
-					fmt.Println(optTemp)
-				} else if highTemp == 30 || number < highTemp && number >= optTemp {
-					highTemp = number
-					fmt.Println(optTemp)
-				} else {
-					fmt.Println(optTemp)
-				}
-			default:
-				fmt.Println("Invalid operation")
-				os.Exit(0)
-			}
-			if fail {
-				fmt.Println(-1)
-				break
-			}
+		if newTemp < 15 || newTemp > 30 || minTemp > maxTemp {
+			fail = true
 		}
+
+		if !fail {
+			fmt.Println(minTemp)
+		}
+	}
+
+	if fail {
+		fmt.Println(-1)
+	}
+}
+
+func main() {
+
+	scanner := bufio.NewScanner(os.Stdin)
+
+	if !scanner.Scan() {
+		fmt.Println("Invalid number of departments")
+		return
+	}
+	departmentsCount, err := strconv.Atoi(scanner.Text())
+	if err != nil {
+		fmt.Println("Invalid number of departments")
+		return
+	}
+
+	for range departmentsCount {
+		processDepartment(scanner)
 	}
 }
