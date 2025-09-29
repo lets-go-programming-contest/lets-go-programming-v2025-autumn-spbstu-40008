@@ -97,8 +97,7 @@ func processDepartment(scanner *bufio.Scanner) {
 			break
 		}
 
-		input := scanner.Text()
-		newMinTemp, newMaxTemp, err := processEmployeeData(input, minTemp, maxTemp)
+		newMinTemp, newMaxTemp, err := processEmployeeData(scanner.Text(), minTemp, maxTemp)
 		if err != nil {
 			fail = true
 
