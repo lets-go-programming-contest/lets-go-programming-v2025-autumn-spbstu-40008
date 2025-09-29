@@ -60,7 +60,12 @@ func main() {
 
 	var k int
 	_, err = fmt.Scanln(&k)
-	if err != nil || k > n || k <= 0 {
+	if err != nil {
+		fmt.Println("Invalid number of prefer dish")
+		os.Exit(0)
+	}
+
+	if k > n || k <= 0 {
 		fmt.Println("Invalid number of prefer dish")
 		os.Exit(0)
 	}
