@@ -2,20 +2,45 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
 )
 
+func parseInputLine(input string) (string, int, error) {
+	var op, numStr string
+
+	if strings.HasPrefix(input, ">=") {
+		op = ">="
+		numStr = strings.TrimSpace(strings.TrimPrefix(input, ">="))
+	} else if strings.HasPrefix(input, "<=") {
+		op = "<="
+		numStr = strings.TrimSpace(strings.TrimPrefix(input, "<="))
+	} else {
+		return "", 0, errors.New("invalid operation")
+	}
+
+	val, err := strconv.Atoi(numStr)
+	if err != nil {
+		return "", 0, errors.New("invalid number")
+	}
+
+	return op, val, nil
+}
+
 func processDepartment(scanner *bufio.Scanner) {
 	if !scanner.Scan() {
 		fmt.Println("Invalid number of employees")
+
 		return
 	}
-	employeesCount, err := strconv.Atoi(scanner.Text())
+	employeesCountStr := scanner.Text()
+	employeesCount, err := strconv.Atoi(employeesCountStr)
 	if err != nil {
 		fmt.Println("Invalid number of employees")
+
 		return
 	}
 
@@ -26,50 +51,33 @@ func processDepartment(scanner *bufio.Scanner) {
 	for range employeesCount {
 		if !scanner.Scan() {
 			fmt.Println("Invalid temperature")
-			os.Exit(0)
+
+			return
 		}
 		input := scanner.Text()
-
-		var newTemp int
-		var parseErr error
-
-		switch {
-		case strings.HasPrefix(input, ">="):
-			numberStr := strings.TrimSpace(strings.TrimPrefix(input, ">="))
-			newTemp, parseErr = strconv.Atoi(numberStr)
-			if parseErr == nil {
-				if newTemp > minTemp {
-					minTemp = newTemp
-				}
-			} else {
-				fmt.Println("Invalid number")
-				os.Exit(0)
-			}
-
-		case strings.HasPrefix(input, "<="):
-			numberStr := strings.TrimSpace(strings.TrimPrefix(input, "<="))
-			newTemp, parseErr = strconv.Atoi(numberStr)
-			if parseErr == nil {
-				if newTemp < maxTemp {
-					maxTemp = newTemp
-				}
-			} else {
-				fmt.Println("Invalid number")
-				os.Exit(0)
-			}
-
-		default:
-			fmt.Println("Invalid operation")
-			os.Exit(0)
-		}
-
-		if newTemp < 15 || newTemp > 30 || minTemp > maxTemp {
+		op, val, err := parseInputLine(input)
+		if err != nil || val < 15 || val > 30 {
 			fail = true
+			continue
 		}
 
-		if !fail {
-			fmt.Println(minTemp)
+		switch op {
+		case ">=":
+			if val > minTemp {
+				minTemp = val
+			}
+		case "<=":
+			if val < maxTemp {
+				maxTemp = val
+			}
 		}
+
+		if minTemp > maxTemp {
+			fail = true
+			break
+		}
+
+		fmt.Println(minTemp)
 	}
 
 	if fail {
