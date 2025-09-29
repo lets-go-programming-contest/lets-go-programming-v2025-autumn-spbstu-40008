@@ -29,6 +29,7 @@ func (h *MaxHeap) Pop() interface{} {
 
 func main() {
 	var numberOfDishes int
+
 	_, err := fmt.Scanln(&numberOfDishes)
 	if err != nil {
 		fmt.Println("Invalid number of dishes")
