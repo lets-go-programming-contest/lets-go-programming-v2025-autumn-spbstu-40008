@@ -101,7 +101,7 @@ func processDepartment(scanner *bufio.Scanner) {
 		if err != nil {
 			fail = true
 
-			continue
+			break
 		}
 
 		minTemp = newMinTemp
