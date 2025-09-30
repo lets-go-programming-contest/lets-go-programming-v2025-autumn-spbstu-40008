@@ -16,32 +16,32 @@ func main() {
 
 	if err1 != nil {
 		fmt.Print("Invalid first operand\n")
-		os.Exit(1)
+		os.Exit(0)
 	}
 
 	_, err2 := fmt.Scanln(&numb2)
 
 	if err2 != nil {
 		fmt.Print("Invalid second operand\n")
-		os.Exit(1)
+		os.Exit(0)
 	}
 
 	_, err3 := fmt.Scanln(&operator)
 
 	if err3 != nil {
 		fmt.Print("Invalid operation\n")
-		os.Exit(1)
+		os.Exit(0)
 	} else if operator != "+" &&
 		operator != "-" &&
 		operator != "/" &&
 		operator != "*" {
 		fmt.Print("Invalid operation\n")
-		os.Exit(1)
+		os.Exit(0)
 	}
 
 	if numb2 == 0 && operator == "/" {
 		fmt.Print("Division by zero\n")
-		os.Exit(1)
+		os.Exit(0)
 	}
 
 	switch operator {
