@@ -6,9 +6,6 @@ import (
 )
 
 func main() {
-
-	fmt.Println("Калькулятор")
-
 	var (
 		numb1    int
 		numb2    int
