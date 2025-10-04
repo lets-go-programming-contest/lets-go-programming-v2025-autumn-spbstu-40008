@@ -17,12 +17,13 @@ func main() {
 			return
 		}
 
-		minT = 15
-		maxT = 30
+		minT, maxT = 15, 30
+
 		for range employees {
 			if _, err := fmt.Scanf("%s %d", &sign, &temp); err != nil {
 				return
 			}
+
 			switch sign {
 			case "<=":
 				maxT = min(maxT, temp)
