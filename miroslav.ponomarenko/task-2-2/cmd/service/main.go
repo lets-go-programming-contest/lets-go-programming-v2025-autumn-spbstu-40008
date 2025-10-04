@@ -12,11 +12,9 @@ func (h *Heap) Less(i, j int) bool { return (*h)[i] < (*h)[j] }
 func (h *Heap) Swap(i, j int)      { (*h)[i], (*h)[j] = (*h)[j], (*h)[i] }
 
 func (h *Heap) Push(x any) {
-	v, ok := x.(int)
-	if !ok {
-		return
+	if v, ok := x.(int); ok {
+		*h = append(*h, v)
 	}
-	*h = append(*h, v)
 }
 
 func (h *Heap) Pop() any {
@@ -42,6 +40,7 @@ func main() {
 		if _, err := fmt.Scan(&dish); err != nil {
 			return
 		}
+
 		heap.Push(myHeap, dish)
 	}
 
