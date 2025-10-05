@@ -1,7 +1,7 @@
 package main
 
 import (
- "fmt"
+	"fmt"
 )
 
 func main() {
@@ -11,7 +11,7 @@ func main() {
 	var result int
 
 	_, err := fmt.Scanln(&firstNum)
-  	if err != nil {
+	if err != nil {
 		fmt.Println("Invalid first operand")
 		return
 	}
