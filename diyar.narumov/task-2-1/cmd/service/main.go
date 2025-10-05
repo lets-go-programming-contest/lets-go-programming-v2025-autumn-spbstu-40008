@@ -1,22 +1,24 @@
 package main
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+	"os"
+)
 
-func processEmployee(low, high *int) {
+var ErrInvalidComparisonOperator = errors.New("invalid comparison operator; use '<=' or '>='")
+
+func processEmployee(low, high *int) error {
 	var cmp string
 
 	if _, err := fmt.Scan(&cmp); err != nil {
-		fmt.Println("Error: failed to read comparison operator")
-
-		return
+		return fmt.Errorf("failed to read comparison operator: %w", err)
 	}
 
 	var temperature int
 
 	if _, err := fmt.Scan(&temperature); err != nil {
-		fmt.Println("Error: failed to read temperature value")
-
-		return
+		return fmt.Errorf("failed to read temperature value: %w", err)
 	}
 
 	switch cmp {
@@ -29,9 +31,7 @@ func processEmployee(low, high *int) {
 			*low = temperature
 		}
 	default:
-		fmt.Println("Error: invalid comparison operator. Use '<=' or '>='")
-
-		return
+		return ErrInvalidComparisonOperator
 	}
 
 	if *low > *high {
@@ -39,33 +39,39 @@ func processEmployee(low, high *int) {
 	} else {
 		fmt.Println(*low)
 	}
+
+	return nil
 }
 
-func processDepartment() {
+func processDepartment() error {
 	var employeesNumber int
 
 	if _, err := fmt.Scan(&employeesNumber); err != nil {
-		fmt.Println("Error: failed to read number of employees")
-
-		return
+		return fmt.Errorf("failed to read number of employees: %w", err)
 	}
 
 	low, high := 15, 30
 	for range employeesNumber {
-		processEmployee(&low, &high)
+		if err := processEmployee(&low, &high); err != nil {
+			return err
+		}
 	}
+
+	return nil
 }
 
 func main() {
 	var departmentsNumber int
 
 	if _, err := fmt.Scan(&departmentsNumber); err != nil {
-		fmt.Println("Error: failed to read number of departments")
+		fmt.Fprintf(os.Stderr, "Error: failed to read number of departments: %v\n", err)
 
 		return
 	}
 
 	for range departmentsNumber {
-		processDepartment()
+		if err := processDepartment(); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		}
 	}
 }
