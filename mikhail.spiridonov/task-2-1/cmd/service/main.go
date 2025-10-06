@@ -9,8 +9,9 @@ const (
 )
 
 func main() {
-	var (countDepartments, countEmployees, temp int
-		setTempSign                             string
+	var (
+		countDepartments, countEmployees, temp int
+		setTempSign                            string
 	)
 
 	if _, err := fmt.Scan(&countDepartments); err != nil {
@@ -22,7 +23,7 @@ func main() {
 		}
 
 		currentMin := MinTempDefault
-        currentMax := MaxTempDefault
+		currentMax := MaxTempDefault
 
 		for range countEmployees {
 			if _, err := fmt.Scan(&setTempSign, &temp); err != nil {
