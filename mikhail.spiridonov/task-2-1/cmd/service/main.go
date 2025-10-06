@@ -38,10 +38,10 @@ func main() {
 			}
 
 			switch setTempSign {
-			case ">=":
-				currentMin = max(MinTempDefault, temp)
 			case "<=":
 				currentMax = min(MaxTempDefault, temp)
+			case ">=":
+				currentMin = max(MinTempDefault, temp)
 			default:
 				continue
 			}
