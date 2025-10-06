@@ -32,7 +32,13 @@ func main() {
 
 		for range countEmployees {
 			if _, err := fmt.Scan(&setTempSign, &temp); err != nil {
-				fmt.Printf("Bad input for sign or limit: %v\n", err)
+				fmt.Printf("Bad input: %v\n", err)
+
+				return
+			}
+
+			if setTempSign != "<=" && setTempSign != ">=" {
+				fmt.Printf("Invalid sign: %s\n", setTempSign)
 
 				return
 			}
