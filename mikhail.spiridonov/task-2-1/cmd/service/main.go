@@ -45,9 +45,9 @@ func main() {
 
 			switch setTempSign {
 			case "<=":
-				currentMax = min(MaxTempDefault, temp)
+				currentMax = min(currentMax, temp)
 			case ">=":
-				currentMin = max(MinTempDefault, temp)
+				currentMin = max(currentMin, temp)
 			default:
 				continue
 			}
