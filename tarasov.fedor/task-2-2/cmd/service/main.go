@@ -3,7 +3,6 @@ package main
 import (
 	"container/heap"
 	"fmt"
-	"os"
 )
 
 type MaxHeap []int
@@ -33,7 +32,8 @@ func main() {
 	_, err := fmt.Scanln(&numberOfDishes)
 	if err != nil {
 		fmt.Println("Invalid number of dishes")
-		os.Exit(0)
+
+		return
 	}
 
 	nums := make([]int, numberOfDishes)
@@ -54,7 +54,8 @@ func main() {
 	_, err = fmt.Scanln(&preferredDishNum)
 	if err != nil || preferredDishNum > numberOfDishes || preferredDishNum <= 0 {
 		fmt.Println("Invalid number of prefer dish")
-		os.Exit(0)
+
+		return
 	}
 
 	var preferDish interface{}
@@ -62,7 +63,5 @@ func main() {
 		preferDish = heap.Pop(heapDishes)
 	}
 
-	if finalDish, ok := preferDish.(int); ok {
-		fmt.Println(finalDish)
-	}
+	fmt.Println(preferDish)
 }
