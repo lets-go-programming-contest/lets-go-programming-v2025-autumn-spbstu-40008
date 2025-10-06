@@ -17,6 +17,7 @@ func main() {
 	if _, err := fmt.Scan(&countDepartments); err != nil {
 		return
 	}
+
 	for range countDepartments {
 		if _, err := fmt.Scan(&countEmployees); err != nil {
 			return
@@ -29,6 +30,7 @@ func main() {
 			if _, err := fmt.Scan(&setTempSign, &temp); err != nil {
 				return
 			}
+
 			switch setTempSign {
 			case ">=":
 				currentMin = max(MinTempDefault, temp)
@@ -37,6 +39,7 @@ func main() {
 			default:
 				continue
 			}
+
 			if currentMax < currentMin {
 				fmt.Println(ErrVal)
 			}
