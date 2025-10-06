@@ -16,12 +16,14 @@ func main() {
 
 	if _, err := fmt.Scan(&countDepartments); err != nil {
 		fmt.Printf("Bad input for departments: %v\n", err)
+
 		return
 	}
 
 	for range countDepartments {
 		if _, err := fmt.Scan(&countEmployees); err != nil {
 			fmt.Printf("Bad input for employees: %v\n", err)
+
 			return
 		}
 
@@ -31,6 +33,7 @@ func main() {
 		for range countEmployees {
 			if _, err := fmt.Scan(&setTempSign, &temp); err != nil {
 				fmt.Printf("Bad input for sign or limit: %v\n", err)
+
 				return
 			}
 
@@ -45,9 +48,9 @@ func main() {
 
 			if currentMax < currentMin {
 				fmt.Println(ErrVal)
+			} else {
+				fmt.Println(currentMin)
 			}
-
-			fmt.Println(currentMin)
 		}
 	}
 }
