@@ -2,17 +2,16 @@ package main
 
 import "fmt"
 
-const MinTempDefault = 15
-const MaxTempDefault = 30
-const ErrVal         = -1
+const (
+	MinTempDefault = 15
+	MaxTempDefault = 30
+	ErrVal         = -1
+)
 
 func main() {
-	var countDepartments  int
-	var countEmployees    int
-	var temp              int
-	var newMinTemperature int
-	var newMaxTemperature int
-	var setTempSign       string
+	var (countDepartments, countEmployees, temp int
+		setTempSign                             string
+	)
 
 	if _, err := fmt.Scan(&countDepartments); err != nil {
 		return
@@ -22,22 +21,25 @@ func main() {
 			return
 		}
 
+		currentMin := MinTempDefault
+        currentMax := MaxTempDefault
+
 		for range countEmployees {
 			if _, err := fmt.Scan(&setTempSign, &temp); err != nil {
 				return
 			}
 			switch setTempSign {
 			case ">=":
-				newMinTemperature = max(MaxTempDefault, temp)
+				currentMin = max(MinTempDefault, temp)
 			case "<=":
-				newMaxTemperature = min(MinTempDefault, temp)
+				currentMax = min(MaxTempDefault, temp)
 			default:
 				continue
 			}
-			if newMinTemperature > newMaxTemperature {
+			if currentMax < currentMin {
 				fmt.Println(ErrVal)
 			}
-			fmt.Println(newTemperature)
+			fmt.Println(currentMin)
 		}
 	}
 }
