@@ -9,10 +9,10 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	. "task-3/cmd/struct"
+	"task-3/cmd/struct"
 )
 
-func readFile(cfg File) File {
+func readFile(cfg structures.File) structures.File {
 	yamlFile, err := os.ReadFile("config.yaml")
 	if err != nil {
 		panic(err)
@@ -26,13 +26,13 @@ func readFile(cfg File) File {
 	return cfg
 }
 
-func decodeXML(cfg File) ValCurs {
+func decodeXML(cfg structures.File) structures.ValCurs {
 	xmlFile, err := os.ReadFile(cfg.Input)
 	if err != nil {
 		panic(err)
 	}
 
-	var val ValCurs
+	var val structures.ValCurs
 
 	err = xml.Unmarshal(xmlFile, &val)
 	if err != nil {
@@ -42,13 +42,13 @@ func decodeXML(cfg File) ValCurs {
 	return val
 }
 
-func normalizeValues(val []Valute) {
+func normalizeValues(val []structures.Valute) {
 	for i := range val {
 		val[i].Value = strings.ReplaceAll(val[i].Value, ",", ".")
 	}
 }
 
-func sortValuteByValue(val ValCurs) {
+func sortValuteByValue(val structures.ValCurs) {
 	normalizeValues(val.Valute)
 	sort.Slice(val.Valute, func(i, j int) bool {
 
@@ -78,7 +78,7 @@ func createOutputFile(filename string) *os.File {
 }
 
 func main() {
-	var cfg File
+	var cfg structures.File
 	cfg = readFile(cfg)
 	val := decodeXML(cfg)
 	sortValuteByValue(val)
@@ -86,11 +86,11 @@ func main() {
 	jsonData, err := json.MarshalIndent(val.Valute, "", "  ")
 
 	outputFile := createOutputFile(cfg.Output)
-	defer func(outputFile *os.File) {
-		err := outputFile.Close()
-		if err != nil {
+	defer func() {
+		if err := outputFile.Close(); err != nil {
+			return
 		}
-	}(outputFile)
+	}()
 
 	_, err = outputFile.Write(jsonData)
 	if err != nil {
