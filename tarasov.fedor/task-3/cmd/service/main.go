@@ -17,19 +17,12 @@ import (
 	"task-3/structures"
 )
 
-var configPath string
-
-func init() {
-	flag.StringVar(&configPath, "config", "config.yaml", "Path to the YAML configuration file")
-}
-
-func readFile() structures.File {
+func readFile(configPath string) structures.File {
 	var cfg structures.File
 	yamlFile, err := os.ReadFile(configPath)
 	if err != nil {
 		panic(err)
 	}
-
 	err = yaml.Unmarshal(yamlFile, &cfg)
 	if err != nil {
 		panic(err)
@@ -58,7 +51,7 @@ func decodeXML(cfg structures.File) structures.ValCursXML {
 			return charmap.Windows1251.NewDecoder().Reader(input), nil
 		}
 
-		return nil, nil
+		return nil, io.EOF
 	}
 
 	err = decoder.Decode(&val)
@@ -103,11 +96,13 @@ func sortValuteByValue(val structures.ValCursXML) structures.ValCursJSON {
 
 func createOutputFile(filename string) *os.File {
 	dirPath := filepath.Dir(filename)
-	if err := os.MkdirAll(dirPath, 0o755); err != nil {
+	const DirPerm = 0o755
+	if err := os.MkdirAll(dirPath, DirPerm); err != nil {
 		panic(err)
 	}
 
-	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
+	const FilePerm = 0o644
+	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, FilePerm)
 	if err != nil {
 		panic(err)
 	}
@@ -116,13 +111,19 @@ func createOutputFile(filename string) *os.File {
 }
 
 func main() {
+	var configPath string
+
+	flag.StringVar(&configPath, "config", "config.yaml", "Path to the YAML configuration file")
 	flag.Parse()
 
-	cfg := readFile()
+	cfg := readFile(configPath)
 	val := decodeXML(cfg)
 	valJSON := sortValuteByValue(val)
 
 	jsonData, err := json.MarshalIndent(valJSON.Valute, "", "  ")
+	if err != nil {
+		panic(err)
+	}
 
 	outputFile := createOutputFile(cfg.Output)
 	defer func() {
