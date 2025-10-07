@@ -23,6 +23,7 @@ func readFile(configPath string) structures.File {
 	if err != nil {
 		panic(err)
 	}
+
 	err = yaml.Unmarshal(yamlFile, &cfg)
 	if err != nil {
 		panic(err)
@@ -36,6 +37,7 @@ func decodeXML(cfg structures.File) structures.ValCursXML {
 	if err != nil {
 		panic(err)
 	}
+
 	defer func() {
 		if err := xmlFile.Close(); err != nil {
 			return
@@ -96,7 +98,9 @@ func sortValuteByValue(val structures.ValCursXML) structures.ValCursJSON {
 
 func createOutputFile(filename string) *os.File {
 	dirPath := filepath.Dir(filename)
+
 	const DirPerm = 0o755
+
 	if err := os.MkdirAll(dirPath, DirPerm); err != nil {
 		panic(err)
 	}
