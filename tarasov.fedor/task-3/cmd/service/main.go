@@ -12,8 +12,8 @@ import (
 	"task-3/structures"
 )
 
-func readFile(cfg structures.File) structures.File {
-	yamlFile, err := os.ReadFile("config.yaml")
+func readFile(cfg structures.File, config string) structures.File {
+	yamlFile, err := os.ReadFile(config)
 	if err != nil {
 		panic(err)
 	}
@@ -78,8 +78,13 @@ func createOutputFile(filename string) *os.File {
 }
 
 func main() {
+	configPath := "config.yaml"
+	if len(os.Args) > 1 {
+		configPath = os.Args[1]
+	}
+
 	var cfg structures.File
-	cfg = readFile(cfg)
+	cfg = readFile(cfg, configPath)
 	val := decodeXML(cfg)
 	sortValuteByValue(val)
 
