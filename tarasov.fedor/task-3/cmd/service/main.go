@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"encoding/xml"
+	"flag"
 	"gopkg.in/yaml.v2"
 	"os"
 	"path/filepath"
@@ -12,8 +13,15 @@ import (
 	"task-3/structures"
 )
 
-func readFile(cfg structures.File, config string) structures.File {
-	yamlFile, err := os.ReadFile(config)
+var configPath string
+
+func init() {
+	flag.StringVar(&configPath, "config", "config.yaml", "Path to the YAML configuration file")
+}
+
+func readFile() structures.File {
+	var cfg structures.File
+	yamlFile, err := os.ReadFile(configPath)
 	if err != nil {
 		panic(err)
 	}
@@ -78,13 +86,9 @@ func createOutputFile(filename string) *os.File {
 }
 
 func main() {
-	configPath := "config.yaml"
-	if len(os.Args) > 1 {
-		configPath = os.Args[1]
-	}
+	flag.Parse()
 
-	var cfg structures.File
-	cfg = readFile(cfg, configPath)
+	cfg := readFile()
 	val := decodeXML(cfg)
 	sortValuteByValue(val)
 
