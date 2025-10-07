@@ -12,35 +12,36 @@ func main() {
 		operator string
 	)
 
-	_, err1 := fmt.Scanln(&numb1)
+	_, err := fmt.Scanln(&numb1)
 
-	if err1 != nil {
-		fmt.Print("Invalid first operand\n")
+	if err != nil {
+		fmt.Println("Invalid first operand")
 		os.Exit(0)
 	}
 
-	_, err2 := fmt.Scanln(&numb2)
+	_, err = fmt.Scanln(&numb2)
 
-	if err2 != nil {
-		fmt.Print("Invalid second operand\n")
+	if err != nil {
+		fmt.Println("Invalid second operand")
 		os.Exit(0)
 	}
 
-	_, err3 := fmt.Scanln(&operator)
+	_, err = fmt.Scanln(&operator)
 
-	if err3 != nil {
-		fmt.Print("Invalid operation\n")
+	if err != nil {
+		fmt.Println("Invalid operation")
 		os.Exit(0)
-	} else if operator != "+" &&
+	}
+	if operator != "+" &&
 		operator != "-" &&
 		operator != "/" &&
 		operator != "*" {
-		fmt.Print("Invalid operation\n")
+		fmt.Println("Invalid operation")
 		os.Exit(0)
 	}
 
 	if numb2 == 0 && operator == "/" {
-		fmt.Print("Division by zero\n")
+		fmt.Println("Division by zero")
 		os.Exit(0)
 	}
 
