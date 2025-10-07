@@ -29,19 +29,16 @@ func main() {
 	var number1, number2 int
 	var operation string
 
-	conclusion("Введите первое число:")
 	if _, err := fmt.Scanln(&number1); err != nil {
 		conclusion("Invalid first operand")
 		return
 	}
 
-	conclusion("Введите второе число:")
 	if _, err := fmt.Scanln(&number2); err != nil {
 		conclusion("Invalid second operand")
 		return
 	}
 
-	conclusion("Введите символ операции:")
 	if _, err := fmt.Scanln(&operation); err != nil {
 		conclusion("Invalid operation")
 		return
