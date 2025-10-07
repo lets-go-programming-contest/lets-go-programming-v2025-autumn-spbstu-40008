@@ -1,4 +1,4 @@
-package _struct
+package structures
 
 type ValCurs struct {
 	Valute []Valute `xml:"Valute"`

@@ -1,4 +1,4 @@
-package _struct
+package structures
 
 type File struct {
 	Input  string `yaml:"input-file"`
