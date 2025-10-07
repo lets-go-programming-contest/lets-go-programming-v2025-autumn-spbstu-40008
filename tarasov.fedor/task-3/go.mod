@@ -1,10 +1,7 @@
 module task-3
 
-go 1.24.0
-
-toolchain go1.24.7
-
+go 1.22
 require (
-	golang.org/x/text v0.29.0 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gopkg.in/yaml.v2 v2.4.0
+	golang.org/x/text v0.14.0 // indirect
 )
