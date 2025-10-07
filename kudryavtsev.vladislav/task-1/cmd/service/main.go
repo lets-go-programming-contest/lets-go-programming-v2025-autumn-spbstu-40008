@@ -10,19 +10,30 @@ func main() {
 	var a int
 	var b int
 	var c string
+
 	_, err := fmt.Scan(&a)
 	if err != nil {
-		fmt.Print("Invalid first operand\n")
-		bufio.NewReader(os.Stdin).ReadString('\n')
+		fmt.Println("Invalid first operand")
+		if _, err := bufio.NewReader(os.Stdin).ReadString('\n'); err != nil {
+			fmt.Println("Error reading input:", err)
+		}
 		return
 	}
+
 	_, err = fmt.Scan(&b)
 	if err != nil {
-		fmt.Print("Invalid second operand\n")
-		bufio.NewReader(os.Stdin).ReadString('\n')
+		fmt.Println("Invalid second operand")
+		if _, err := bufio.NewReader(os.Stdin).ReadString('\n'); err != nil {
+			fmt.Println("Error reading input:", err)
+		}
 		return
 	}
-	fmt.Scan(&c)
+
+	if _, err := fmt.Scan(&c); err != nil {
+		fmt.Println("Invalid operation input:", err)
+		return
+	}
+
 	switch c {
 	case "+":
 		fmt.Println(a + b)
