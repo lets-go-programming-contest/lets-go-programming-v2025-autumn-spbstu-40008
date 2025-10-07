@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"task-3/cmd/struct"
+	"task-3/structures"
 )
 
 func readFile(cfg structures.File) structures.File {
