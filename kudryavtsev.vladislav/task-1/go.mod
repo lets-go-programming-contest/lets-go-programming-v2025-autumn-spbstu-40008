@@ -1,3 +1,3 @@
-module task-1
+module main.go
 
 go 1.25.1
