@@ -38,7 +38,7 @@ func readFile() structures.File {
 	return cfg
 }
 
-func decodeXML(cfg structures.File) structures.ValCurs {
+func decodeXML(cfg structures.File) structures.ValCursXML {
 	xmlFile, err := os.Open(cfg.Input)
 	if err != nil {
 		panic(err)
@@ -49,7 +49,7 @@ func decodeXML(cfg structures.File) structures.ValCurs {
 		}
 	}()
 
-	var val structures.ValCurs
+	var val structures.ValCursXML
 
 	decoder := xml.NewDecoder(xmlFile)
 
@@ -69,24 +69,36 @@ func decodeXML(cfg structures.File) structures.ValCurs {
 	return val
 }
 
-func normalizeValues(val []structures.Valute) {
-	for i := range val {
-		val[i].Value = strings.ReplaceAll(val[i].Value, ",", ".")
+func normalizeValues(val structures.ValCursXML) structures.ValCursJSON {
+	jsonValCurs := structures.ValCursJSON{
+		Valute: make([]structures.ValuteJSON, 0, len(val.Valute)),
 	}
-}
 
-func sortValuteByValue(val structures.ValCurs) {
-	normalizeValues(val.Valute)
-	sort.Slice(val.Valute, func(i, j int) bool {
-		valI, errI := strconv.ParseFloat(val.Valute[i].Value, 64)
-		valJ, errJ := strconv.ParseFloat(val.Valute[j].Value, 64)
+	for _, xmlValute := range val.Valute {
+		cleanValueStr := strings.ReplaceAll(xmlValute.Value, ",", ".")
 
-		if errI != nil || errJ != nil {
-			return false
+		valueFloat, err := strconv.ParseFloat(cleanValueStr, 64)
+		if err != nil {
+			panic(err)
 		}
 
-		return valI > valJ
+		jsonValCurs.Valute = append(jsonValCurs.Valute, structures.ValuteJSON{
+			NumCode:  xmlValute.NumCode,
+			CharCode: xmlValute.CharCode,
+			Value:    valueFloat,
+		})
+	}
+
+	return jsonValCurs
+}
+
+func sortValuteByValue(val structures.ValCursXML) structures.ValCursJSON {
+	valJSON := normalizeValues(val)
+	sort.Slice(valJSON.Valute, func(i, j int) bool {
+		return valJSON.Valute[i].Value > valJSON.Valute[j].Value
 	})
+
+	return valJSON
 }
 
 func createOutputFile(filename string) *os.File {
@@ -108,9 +120,9 @@ func main() {
 
 	cfg := readFile()
 	val := decodeXML(cfg)
-	sortValuteByValue(val)
+	valJSON := sortValuteByValue(val)
 
-	jsonData, err := json.MarshalIndent(val.Valute, "", "  ")
+	jsonData, err := json.MarshalIndent(valJSON.Valute, "", "  ")
 
 	outputFile := createOutputFile(cfg.Output)
 	defer func() {
