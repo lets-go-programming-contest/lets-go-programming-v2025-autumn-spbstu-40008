@@ -7,8 +7,8 @@ func conclusion(information any){
 }
 
 
-func mathematical_operations(number1 int, number2 int, the_addition string){
-	switch the_addition{
+func mathematicalOperations(number1 int, number2 int, theAddition string){
+	switch theAddition{
 	case "+":
 		conclusion(number1 + number2)
 	case "-":	
@@ -28,7 +28,7 @@ func mathematical_operations(number1 int, number2 int, the_addition string){
 
 func main(){
 	var number1, number2 int
-	var the_addition string
+	var theAddition string
 	conclusion("Введите первое число:")
 	if _,err := fmt.Scanln(&number1); err != nil{
 		conclusion("Invalid first operand")
@@ -40,10 +40,10 @@ func main(){
 		return
 	}
 	conclusion("Введите символ операции:")
-	if _,err := fmt.Scanln(&the_addition); err != nil{
+	if _,err := fmt.Scanln(&theAddition); err != nil{
 		conclusion("Invalid operation")
 		return
 	}
-	mathematical_operations(number1, number2,the_addition)
+	mathematicalOperations(number1, number2,theAddition)
 
 } 
