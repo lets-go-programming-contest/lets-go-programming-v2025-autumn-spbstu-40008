@@ -4,12 +4,16 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"flag"
-	"gopkg.in/yaml.v2"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
+
+	"golang.org/x/text/encoding/charmap"
+	"gopkg.in/yaml.v2"
+
 	"task-3/structures"
 )
 
@@ -35,14 +39,29 @@ func readFile() structures.File {
 }
 
 func decodeXML(cfg structures.File) structures.ValCurs {
-	xmlFile, err := os.ReadFile(cfg.Input)
+	xmlFile, err := os.Open(cfg.Input)
 	if err != nil {
 		panic(err)
 	}
+	defer func() {
+		if err := xmlFile.Close(); err != nil {
+			return
+		}
+	}()
 
 	var val structures.ValCurs
 
-	err = xml.Unmarshal(xmlFile, &val)
+	decoder := xml.NewDecoder(xmlFile)
+
+	decoder.CharsetReader = func(charset string, input io.Reader) (io.Reader, error) {
+		if strings.ToLower(charset) == "windows-1251" {
+			return charmap.Windows1251.NewDecoder().Reader(input), nil
+		}
+
+		return nil, nil
+	}
+
+	err = decoder.Decode(&val)
 	if err != nil {
 		panic(err)
 	}
@@ -59,7 +78,6 @@ func normalizeValues(val []structures.Valute) {
 func sortValuteByValue(val structures.ValCurs) {
 	normalizeValues(val.Valute)
 	sort.Slice(val.Valute, func(i, j int) bool {
-
 		valI, errI := strconv.ParseFloat(val.Valute[i].Value, 64)
 		valJ, errJ := strconv.ParseFloat(val.Valute[j].Value, 64)
 
@@ -73,11 +91,11 @@ func sortValuteByValue(val structures.ValCurs) {
 
 func createOutputFile(filename string) *os.File {
 	dirPath := filepath.Dir(filename)
-	if err := os.MkdirAll(dirPath, 0755); err != nil {
+	if err := os.MkdirAll(dirPath, 0o755); err != nil {
 		panic(err)
 	}
 
-	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
 	if err != nil {
 		panic(err)
 	}
