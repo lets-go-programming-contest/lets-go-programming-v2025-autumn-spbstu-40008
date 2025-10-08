@@ -10,11 +10,14 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+)
 
+import (
 	"golang.org/x/text/encoding/charmap"
-
 	"gopkg.in/yaml.v2"
+)
 
+import (
 	"task-3/structures"
 )
 
