@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"golang.org/x/text/encoding/charmap"
+
 	"gopkg.in/yaml.v2"
 
 	"task-3/structures"
