@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
 	"task-3/structures"
 
 	"golang.org/x/text/encoding/charmap"
