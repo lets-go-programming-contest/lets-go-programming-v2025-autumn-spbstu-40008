@@ -108,6 +108,7 @@ func createOutputFile(filename string) *os.File {
 
 	const FilePerm = 0o644
 	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, FilePerm)
+
 	if err != nil {
 		panic(err)
 	}
