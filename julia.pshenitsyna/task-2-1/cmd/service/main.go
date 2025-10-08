@@ -22,11 +22,11 @@ func main() {
 			return
 		}
 
-		maxT = 10000000000000
+		maxT = 1000
 		minT = 0
 
 		for range employees {
-			_, err := fmt.Scanf("\n%s %d", &sign, &temperature)
+			_, err := fmt.Scanf("%s %d", &sign, &temperature)
 
 			if err != nil {
 				return
@@ -43,10 +43,9 @@ func main() {
 
 			if minT > maxT {
 				fmt.Println(-1)
-				continue
+			} else {
+				fmt.Println(minT, maxT)
 			}
-
-			fmt.Println(min(minT, maxT))
 		}
 	}
 }
