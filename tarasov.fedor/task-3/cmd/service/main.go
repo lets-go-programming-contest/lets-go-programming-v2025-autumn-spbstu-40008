@@ -4,14 +4,20 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"flag"
+
 	"io"
 	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
-	"task-3/structures"
+)
 
+import (
+	"task-3/structures"
+)
+
+import (
 	"golang.org/x/text/encoding/charmap"
 	"gopkg.in/yaml.v2"
 )
