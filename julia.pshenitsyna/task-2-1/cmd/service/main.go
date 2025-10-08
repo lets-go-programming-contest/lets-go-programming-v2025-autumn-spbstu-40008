@@ -9,14 +9,15 @@ func main() {
 		departments, employees, maxT, minT, temperature int
 		sign                                            string
 	)
+
 	_, err := fmt.Scan(&departments)
 	if err != nil {
 		return
 	}
 
 	for range departments {
-
 		_, err := fmt.Scan(&employees)
+
 		if err != nil {
 			return
 		}
@@ -25,8 +26,8 @@ func main() {
 		minT = 0
 
 		for range employees {
-
 			_, err := fmt.Scanf("\n%s %d", &sign, &temperature)
+
 			if err != nil {
 				return
 			}
@@ -37,13 +38,11 @@ func main() {
 			case "<=":
 				maxT = min(maxT, temperature)
 			default:
-
 				continue
 			}
 
 			if minT > maxT {
 				fmt.Println(-1)
-				
 				continue
 			}
 
