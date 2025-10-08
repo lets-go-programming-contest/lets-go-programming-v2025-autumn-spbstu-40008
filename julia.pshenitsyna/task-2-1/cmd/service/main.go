@@ -17,7 +17,6 @@ func main() {
 
 	for range departments {
 		_, err := fmt.Scan(&employees)
-
 		if err != nil {
 			return
 		}
@@ -27,7 +26,6 @@ func main() {
 
 		for range employees {
 			_, err := fmt.Scanf("%s %d", &sign, &temperature)
-
 			if err != nil {
 				return
 			}
