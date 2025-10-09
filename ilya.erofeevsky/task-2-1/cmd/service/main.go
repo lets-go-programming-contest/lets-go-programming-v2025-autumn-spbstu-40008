@@ -17,14 +17,15 @@ func main() {
 	_, err := fmt.Scan(&coutDepart)
 	if err != nil {
 		fmt.Println("Incorrect quantity departaments")
+		
 		return
 	}
 
 	for range coutDepart {
-
 		_, err = fmt.Scan(&coutWorkers)
 		if err != nil {
 			fmt.Println("Incorrect quantity workers")
+			
 			return
 		}
 
@@ -32,16 +33,17 @@ func main() {
 		currentMin := MinTemp
 
 		for range coutWorkers {
-
 			_, err = fmt.Scan(&Symbols)
 			if err != nil {
 				fmt.Println("Incorrect symbol")
+				
 				return
 			}
 
 			_, err = fmt.Scan(&Temp)
 			if err != nil {
 				fmt.Println("Incorrect temperature")
+				
 				return
 			}
 
