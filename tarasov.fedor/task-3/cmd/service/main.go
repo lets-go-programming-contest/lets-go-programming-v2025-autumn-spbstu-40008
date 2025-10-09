@@ -12,9 +12,7 @@ import (
 	"strings"
 
 	"github.com/task-3/internal/structures"
-
 	"golang.org/x/text/encoding/charmap"
-
 	"gopkg.in/yaml.v2"
 )
 
