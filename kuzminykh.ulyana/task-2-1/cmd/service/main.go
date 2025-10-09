@@ -26,6 +26,9 @@ func main() {
 
 		for range emp {
 			_, err = fmt.Scan(&sign, &curTemp)
+			if err != nil {
+				fmt.Println("Invalid value")
+			}
 
 			switch sign {
 			case "<=":
