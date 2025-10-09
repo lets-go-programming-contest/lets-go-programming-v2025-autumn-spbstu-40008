@@ -6,41 +6,38 @@ import (
 
 func main() {
 	var (
-		num1, num2 int
-		sign       string
+		a, b int
+		c    string
 	)
 
-	_, err := fmt.Scan(&num1)
-	if err != nil {
+	if _, err := fmt.Scan(&a); err != nil {
 		fmt.Println("Invalid first operand")
 		return
 	}
 
-	_, err = fmt.Scan(&num2)
-	if err != nil {
+	if _, err := fmt.Scan(&b); err != nil {
 		fmt.Println("Invalid second operand")
 		return
 	}
 
-	_, err = fmt.Scan(&sign)
-	if err != nil {
+	if _, err := fmt.Scan(&c); err != nil {
 		fmt.Println("Invalid operation")
 		return
 	}
 
-	switch sign {
+	switch c {
 	case "+":
-		fmt.Println(num1 + num2)
+		fmt.Println(a + b)
 	case "-":
-		fmt.Println(num1 - num2)
+		fmt.Println(a - b)
 	case "*":
-		fmt.Println(num1 * num2)
+		fmt.Println(a * b)
 	case "/":
-		if num2 == 0 {
+		if b == 0 {
 			fmt.Println("Division by zero")
-		} else {
-			fmt.Println(num1 / num2)
+			return
 		}
+		fmt.Println(a / b)
 	default:
 		fmt.Println("Invalid operation")
 	}
