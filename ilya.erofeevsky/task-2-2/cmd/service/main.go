@@ -84,3 +84,5 @@ func getPriority(dishes []int, priority int) int {
 
 	return (*heapData)[0]
 }
+
+
