@@ -7,14 +7,12 @@ func main() {
 	var secNum int
 	var op string
 
-	fmt.Println("Enter the first number: ")
 	_, err1 := fmt.Scan(&fstNum)
 	if err1 != nil {
 		fmt.Println("Invalid first operand:", err1)
 		return
 	}
-
-	fmt.Println("Enter the second number:")
+	
 	_, err2 := fmt.Scan(&secNum)
 	if err2 != nil {
 		fmt.Println("Invalid second operand:", err2)
@@ -29,7 +27,7 @@ func main() {
 	}
 
 	result := calculate(fstNum, secNum, op)
-	fmt.Println("Result: ", result)
+	fmt.Println(result)
 }
 
 func rightOp(op string) bool {
