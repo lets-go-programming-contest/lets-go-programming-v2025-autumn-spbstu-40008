@@ -7,22 +7,26 @@ func main() {
 	var secNum int
 	var op string
 
-	_, err1 := fmt.Scan(&fstNum)
-	if err1 != nil {
-		fmt.Println("Invalid first operand:", err1)
+	_, err := fmt.Scan(&fstNum)
+	if err != nil {
+		fmt.Println("Invalid first operand")
 		return
 	}
 
-	_, err2 := fmt.Scan(&secNum)
-	if err2 != nil {
-		fmt.Println("Invalid second operand:", err2)
+	_, err = fmt.Scan(&secNum)
+	if err != nil {
+		fmt.Println("Invalid second operand")
 		return
 	}
 
-	_, _ = fmt.Scan(&op)
-
-	if !rightOp(op) {
+	_, err = fmt.Scan(&op)
+	if err != nil || !rightOp(op) {
 		fmt.Println("Invalid operation")
+		return
+	}
+
+	if op == "/" && secNum == 0 {
+		fmt.Println("Division by zero")
 		return
 	}
 
@@ -48,10 +52,6 @@ func calculate(a int, b int, op string) int {
 	case "*":
 		return a * b
 	case "/":
-		if b == 0 {
-			fmt.Println("Division by zero")
-			return 0
-		}
 		return a / b
 	default:
 		return 0
