@@ -12,13 +12,15 @@ func main() {
 
 	_, err := fmt.Scan(&dep)
 	if err != nil {
-		fmt.Println("Invalid value")
+		fmt.Println(err)
+		return
 	}
 
 	for range dep {
 		_, err = fmt.Scan(&emp)
 		if err != nil {
-			fmt.Println("Invalid value")
+			fmt.Println(err)
+			return
 		}
 
 		maxTemp = 30
@@ -41,9 +43,10 @@ func main() {
 
 			if maxTemp < minTemp {
 				fmt.Println(-1)
-			} else {
-				fmt.Println(min(minTemp, maxTemp))
+				continue
 			}
+
+			fmt.Println(min(minTemp, maxTemp))
 		}
 	}
 }
