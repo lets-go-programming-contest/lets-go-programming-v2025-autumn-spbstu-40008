@@ -49,7 +49,7 @@ func main() {
 	}
 
 	if _, err := fmt.Scanln(&prefer); err != nil {
-		fmt.Println("Invalid prefered dish value")
+		fmt.Println("Invalid preferred dish value")
 
 		return
 	}
