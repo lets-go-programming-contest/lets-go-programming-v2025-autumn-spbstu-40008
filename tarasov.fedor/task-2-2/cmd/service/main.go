@@ -31,7 +31,7 @@ func main() {
 
 	_, err := fmt.Scanln(&numberOfDishes)
 	if err != nil {
-		fmt.Println("Invalid number of dishes")
+		fmt.Println("Input error: Please enter a valid number of dishes.")
 
 		return
 	}
@@ -39,6 +39,8 @@ func main() {
 	nums := make([]int, numberOfDishes)
 	for index := range numberOfDishes {
 		if _, err := fmt.Scan(&nums[index]); err != nil {
+			fmt.Println("Input error: Please enter a valid sequence of dishes.")
+
 			return
 		}
 	}
