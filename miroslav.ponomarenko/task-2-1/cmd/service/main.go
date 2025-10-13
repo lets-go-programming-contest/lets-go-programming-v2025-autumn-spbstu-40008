@@ -9,11 +9,13 @@ func main() {
 	)
 
 	if _, err := fmt.Scan(&departments); err != nil {
+		fmt.Println("Invalid departments value")
 		return
 	}
 
 	for range departments {
 		if _, err := fmt.Scan(&employees); err != nil {
+			fmt.Println("Invalid employees value")
 			return
 		}
 
@@ -21,6 +23,7 @@ func main() {
 
 		for range employees {
 			if _, err := fmt.Scanf("%s %d", &sign, &temp); err != nil {
+				fmt.Println("Invalid temp format")
 				return
 			}
 
@@ -30,14 +33,16 @@ func main() {
 			case ">=":
 				minT = max(minT, temp)
 			default:
-				continue
+				fmt.Println("Invalid sign")
 			}
 
 			if minT > maxT {
 				fmt.Println(-1)
-			} else {
-				fmt.Println(minT)
+
+				continue
 			}
+
+			fmt.Println(minT)
 		}
 	}
 }
