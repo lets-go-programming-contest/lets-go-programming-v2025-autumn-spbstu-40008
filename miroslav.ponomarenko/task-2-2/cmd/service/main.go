@@ -33,11 +33,15 @@ func main() {
 	heap.Init(myHeap)
 
 	if _, err := fmt.Scanln(&dishes); err != nil {
+		fmt.Println("Invalid dishes value")
+
 		return
 	}
 
 	for range dishes {
 		if _, err := fmt.Scan(&dish); err != nil {
+			fmt.Println("Invalid dish value")
+
 			return
 		}
 
@@ -45,6 +49,8 @@ func main() {
 	}
 
 	if _, err := fmt.Scanln(&prefer); err != nil {
+		fmt.Println("Invalid prefered dish value")
+
 		return
 	}
 
