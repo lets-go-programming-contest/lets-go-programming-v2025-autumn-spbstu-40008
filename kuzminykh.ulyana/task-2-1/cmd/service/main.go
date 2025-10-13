@@ -13,6 +13,7 @@ func main() {
 	_, err := fmt.Scan(&dep)
 	if err != nil {
 		fmt.Println(err)
+
 		return
 	}
 
@@ -20,6 +21,7 @@ func main() {
 		_, err = fmt.Scan(&emp)
 		if err != nil {
 			fmt.Println(err)
+
 			return
 		}
 
@@ -29,7 +31,9 @@ func main() {
 		for range emp {
 			_, err = fmt.Scan(&sign, &curTemp)
 			if err != nil {
-				fmt.Println("Invalid value")
+				fmt.Println(err)
+
+				return
 			}
 
 			switch sign {
@@ -39,10 +43,13 @@ func main() {
 				minTemp = max(minTemp, curTemp)
 			default:
 				fmt.Println("Invalid operation")
+
+				return
 			}
 
 			if maxTemp < minTemp {
 				fmt.Println(-1)
+
 				continue
 			}
 
