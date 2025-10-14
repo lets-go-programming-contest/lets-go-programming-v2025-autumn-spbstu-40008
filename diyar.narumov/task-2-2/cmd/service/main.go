@@ -3,6 +3,7 @@ package main
 import (
 	"container/heap"
 	"fmt"
+	"os"
 )
 
 type IntHeap []int
@@ -40,7 +41,7 @@ func main() {
 	var dishesNumber int
 
 	if _, err := fmt.Scan(&dishesNumber); err != nil {
-		fmt.Println("Error: failed to read number of dishes")
+		fmt.Fprintf(os.Stderr, "Error: failed to read number of dishes: %v\n", err)
 
 		return
 	}
@@ -51,7 +52,7 @@ func main() {
 		var currentDishValue int
 
 		if _, err := fmt.Scan(&currentDishValue); err != nil {
-			fmt.Println("Error: failed to read dish value")
+			fmt.Fprintf(os.Stderr, "Error: failed to read dish value: %v\n", err)
 
 			return
 		}
@@ -62,13 +63,13 @@ func main() {
 	var preferredDishNumber int
 
 	if _, err := fmt.Scan(&preferredDishNumber); err != nil {
-		fmt.Println("Error: failed to read preferred dish number")
+		fmt.Fprintf(os.Stderr, "Error: failed to read preferred dish number: %v\n", err)
 
 		return
 	}
 
 	if preferredDishNumber <= 0 || preferredDishNumber > dishesHeap.Len() {
-		fmt.Println("Error: invalid preferred dish number")
+		fmt.Fprintf(os.Stderr, "Error: invalid preferred dish number\n")
 
 		return
 	}
