@@ -1,8 +1,8 @@
 package main
 
 import (
-    "fmt"
 	"container/heap"
+	"fmt"
 )
 
 type IntHeap []int
@@ -12,38 +12,40 @@ func (h IntHeap) Less(i, j int) bool { return h[i] > h[j] }
 func (h IntHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
 
 func (h *IntHeap) Push(x interface{}) {
-    *h = append(*h, x.(int))
+	if val, ok := x.(int); ok {
+		*h = append(*h, val)
+	}
 }
 
 func (h *IntHeap) Pop() interface{} {
-    old := *h
-    n := len(old)
-    x := old[n-1]
-    *h = old[0 : n-1]
+	old := *h
+	n := len(old)
+	x := old[n-1]
+	*h = old[0 : n-1]
 
-    return x
+	return x
 }
 
 func main() {
-    rating := &IntHeap{}
-    heap.Init(rating)
+	rating := &IntHeap{}
+	heap.Init(rating)
 
-    var (
-        nDishes int
-        nRating int
-        temp int
+	var (
+		nDishes int
+		nRating int
+		temp    int
 	)
 
 	_, err := fmt.Scan(&nDishes)
 	if err != nil {
-        fmt.Println("Invalid number")
+		fmt.Println("Invalid number")
 
-        return
+		return
 	}
 
-	for range nDishes{
+	for range nDishes {
 		_, err = fmt.Scan(&temp)
-		if err != nil{
+		if err != nil {
 			fmt.Println("Invalid number")
 
 			return
@@ -51,7 +53,7 @@ func main() {
 
 		heap.Push(rating, temp)
 	}
-	
+
 	_, err = fmt.Scan(&nRating)
 	if err != nil {
 		fmt.Println("Invalid number")
