@@ -40,6 +40,7 @@ func main() {
 				minTemp = max(minTemp, temp)
 			default:
 				fmt.Println("Error with operator")
+
 				return
 			}
 
