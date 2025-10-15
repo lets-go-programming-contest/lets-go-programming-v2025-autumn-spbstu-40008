@@ -22,15 +22,15 @@ func main() {
 	}
 
 	aIth := make([]int, countOfDishes)
-	for i := range countOfDishes {
-		if _, err := fmt.Scan(&aIth[i]); err != nil {
+	for index := range countOfDishes {
+		if _, err := fmt.Scan(&aIth[index]); err != nil {
 			fmt.Printf("Bad input for sequence: %v\n", err)
 
 			return
 		}
 
-		if aIth[i] < -10000 || aIth[i] > 10000 {
-			fmt.Printf("Invalid a_i value: %d. Must be between -10000 and 10000.\n", aIth[i])
+		if aIth[index] < -10000 || aIth[index] > 10000 {
+			fmt.Printf("Invalid a_i value: %d. Must be between -10000 and 10000.\n", aIth[index])
 
 			return
 		}
