@@ -6,36 +6,53 @@ func (object *MyHeap) Len() int {
 	if object == nil {
 		return 0
 	}
+
 	return len(*object)
 }
 
-func (object *MyHeap) Less(i, j int) bool {
+func (object *MyHeap) Less(firstIndex, secondIndex int) bool {
 	if object == nil {
 		return false
 	}
-	if i < 0 || i >= len(*object) || j < 0 || j >= len(*object) {
+
+	if firstIndex < 0 || firstIndex >= len(*object) || secondIndex < 0 || secondIndex >= len(*object) {
 		return false
 	}
-	return (*object)[i] < (*object)[j]
+
+	return (*object)[firstIndex] < (*object)[secondIndex]
 }
 
-func (object *MyHeap) Swap(i, j int) {
+func (object *MyHeap) Swap(firstIndex, secondIndex int) {
 	if object == nil {
 		return
 	}
-	if i < 0 || i >= len(*object) || j < 0 || j >= len(*object) {
+
+	if firstIndex < 0 || firstIndex >= len(*object) || secondIndex < 0 || secondIndex >= len(*object) {
 		return
 	}
-	(*object)[i], (*object)[j] = (*object)[j], (*object)[i]
+
+	(*object)[firstIndex], (*object)[secondIndex] = (*object)[secondIndex], (*object)[firstIndex]
 }
 
 func (object *MyHeap) Push(number interface{}) {
 	if object == nil {
-		newHeap := MyHeap{number.(int)}
+		value, ok := number.(int)
+		if !ok {
+			return
+		}
+
+		newHeap := MyHeap{value}
 		*object = newHeap
+
 		return
 	}
-	*object = append(*object, number.(int))
+
+	value, ok := number.(int)
+	if !ok {
+		return
+	}
+
+	*object = append(*object, value)
 }
 
 func (object *MyHeap) Pop() interface{} {
