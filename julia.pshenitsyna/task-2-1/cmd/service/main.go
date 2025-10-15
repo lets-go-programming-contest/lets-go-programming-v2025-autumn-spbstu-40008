@@ -12,12 +12,14 @@ func main() {
 
 	_, err := fmt.Scan(&departments)
 	if err != nil {
+		fmt.Println("Input error")
 		return
 	}
 
 	for range departments {
 		_, err := fmt.Scan(&employees)
 		if err != nil {
+			fmt.Println("Input error")
 			return
 		}
 
@@ -27,6 +29,7 @@ func main() {
 		for range employees {
 			_, err := fmt.Scanf("%s %d", &sign, &temperature)
 			if err != nil {
+				fmt.Println("Input error")
 				return
 			}
 
@@ -36,14 +39,16 @@ func main() {
 			case "<=":
 				maxT = min(maxT, temperature)
 			default:
-				continue
+				fmt.Println("Wrong operator")
 			}
 
 			if minT > maxT {
 				fmt.Println(-1)
-			} else {
-				fmt.Println(minT)
+
+				continue
 			}
+
+			fmt.Println(minT)
 		}
 	}
 }
