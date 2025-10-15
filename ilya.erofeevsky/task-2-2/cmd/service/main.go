@@ -49,9 +49,9 @@ func main() {
 		return
 	}
 
-	Rate := make([]int, countDish)
+	rate := make([]int, countDish)
 	for i := range countDish {
-		_, err := fmt.Scan(&Rate[i])
+		_, err := fmt.Scan(&rate[i])
 		if err != nil {
 			fmt.Println(-1)
 
@@ -66,7 +66,7 @@ func main() {
 		return
 	}
 
-	result := getPriority(Rate, priorityDish)
+	result := getPriority(rate, priorityDish)
 	fmt.Println(result)
 }
 
