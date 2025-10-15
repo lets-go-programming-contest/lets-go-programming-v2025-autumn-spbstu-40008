@@ -1,9 +1,9 @@
 package finder
 
-import "github.com/mordw1n/task-2-2/internal/heap"
+import "container/heap"
 
 func finderTheLargest(nums []int, k int) int {
-	object := &MinHeap{}
+	object := &Heap{}
 	heap.Init(object)
 
 	for _, num := range nums {
