@@ -13,6 +13,7 @@ func main() {
 	_, err := fmt.Scan(&departments)
 	if err != nil {
 		fmt.Println("Input error")
+		
 		return
 	}
 
@@ -20,6 +21,7 @@ func main() {
 		_, err := fmt.Scan(&employees)
 		if err != nil {
 			fmt.Println("Input error")
+
 			return
 		}
 
@@ -30,6 +32,7 @@ func main() {
 			_, err := fmt.Scanf("%s %d", &sign, &temperature)
 			if err != nil {
 				fmt.Println("Input error")
+
 				return
 			}
 
