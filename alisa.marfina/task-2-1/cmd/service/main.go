@@ -11,7 +11,6 @@ func main() {
 	_, err := fmt.Scan(&numberOfDepartments)
 	if err != nil {
 		fmt.Println("Error with numbers of departments", err)
-
 		return
 	}
 
@@ -19,7 +18,6 @@ func main() {
 		_, err := fmt.Scan(&numberOfEmployees)
 		if err != nil {
 			fmt.Println("Error with numbers of employees", err)
-
 			return
 		}
 
@@ -28,7 +26,7 @@ func main() {
 		for range numberOfEmployees {
 			_, err := fmt.Scan(&data, &temp)
 			if err != nil {
-
+				fmt.Println("Error with employee data", err)
 				return
 			}
 
@@ -39,12 +37,12 @@ func main() {
 				minTemp = max(minTemp, temp)
 			default:
 				fmt.Println("Error with operator")
-
-				continue
+				return
 			}
 
 			if minTemp > maxTemp {
 				fmt.Println(-1)
+				continue
 			}
 
 			fmt.Println(minTemp)
