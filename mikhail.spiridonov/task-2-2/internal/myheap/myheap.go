@@ -1,28 +1,28 @@
-package heap
+package myheap
 
-type Heap []int
+type myHeap []int
 
-func (object Heap) Len() int {
+func (object myHeap) Len() int {
 	return len(object)
 } 
 
-func (object Heap) Less(i, j int) bool {
+func (object myHeap) Less(i, j int) bool {
 	return object[i] < object[j]
 }
 
-func (object Heap) Swap(i, j int) {
+func (object myHeap) Swap(i, j int) {
 	object[i], object[j] = object[j], object[i]
 }
 
-func (object *Heap) Push(number interface{}) {
+func (object *myHeap) Push(number interface{}) {
 	*object = append(*object, number.(int))
 }
 
-func (object *Heap) Pop() interface{} {
+func (object *myHeap) Pop() interface{} {
 	outdated := *object
 	temp_len := len(outdated)
 	number := outdated[temp_len - 1]
 	*object = outdated[0 : temp_len - 1]
-
+	
 	return number
 }

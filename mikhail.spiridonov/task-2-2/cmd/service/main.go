@@ -1,10 +1,8 @@
 package main
 
 import (
-	"container/heap"
  	"fmt"
 
- 	"github.com/mordw1n/task-2-2/internal/heap"
  	"github.com/mordw1n/task-2-2/internal/finder"
 )
 
@@ -18,7 +16,7 @@ func main()  {
 
 	a_i := make([]int, countOfDishes)
 	for i := 0; i < countOfDishes; i++ {
-		if _, err := fmt.Scan(&a_i); err != nil {
+		if _, err := fmt.Scan(&a_i[i]); err != nil {
 			fmt.Printf("Bad input for sequence: %v\n", err)
 
 			return
@@ -32,7 +30,6 @@ func main()  {
 		return
 	}
 
-	result := finderTheLargest(a_i, num_k)
+	result := finder.finderTheLargest(a_i, num_k)
 	fmt.Println(result)
-
 }
