@@ -30,6 +30,6 @@ func main()  {
 		return
 	}
 
-	result := finder.finderTheLargest(a_i, num_k)
+	result := finder.FinderTheLargest(a_i, num_k)
 	fmt.Println(result)
 }

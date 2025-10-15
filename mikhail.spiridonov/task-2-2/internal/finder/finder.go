@@ -6,8 +6,8 @@ import (
  	"github.com/mordw1n/task-2-2/internal/myheap"
 )
 
-func finderTheLargest(nums []int, k int) int {
-	object := &myheap.myHeap{}
+func FinderTheLargest(nums []int, k int) int {
+	object := &myheap.MyHeap{}
 	heap.Init(object)
 
 	for _, num := range nums {
