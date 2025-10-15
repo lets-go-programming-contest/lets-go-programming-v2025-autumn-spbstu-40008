@@ -14,22 +14,22 @@ func main()  {
 		return
 	}
 
-	a_i := make([]int, countOfDishes)
-	for i := 0; i < countOfDishes; i++ {
-		if _, err := fmt.Scan(&a_i[i]); err != nil {
+	aIth := make([]int, countOfDishes)
+	for i := range countOfDishes {
+		if _, err := fmt.Scan(&aIth[i]); err != nil {
 			fmt.Printf("Bad input for sequence: %v\n", err)
 
 			return
 		}
 	}
 
-	var num_k int
-	if _, err := fmt.Scan(&num_k); err != nil {
+	var numKth int
+	if _, err := fmt.Scan(&numKth); err != nil {
 		fmt.Printf("Bad input for dish preference: %v\n", err)
 
 		return
 	}
 
-	result := finder.FinderTheLargest(a_i, num_k)
+	result := finder.FinderTheLargest(aIth, numKth)
 	fmt.Println(result)
 }

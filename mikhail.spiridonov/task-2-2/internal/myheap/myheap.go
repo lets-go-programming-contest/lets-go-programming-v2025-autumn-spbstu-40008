@@ -20,9 +20,9 @@ func (object *MyHeap) Push(number interface{}) {
 
 func (object *MyHeap) Pop() interface{} {
 	outdated := *object
-	temp_len := len(outdated)
-	number := outdated[temp_len - 1]
-	*object = outdated[0 : temp_len - 1]
+	tempLen := len(outdated)
+	number := outdated[tempLen - 1]
+	*object = outdated[0 : tempLen - 1]
 	
 	return number
 }
