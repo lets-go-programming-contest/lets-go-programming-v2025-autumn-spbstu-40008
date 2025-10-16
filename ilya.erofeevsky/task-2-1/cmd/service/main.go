@@ -10,13 +10,13 @@ const (
 
 func main() {
 	var (
-		coutDepart, coutWorkers, Temp int
-		Symbols                       string
+		coutDepart, coutWorkers, temp int
+		symbols                       string
 	)
 
 	_, err := fmt.Scan(&coutDepart)
 	if err != nil {
-		fmt.Println("Incorrect quantity departaments")
+		fmt.Println("Error reading count of departaments")
 
 		return
 	}
@@ -33,34 +33,35 @@ func main() {
 		currentMin := MinTemp
 
 		for range coutWorkers {
-			_, err = fmt.Scan(&Symbols)
+			_, err = fmt.Scan(&symbols)
 			if err != nil {
 				fmt.Println("Incorrect symbol")
 
 				return
 			}
 
-			_, err = fmt.Scan(&Temp)
+			_, err = fmt.Scan(&temp)
 			if err != nil {
 				fmt.Println("Incorrect temperature")
 
 				return
 			}
 
-			switch Symbols {
+			switch symbols {
 			case "<=":
-				currentMax = min(currentMax, Temp)
+				currentMax = min(currentMax, temp)
 			case ">=":
-				currentMin = max(currentMin, Temp)
+				currentMin = max(currentMin, temp)
 			default:
+				fmt.Println("Warning: Unknow symbol")
 				continue
 			}
 
 			if currentMax < currentMin {
 				fmt.Println(ErrorVal)
-			} else {
-				fmt.Println(currentMin)
+				continue
 			}
+			fmt.Println(currentMin)
 		}
 	}
 }
