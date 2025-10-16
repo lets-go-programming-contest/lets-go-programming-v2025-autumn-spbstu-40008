@@ -5,7 +5,10 @@ import (
 )
 
 func main() {
-	var numberOfDepartments int
+	var (
+		numberOfDepartments, numberOfEmployees, minTemp, maxTemp, t int
+		op                                                          string
+	)
 
 	_, err := fmt.Scan(&numberOfDepartments)
 	if err != nil {
@@ -15,7 +18,6 @@ func main() {
 	}
 
 	for range numberOfDepartments {
-		var numberOfEmployees int
 
 		_, err = fmt.Scan(&numberOfEmployees)
 		if err != nil {
@@ -24,12 +26,10 @@ func main() {
 			return
 		}
 
-		minTemp := 15
-		maxTemp := 30
+		minTemp = 15
+		maxTemp = 30
 
 		for range numberOfEmployees {
-			var op string
-			var t int
 
 			_, err := fmt.Scan(&op, &t)
 			if err != nil {
@@ -48,7 +48,6 @@ func main() {
 				}
 			default:
 				fmt.Println("Incorrect input")
-				return
 			}
 
 			if minTemp > maxTemp {
