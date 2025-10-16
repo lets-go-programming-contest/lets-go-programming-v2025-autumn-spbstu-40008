@@ -6,8 +6,8 @@ import (
 
 func main() {
 	var (
-		numberOfDepartments, numberOfEmployees, minTemp, maxTemp, t int
-		operation                                                   string
+		numberOfDepartments, numberOfEmployees, minTemp, maxTemp, temperature int
+		operation                                                             string
 	)
 
 	_, err := fmt.Scan(&numberOfDepartments)
@@ -18,7 +18,7 @@ func main() {
 	}
 
 	for range numberOfDepartments {
-		_, err := fmt.Scan(&numberOfEmployees)
+		_, err = fmt.Scan(&numberOfEmployees)
 		if err != nil {
 			fmt.Println("Incorrect input")
 
@@ -29,7 +29,7 @@ func main() {
 		maxTemp = 30
 
 		for range numberOfEmployees {
-			_, err := fmt.Scan(&operation, &t)
+			_, err = fmt.Scan(&operation, &temperature)
 			if err != nil {
 				fmt.Println("Incorrect input")
 
@@ -38,12 +38,12 @@ func main() {
 
 			switch operation {
 			case ">=":
-				if t > minTemp {
-					minTemp = t
+				if temperature > minTemp {
+					minTemp = temperature
 				}
 			case "<=":
-				if t < maxTemp {
-					maxTemp = t
+				if temperature < maxTemp {
+					maxTemp = temperature
 				}
 			default:
 				fmt.Println("Incorrect input")
