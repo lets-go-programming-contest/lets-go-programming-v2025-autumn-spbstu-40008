@@ -54,11 +54,13 @@ func main() {
 				currentMin = max(currentMin, temp)
 			default:
 				fmt.Println("Warning: Unknow symbol")
+
 				continue
 			}
 
 			if currentMax < currentMin {
 				fmt.Println(ErrorVal)
+
 				continue
 			}
 			fmt.Println(currentMin)
