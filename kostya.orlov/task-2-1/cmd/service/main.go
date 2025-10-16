@@ -83,6 +83,7 @@ func main() {
 
 			if lower > upper {
 				comfortable = append(comfortable, -1)
+				break
 			} else {
 				comfortable = append(comfortable, lower)
 			}
