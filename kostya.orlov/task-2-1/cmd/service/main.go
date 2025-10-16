@@ -8,84 +8,62 @@ import (
 	"strings"
 )
 
-var reader = bufio.NewReader(os.Stdin)
-
-func readLine() (string, error) {
-	line, err := reader.ReadString('\n')
-
-	if err != nil {
-		return "", err
-	}
-
-	return strings.TrimSpace(line), nil
-}
-
 func main() {
-	var (
-		n, k, upper, lower int
-		temp               string
-	)
+	reader := bufio.NewReader(os.Stdin)
 
-	_, err := fmt.Scan(&n)
-
-	if err != nil {
-		fmt.Println("Error input")
-		os.Exit(0)
-	}
+	var n int
+	fmt.Scan(&n)
 
 	for i := 0; i < n; i++ {
-		_, err = fmt.Scan(&k)
+		var k int
+		fmt.Scan(&k)
 
-		if err != nil {
-			fmt.Println("Error input")
-			os.Exit(0)
-		}
+		lower := 15
+		upper := 30
 
-		upper = 30
-		lower = 15
+		results := make([]int, 0, k)
 
 		for j := 0; j < k; j++ {
-			temp, err = readLine()
+			line, _ := reader.ReadString('\n')
+			line = strings.TrimSpace(line)
 
-			if err != nil || temp == "" {
-				fmt.Println("Error input")
-				os.Exit(0)
+			if line == "" {
+				j--
+				continue
 			}
 
-			parts := strings.Fields(temp)
-
+			parts := strings.Fields(line)
 			if len(parts) != 2 {
-				fmt.Println("Error")
-				os.Exit(0)
+				fmt.Println("Ошибка формата ввода")
+				return
 			}
 
-			operator := parts[0]
-			degreeStr := parts[1]
-
-			degree, err := strconv.Atoi(degreeStr)
-
+			op := parts[0]
+			val, err := strconv.Atoi(parts[1])
 			if err != nil {
-				fmt.Println("Error converting")
-				os.Exit(0)
+				fmt.Println("Ошибка числа")
+				return
 			}
 
-			switch operator {
-			case "<=":
-				if degree <= upper {
-					upper = degree
+			if op == "<=" {
+				if val < upper {
+					upper = val
 				}
-			case ">=":
-				if degree >= lower {
-					lower = degree
+			} else if op == ">=" {
+				if val > lower {
+					lower = val
 				}
 			}
 
 			if lower > upper {
-				fmt.Println(-1)
+				results = append(results, -1)
 			} else {
-				fmt.Println(lower)
+				results = append(results, lower)
 			}
+		}
 
+		for _, r := range results {
+			fmt.Println(r)
 		}
 	}
 }
