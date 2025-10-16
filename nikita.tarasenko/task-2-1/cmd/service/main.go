@@ -8,17 +8,10 @@ const (
 )
 
 func main() {
-	var departmentCount int
-
-	var employeeCount int
-
-	var nowMinimumTemperature int
-
-	var nowMaximumTemperature int
-
-	var data int
-
-	var sign string
+	var (
+		departmentCount, employeeCount, nowMinimumTemperature, nowMaximumTemperature, data int
+		sign                                                                               string
+	)
 
 	_, err := fmt.Scan(&departmentCount)
 	if err != nil {
