@@ -25,11 +25,6 @@ func main() {
 			line, _ := reader.ReadString('\n')
 			line = strings.TrimSpace(line)
 
-			if line == "" {
-				j--
-				continue
-			}
-
 			parts := strings.Fields(line)
 			if len(parts) != 2 {
 				fmt.Println("Error input")
