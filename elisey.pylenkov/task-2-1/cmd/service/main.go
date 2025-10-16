@@ -18,6 +18,7 @@ func main() {
 
 		for range numEmployees {
 			var operator string
+
 			var temp int
 
 			if _, err := fmt.Scan(&operator, &temp); err != nil {
