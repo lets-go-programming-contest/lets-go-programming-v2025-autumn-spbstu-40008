@@ -16,7 +16,7 @@ func main() {
 		return
 	}
 
-	for range numberOfDepartments {
+	for i := 0; i < numberOfDepartments; i++ {
 		_, err := fmt.Scan(&numberOfEmployees)
 		if err != nil {
 			fmt.Println("Incorrect input")
