@@ -1,43 +1,91 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"os"
+	"strconv"
 )
+
+func readLine() (string, error) {
+	scanner := bufio.NewScanner(os.Stdin)
+
+	if scanner.Scan() {
+		return scanner.Text(), nil
+	}
+
+	err := scanner.Err()
+
+	if err != nil {
+		return "", err
+	}
+
+	return "", nil
+}
 
 func main() {
 	var (
-		n, k, wish  int
-		lower       = 15
-		upper       = 30
-		comfortable []int
-		temp        string
+		n, k, upper, lower int
+		comfortable        []int
+		temp               string
 	)
 
-	fmt.Scan(&n)
+	_, err := fmt.Scan(&n)
 
-	for i := 0; i < n; i++ {
-		fmt.Scan(&k)
-		for j := 0; j < k; j++ {
-			fmt.Scan(&temp)
-			fmt.Scan(&wish)
-
-			if temp == "<=" &&
-				wish >= lower {
-				upper = wish
-				comfortable = append(comfortable, lower)
-			} else if temp == ">=" &&
-				wish <= upper {
-				lower = wish
-				comfortable = append(comfortable, lower)
-			} else {
-				comfortable = append(comfortable, -1)
-			}
-		}
-		lower = 15
-		upper = 30
+	if err != nil {
+		fmt.Println("Error input")
+		os.Exit(0)
 	}
 
-	for i := 0; i < len(comfortable); i++ {
-		fmt.Println(comfortable[i])
+	for i := 0; i < n; i++ {
+		_, err = fmt.Scan(&k)
+
+		if err != nil {
+			fmt.Println("Error input")
+			os.Exit(0)
+		}
+
+		upper = 30
+		lower = 15
+
+		for j := 0; j < k; j++ {
+			temp, err = readLine()
+
+			if err != nil {
+				fmt.Println("Error input")
+				os.Exit(0)
+			}
+
+			degree, err := strconv.Atoi(temp[3:])
+
+			if err != nil {
+				fmt.Println("Error converting")
+				os.Exit(0)
+			}
+
+			temp = temp[:2]
+
+			switch temp {
+			case "<=":
+				if degree <= upper {
+					upper = degree
+				}
+			case ">=":
+				if degree >= lower {
+					lower = degree
+				}
+			}
+
+			if lower > upper {
+				comfortable = append(comfortable, -1)
+			} else {
+				comfortable = append(comfortable, lower)
+			}
+
+		}
+	}
+
+	for _, val := range comfortable {
+		fmt.Println(val)
 	}
 }
