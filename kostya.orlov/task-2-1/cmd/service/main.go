@@ -50,7 +50,7 @@ func main() {
 			if lower > upper {
 				fmt.Println(-1)
 			} else {
-				fmt.Print(lower)
+				fmt.Println(lower)
 			}
 		}
 	}
