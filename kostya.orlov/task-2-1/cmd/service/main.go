@@ -21,8 +21,6 @@ func main() {
 		lower := 15
 		upper := 30
 
-		results := make([]int, 0, k)
-
 		for j := 0; j < k; j++ {
 			line, _ := reader.ReadString('\n')
 			line = strings.TrimSpace(line)
@@ -34,36 +32,31 @@ func main() {
 
 			parts := strings.Fields(line)
 			if len(parts) != 2 {
-				fmt.Println("Ошибка формата ввода")
+				fmt.Println("Error input")
 				return
 			}
 
 			op := parts[0]
 			val, err := strconv.Atoi(parts[1])
 			if err != nil {
-				fmt.Println("Ошибка числа")
+				fmt.Println("Error num")
 				return
 			}
 
-			if op == "<=" {
-				if val < upper {
-					upper = val
-				}
-			} else if op == ">=" {
-				if val > lower {
-					lower = val
-				}
+			switch op {
+			case "<=":
+				upper = min(upper, val)
+			case ">=":
+				lower = max(lower, val)
+			default:
+				continue
 			}
 
 			if lower > upper {
-				results = append(results, -1)
+				fmt.Println(-1)
 			} else {
-				results = append(results, lower)
+				fmt.Print(lower)
 			}
-		}
-
-		for _, r := range results {
-			fmt.Println(r)
 		}
 	}
 }
