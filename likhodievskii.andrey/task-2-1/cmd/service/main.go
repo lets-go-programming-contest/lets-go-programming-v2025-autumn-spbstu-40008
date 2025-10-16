@@ -16,14 +16,16 @@ func main() {
 		wishTempSign                          string
 	)
 
-	if _, error := fmt.Scan(&departmentCount); error != nil {
-		fmt.Printf("Bad input for departments: %v\n", error)
+	if _, err := fmt.Scan(&departmentCount); err != nil {
+		fmt.Printf("Bad input for departments: %v\n", err)
+
 		return
 	}
 
 	for range departmentCount {
-		if _, error := fmt.Scan(&countEmployess); error != nil {
-			fmt.Printf("Bad input for employess: %v\n", error)
+		if _, err := fmt.Scan(&countEmployess); err != nil {
+			fmt.Printf("Bad input for employess: %v\n", err)
+
 			return
 		}
 		var (
@@ -31,8 +33,9 @@ func main() {
 			departmentMaxTempValue = defaultMaxTempValue
 		)
 		for range countEmployess {
-			if _, error := fmt.Scan(&wishTempSign, &temp); error != nil {
-				fmt.Printf("Bad input: %v\n", error)
+			if _, err := fmt.Scan(&wishTempSign, &temp); err != nil {
+				fmt.Printf("Bad input: %v\n", err)
+
 				return
 			}
 
@@ -43,6 +46,7 @@ func main() {
 				departmentMinTempValue = max(departmentMinTempValue, temp)
 			default:
 				fmt.Printf("Invalid sign: %s\n", wishTempSign)
+
 				return
 			}
 
@@ -54,5 +58,4 @@ func main() {
 
 		}
 	}
-
 }
