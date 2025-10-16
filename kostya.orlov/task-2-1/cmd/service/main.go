@@ -5,22 +5,19 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 )
 
+var reader = bufio.NewReader(os.Stdin)
+
 func readLine() (string, error) {
-	scanner := bufio.NewScanner(os.Stdin)
-
-	if scanner.Scan() {
-		return scanner.Text(), nil
-	}
-
-	err := scanner.Err()
+	line, err := reader.ReadString('\n')
 
 	if err != nil {
 		return "", err
 	}
 
-	return "", nil
+	return strings.TrimSpace(line), nil
 }
 
 func main() {
@@ -51,21 +48,29 @@ func main() {
 		for j := 0; j < k; j++ {
 			temp, err = readLine()
 
-			if err != nil {
+			if err != nil || temp == "" {
 				fmt.Println("Error input")
 				os.Exit(0)
 			}
 
-			degree, err := strconv.Atoi(temp[3:])
+			parts := strings.Fields(temp)
+
+			if len(parts) != 2 {
+				fmt.Println("Error")
+				os.Exit(0)
+			}
+
+			operator := parts[0]
+			degreeStr := parts[1]
+
+			degree, err := strconv.Atoi(degreeStr)
 
 			if err != nil {
 				fmt.Println("Error converting")
 				os.Exit(0)
 			}
 
-			temp = temp[:2]
-
-			switch temp {
+			switch operator {
 			case "<=":
 				if degree <= upper {
 					upper = degree
