@@ -3,20 +3,20 @@ package main
 import "fmt"
 
 func main() {
-	var n, k int
+	var numDepartments, numEmployees int
 
-	if _, err := fmt.Scan(&n); err != nil {
+	if _, err := fmt.Scan(&numDepartments); err != nil {
 		return
 	}
 
-	for i := 0; i < n; i++ {
-		if _, err := fmt.Scan(&k); err != nil {
+	for range numDepartments {
+		if _, err := fmt.Scan(&numEmployees); err != nil {
 			return
 		}
 
 		minTemp, maxTemp := 15, 30
 
-		for j := 0; j < k; j++ {
+		for range numEmployees {
 			var operator string
 			var temp int
 
