@@ -9,9 +9,11 @@ const (
 
 func main() {
 	var departmentCount int
+
 	var employeeCount int
 
 	var nowMinimumTemperature int
+
 	var nowMaximumTemperature int
 
 	var data int
