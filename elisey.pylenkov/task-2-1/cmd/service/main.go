@@ -5,10 +5,14 @@ import "fmt"
 func main() {
 	var n, k int
 
-	fmt.Scan(&n)
+	if _, err := fmt.Scan(&n); err != nil {
+		return
+	}
 
 	for i := 0; i < n; i++ {
-		fmt.Scan(&k)
+		if _, err := fmt.Scan(&k); err != nil {
+			return
+		}
 
 		minTemp, maxTemp := 15, 30
 
@@ -16,7 +20,9 @@ func main() {
 			var operator string
 			var temp int
 
-			fmt.Scan(&operator, &temp)
+			if _, err := fmt.Scan(&operator, &temp); err != nil {
+				return
+			}
 
 			switch operator {
 			case ">=":
