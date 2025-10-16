@@ -12,14 +12,14 @@ func main() {
 
 	_, err := fmt.Scan(&numberOfDepartments)
 	if err != nil {
-
 		fmt.Println("Incorrect input")
+
 		return
 	}
 
 	for range numberOfDepartments {
 
-		_, err = fmt.Scan(&numberOfEmployees)
+		_, err := fmt.Scan(&numberOfEmployees)
 		if err != nil {
 			fmt.Println("Incorrect input")
 
@@ -34,6 +34,7 @@ func main() {
 			_, err := fmt.Scan(&op, &t)
 			if err != nil {
 				fmt.Println("Incorrect input")
+
 				return
 			}
 
