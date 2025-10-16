@@ -28,10 +28,12 @@ func main() {
 
 			return
 		}
+
 		var (
 			departmentMinTempValue = defaultMinTempValue
 			departmentMaxTempValue = defaultMaxTempValue
 		)
+
 		for range countEmployess {
 			if _, err := fmt.Scan(&wishTempSign, &temp); err != nil {
 				fmt.Printf("Bad input: %v\n", err)
@@ -55,7 +57,6 @@ func main() {
 			} else {
 				fmt.Println(departmentMinTempValue)
 			}
-
 		}
 	}
 }
