@@ -63,7 +63,7 @@ func main() {
 
 				continue
 			}
-			
+
 			fmt.Println(currentMin)
 		}
 	}
