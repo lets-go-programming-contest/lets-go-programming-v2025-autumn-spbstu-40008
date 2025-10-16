@@ -72,11 +72,11 @@ func main() {
 
 			switch operator {
 			case "<=":
-				if degree <= upper {
+				if degree < upper {
 					upper = degree
 				}
 			case ">=":
-				if degree >= lower {
+				if degree > lower {
 					lower = degree
 				}
 			}
