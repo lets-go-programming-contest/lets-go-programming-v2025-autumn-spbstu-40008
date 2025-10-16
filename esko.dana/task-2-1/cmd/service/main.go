@@ -5,9 +5,7 @@ import (
 )
 
 func main() {
-	var (
-		numberOfDepartments, numberOfEmployees int
-	)
+	var numberOfDepartments int
 
 	_, err := fmt.Scan(&numberOfDepartments)
 	if err != nil {
@@ -16,19 +14,23 @@ func main() {
 		return
 	}
 
-	for i := 0; i < numberOfDepartments; i++ {
-		_, err := fmt.Scan(&numberOfEmployees)
+	for range numberOfDepartments {
+		var numberOfEmployees int
+
+		_, err = fmt.Scan(&numberOfEmployees)
 		if err != nil {
 			fmt.Println("Incorrect input")
+
 			return
 		}
 
 		minTemp := 15
 		maxTemp := 30
 
-		for j := 0; j < numberOfEmployees; j++ {
+		for range numberOfEmployees {
 			var op string
 			var t int
+
 			_, err := fmt.Scan(&op, &t)
 			if err != nil {
 				fmt.Println("Incorrect input")
