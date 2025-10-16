@@ -8,43 +8,63 @@ import (
 	"strings"
 )
 
-func main() {
-	reader := bufio.NewReader(os.Stdin)
+var reader = bufio.NewReader(os.Stdin)
 
+func readLine() (string, error) {
+	line, err := reader.ReadString('\n')
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(line), nil
+}
+
+func main() {
 	var n int
-	fmt.Scan(&n)
+
+	if _, err := fmt.Scan(&n); err != nil {
+		os.Exit(0)
+	}
 
 	for i := 0; i < n; i++ {
 		var k int
-		fmt.Scan(&k)
+
+		if _, err := fmt.Scan(&k); err != nil {
+			os.Exit(0)
+		}
 
 		lower := 15
 		upper := 30
 
 		for j := 0; j < k; j++ {
-			line, _ := reader.ReadString('\n')
-			line = strings.TrimSpace(line)
+			temp, err := readLine()
 
-			parts := strings.Fields(line)
+			if err != nil || temp == "" {
+				os.Exit(0)
+			}
+
+			parts := strings.Fields(temp)
 			if len(parts) != 2 {
-				fmt.Println("Error input")
-				return
-			}
+				upper = -1
+				lower = 0
+			} else {
+				operator := parts[0]
+				degreeStr := parts[1]
 
-			op := parts[0]
-			val, err := strconv.Atoi(parts[1])
-			if err != nil {
-				fmt.Println("Error num")
-				return
-			}
+				degree, err := strconv.Atoi(degreeStr)
+				if err != nil {
+					os.Exit(0)
+				}
 
-			switch op {
-			case "<=":
-				upper = min(upper, val)
-			case ">=":
-				lower = max(lower, val)
-			default:
-				continue
+				switch operator {
+				case "<=":
+					if degree < upper {
+						upper = degree
+					}
+				case ">=":
+					if degree > lower {
+						lower = degree
+					}
+				}
 			}
 
 			if lower > upper {
