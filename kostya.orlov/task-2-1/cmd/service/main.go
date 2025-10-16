@@ -23,7 +23,6 @@ func readLine() (string, error) {
 func main() {
 	var (
 		n, k, upper, lower int
-		comfortable        []int
 		temp               string
 	)
 
@@ -72,26 +71,21 @@ func main() {
 
 			switch operator {
 			case "<=":
-				if degree < upper {
+				if degree <= upper {
 					upper = degree
 				}
 			case ">=":
-				if degree > lower {
+				if degree >= lower {
 					lower = degree
 				}
 			}
 
 			if lower > upper {
-				comfortable = append(comfortable, -1)
-				break
+				fmt.Println(-1)
 			} else {
-				comfortable = append(comfortable, lower)
+				fmt.Println(lower)
 			}
 
 		}
-	}
-
-	for _, val := range comfortable {
-		fmt.Println(val)
 	}
 }
