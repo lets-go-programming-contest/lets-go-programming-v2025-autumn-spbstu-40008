@@ -38,29 +38,39 @@ func (h IntHeap) Lessthan(i, j int) bool {
 }
 
 func searching(amountOfDishes []int, numberk int) int {
-	h := &IntHeap{}
-	heap.Init(h)
+	heapExample := &IntHeap{}
+	heap.Init(heapExample)
 
-	for i := 0; i < len(amountOfDishes); i++ {
-		if h.Len() < numberk {
-			heap.Push(h, amountOfDishes[i])
-		} else if amountOfDishes[i] > (*h)[0] {
-			heap.Pop(h)
-			heap.Push(h, amountOfDishes[i])
+	for _, dish := range amountOfDishes {
+		if heapExample.Len() < numberk {
+			heap.Push(heapExample, dish)
+		} else if dish > (*heapExample)[0] {
+			heap.Pop(heapExample)
+			heap.Push(heapExample, dish)
 		}
 	}
-	return (*h)[0]
+	return (*heapExample)[0]
 }
 
 func main() {
 	var amountOfDishes, numberk int
 
-	fmt.Scan(&amountOfDishes)
-	arr := make([]int, amountOfDishes)
-	for i := 0; i < amountOfDishes; i++ {
-		fmt.Scan(&arr[i])
+	_, err := fmt.Scan(&amountOfDishes)
+	if err != nil {
+		return
 	}
 
-	fmt.Scan(&numberk)
+	arr := make([]int, amountOfDishes)
+	for i := range arr {
+		_, err = fmt.Scan(&arr[i])
+		if err != nil {
+			return
+		}
+	}
+
+	_, err = fmt.Scan(&numberk)
+	if err != nil {
+		return
+	}
 	fmt.Println(searching(arr, numberk))
 }
