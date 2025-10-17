@@ -15,7 +15,13 @@ func (h IntHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
 func (h *IntHeap) Push(x any) {
 	// Push and Pop use pointer receivers because they modify the slice's length,
 	// not just its contents.
-	*h = append(*h, x.(int))
+	value, err := x.(int)
+	if !err {
+		fmt.Println("push error:", err)
+
+		return
+	}
+	*h = append(*h, value)
 }
 
 func (h *IntHeap) Pop() any {
@@ -23,6 +29,7 @@ func (h *IntHeap) Pop() any {
 	n := len(old)
 	x := old[n-1]
 	*h = old[0 : n-1]
+
 	return x
 }
 
@@ -31,8 +38,8 @@ func (h *IntHeap) Pop() any {
 func main() {
 	var dishesCount, dish, preference int
 
-	h := &IntHeap{}
-	heap.Init(h)
+	DishHeap := &IntHeap{}
+	heap.Init(DishHeap)
 
 	_, err := fmt.Scan(&dishesCount)
 	if err != nil {
@@ -49,7 +56,7 @@ func main() {
 			return
 		}
 
-		heap.Push(h, dish)
+		heap.Push(DishHeap, dish)
 	}
 
 	_, err = fmt.Scan(&preference)
@@ -60,8 +67,8 @@ func main() {
 	}
 
 	for range preference - 1 {
-		heap.Pop(h)
+		heap.Pop(DishHeap)
 	}
 
-	fmt.Println((*h)[0])
+	fmt.Println((*DishHeap)[0])
 }
