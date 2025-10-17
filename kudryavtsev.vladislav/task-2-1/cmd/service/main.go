@@ -8,7 +8,7 @@ func processConditions(numConditions int) {
 	lowerBound := 15
 	upperBound := 30
 
-	for i := 0; i < numConditions; i++ {
+	for range numConditions {
 		var (
 			operator string
 			value    int
@@ -53,7 +53,7 @@ func main() {
 		return
 	}
 
-	for i := 0; i < numTests; i++ {
+	for range numTests {
 		var numConditions int
 
 		if _, err := fmt.Scan(&numConditions); err != nil {
