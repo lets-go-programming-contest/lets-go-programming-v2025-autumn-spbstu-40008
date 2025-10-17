@@ -29,7 +29,9 @@ func (h *IntHeap) Pop() interface{} {
 }
 
 func (h *IntHeap) Push(x interface{}) {
-	*h = append(*h, x.(int))
+	if val, ok := x.(int); ok {
+		*h = append(*h, val)
+	}
 }
 
 func main() {
