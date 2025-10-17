@@ -6,9 +6,7 @@ import (
 )
 
 func main() {
-	var (
-		countDepartments int
-	)
+	var countDepartments int
 
 	if _, err := fmt.Scan(&countDepartments); err != nil {
 		fmt.Println("Error input N")
