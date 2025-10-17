@@ -38,13 +38,9 @@ func main() {
 
 			switch operation {
 			case ">=":
-				if temperature > minTemp {
-					minTemp = temperature
-				}
+				minTemp = max(minTemp, temperature)
 			case "<=":
-				if temperature < maxTemp {
-					maxTemp = temperature
-				}
+				maxTemp = min(maxTemp, temperature)
 			default:
 				fmt.Println("Incorrect input")
 			}
