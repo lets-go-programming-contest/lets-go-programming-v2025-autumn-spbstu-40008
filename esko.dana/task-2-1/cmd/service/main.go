@@ -1,8 +1,6 @@
 package main
 
-import (
-	"fmt"
-)
+import "fmt"
 
 func main() {
 	var (
@@ -13,6 +11,7 @@ func main() {
 	_, err := fmt.Scan(&numberOfDepartments)
 	if err != nil {
 		fmt.Println("Incorrect input")
+
 		return
 	}
 
@@ -20,6 +19,7 @@ func main() {
 		_, err = fmt.Scan(&numberOfEmployees)
 		if err != nil {
 			fmt.Println("Incorrect input")
+
 			return
 		}
 
@@ -30,6 +30,7 @@ func main() {
 			_, err = fmt.Scan(&operation, &temperature)
 			if err != nil {
 				fmt.Println("Incorrect input")
+
 				return
 			}
 
@@ -40,10 +41,13 @@ func main() {
 				maxTemp = min(maxTemp, temperature)
 			default:
 				fmt.Println("Incorrect input")
+
+				return
 			}
 
 			if minTemp > maxTemp {
 				fmt.Println(-1)
+
 				continue
 			}
 
