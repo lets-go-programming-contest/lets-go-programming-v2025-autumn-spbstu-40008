@@ -35,7 +35,7 @@ func (h *IntHeap) Pop() any {
 }
 
 func main() {
-	var dishNum, k, temp int
+	var dishNum, preference, temp int
 
 	rating := &IntHeap{}
 	heap.Init(rating)
@@ -58,14 +58,14 @@ func main() {
 		heap.Push(rating, temp)
 	}
 
-	_, err = fmt.Scan(&k)
+	_, err = fmt.Scan(&preference)
 	if err != nil {
 		fmt.Println("Invalid number")
 
 		return
 	}
 
-	for i := 0; i < k-1; i++ {
+	for range preference - 1 {
 		heap.Pop(rating)
 	}
 
