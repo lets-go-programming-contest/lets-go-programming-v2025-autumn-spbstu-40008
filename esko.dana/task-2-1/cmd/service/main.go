@@ -52,7 +52,6 @@ func main() {
 			}
 
 			fmt.Println(minTemp)
-
 		}
 	}
 }
