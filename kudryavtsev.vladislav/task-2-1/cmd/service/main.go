@@ -5,12 +5,10 @@ import (
 )
 
 func processConditions(numConditions int) {
-	var (
-		lowerBound = 15
-		upperBound = 30
-	)
+	lowerBound := 15
+	upperBound := 30
 
-	for range numConditions {
+	for i := 0; i < numConditions; i++ {
 		var (
 			operator string
 			value    int
@@ -26,15 +24,18 @@ func processConditions(numConditions int) {
 				if upperBound >= value {
 					upperBound = value
 				}
+
 				if upperBound < lowerBound {
 					lowerBound = -1
 				}
 			}
+
 		case ">=":
 			if lowerBound != -1 {
 				if lowerBound <= value {
 					lowerBound = value
 				}
+
 				if lowerBound > upperBound {
 					lowerBound = -1
 				}
@@ -47,12 +48,14 @@ func processConditions(numConditions int) {
 
 func main() {
 	var numTests int
+
 	if _, err := fmt.Scan(&numTests); err != nil {
 		return
 	}
 
-	for range numTests {
+	for i := 0; i < numTests; i++ {
 		var numConditions int
+
 		if _, err := fmt.Scan(&numConditions); err != nil {
 			return
 		}
