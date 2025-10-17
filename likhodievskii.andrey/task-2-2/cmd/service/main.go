@@ -7,9 +7,9 @@ import (
 
 type IntHeap []int
 
-func (h IntHeap) Len() int           { return len(h) }
-func (h IntHeap) Less(i, j int) bool { return h[i] < h[j] }
-func (h IntHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
+func (h *IntHeap) Len() int           { return len(*h) }
+func (h *IntHeap) Less(i, j int) bool { return (*h)[i] < (*h)[j] }
+func (h *IntHeap) Swap(i, j int)      { (*h)[i], (*h)[j] = (*h)[j], (*h)[i] }
 
 func (h *IntHeap) Push(x any) {
 	*h = append(*h, x.(int))
@@ -56,8 +56,8 @@ func main() {
 		return
 	}
 
-	if numberWishDish < 1 || numberWishDish >= countDishes {
-		fmt.Printf("Unreacheble number dish for customer: %d\n", numberWishDish)
+	if numberWishDish < 1 || numberWishDish > countDishes {
+		fmt.Printf("Unreachable number dish for customer: %d\n", numberWishDish)
 
 		return
 	}
@@ -65,8 +65,8 @@ func main() {
 	heapForDishes := &IntHeap{}
 	heap.Init(heapForDishes)
 
-	for indexFirstNumbersWishDish := 0; indexFirstNumbersWishDish < numberWishDish; indexFirstNumbersWishDish++ {
-		heap.Push(heapForDishes, dishes[indexFirstNumbersWishDish])
+	for indexFirstWishDish := range numberWishDish {
+		heap.Push(heapForDishes, dishes[indexFirstWishDish])
 	}
 
 	for countDishBeforeNeeded := numberWishDish; countDishBeforeNeeded < countDishes; countDishBeforeNeeded++ {
