@@ -19,13 +19,13 @@ func (h *IntHeap) Swap(i, j int) {
 	(*h)[i], (*h)[j] = (*h)[j], (*h)[i]
 }
 
-func (h *IntHeap) Push(x interface{}) {
+func (h *IntHeap) Push(x any) {
 	if val, ok := x.(int); ok {
 		*h = append(*h, val)
 	}
 }
 
-func (h *IntHeap) Pop() interface{} {
+func (h *IntHeap) Pop() any {
 	old := *h
 	n := len(old)
 	x := old[n-1]
