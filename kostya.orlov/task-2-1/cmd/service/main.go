@@ -6,7 +6,6 @@ import (
 )
 
 func main() {
-
 	var (
 		countDepartments int
 	)
