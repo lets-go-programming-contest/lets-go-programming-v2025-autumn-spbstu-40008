@@ -64,6 +64,8 @@ func main() {
 					if degree > lower {
 						lower = degree
 					}
+				default:
+					continue
 				}
 			}
 
