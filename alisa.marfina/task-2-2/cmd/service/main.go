@@ -37,14 +37,6 @@ func (h *IntHeap) Pop() interface{} {
 	return x
 }
 
-func (h IntHeap) Length() int {
-	return h.Len()
-}
-
-func (h IntHeap) Lessthan(i, j int) bool {
-	return h.Less(i, j)
-}
-
 func searching(amountOfDishes []int, numberk int) int {
 	heapExample := &IntHeap{}
 	heap.Init(heapExample)
