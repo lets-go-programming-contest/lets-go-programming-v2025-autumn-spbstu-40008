@@ -18,7 +18,12 @@ func (h IntHeap) Swap(i, j int) {
 }
 
 func (h *IntHeap) Push(x interface{}) {
-	*h = append(*h, x.(int))
+	value, ok := x.(int)
+	if !ok {
+		return
+	}
+
+	*h = append(*h, value)
 }
 
 func (h *IntHeap) Pop() interface{} {
@@ -26,6 +31,7 @@ func (h *IntHeap) Pop() interface{} {
 	n := len(old)
 	x := old[n-1]
 	*h = old[0 : n-1]
+
 	return x
 }
 
@@ -49,6 +55,7 @@ func searching(amountOfDishes []int, numberk int) int {
 			heap.Push(heapExample, dish)
 		}
 	}
+
 	return (*heapExample)[0]
 }
 
@@ -72,5 +79,6 @@ func main() {
 	if err != nil {
 		return
 	}
-	fmt.Println(searching(arr, numberk))
+	result := searching(arr, numberk)
+	fmt.Println(result)
 }
