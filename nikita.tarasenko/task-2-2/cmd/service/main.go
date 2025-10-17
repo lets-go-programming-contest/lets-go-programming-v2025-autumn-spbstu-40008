@@ -21,7 +21,7 @@ func (h *IntHeap) Push(x any) {
 
 		return
 	}
-	
+
 	*h = append(*h, value)
 }
 
