@@ -8,28 +8,28 @@ import (
 func main() {
 
 	var (
-		n int
+		countDepartments int
 	)
 
-	if _, err := fmt.Scan(&n); err != nil {
+	if _, err := fmt.Scan(&countDepartments); err != nil {
 		fmt.Println("Error input N")
 		os.Exit(0)
 	}
 
-	for i := 0; i < n; i++ {
+	for range countDepartments {
 		var (
-			k, temp  int
-			upper    = 30
-			lower    = 15
-			operator string
+			countEmployees, temp int
+			upper                = 30
+			lower                = 15
+			operator             string
 		)
 
-		if _, err := fmt.Scan(&k); err != nil {
+		if _, err := fmt.Scan(&countEmployees); err != nil {
 			fmt.Println("Error input K")
 			os.Exit(0)
 		}
 
-		for j := 0; j < k; j++ {
+		for range countEmployees {
 			if _, err := fmt.Scan(&operator, &temp); err != nil {
 				fmt.Println("Error input temperature")
 				os.Exit(0)
