@@ -4,60 +4,59 @@ import (
 	"fmt"
 )
 
-func main() {
+func processConditions(numConditions int) {
 	var (
-		n  int
-		k  int
-		ud = 15
-		uh = 30
-		tw int
-		ts string
+		lowerBound = 15
+		upperBound = 30
 	)
 
-	_, err := fmt.Scan(&n)
-	if err != nil {
+	for range numConditions {
+		var (
+			operator string
+			value    int
+		)
+
+		if _, err := fmt.Scan(&operator, &value); err != nil {
+			return
+		}
+
+		switch operator {
+		case "<=":
+			if lowerBound != -1 {
+				if upperBound >= value {
+					upperBound = value
+				}
+				if upperBound < lowerBound {
+					lowerBound = -1
+				}
+			}
+		case ">=":
+			if lowerBound != -1 {
+				if lowerBound <= value {
+					lowerBound = value
+				}
+				if lowerBound > upperBound {
+					lowerBound = -1
+				}
+			}
+		}
+
+		fmt.Println(lowerBound)
+	}
+}
+
+func main() {
+	var numTests int
+	if _, err := fmt.Scan(&numTests); err != nil {
 		return
 	}
 
-	for i := 0; i < n; i++ {
-		_, err = fmt.Scan(&k)
-		if err != nil {
+	for range numTests {
+		var numConditions int
+		if _, err := fmt.Scan(&numConditions); err != nil {
 			return
 		}
-		for j := 0; j < k; j++ {
-			_, err = fmt.Scan(&ts)
-			if err != nil {
-				return
-			}
 
-			_, err = fmt.Scan(&tw)
-			if err != nil {
-				return
-			}
-
-			switch ts {
-			case "<=":
-				if ud != -1 {
-					if uh >= tw {
-						uh = tw
-					}
-					if uh < ud {
-						ud = -1
-					}
-				}
-			case ">=":
-				if ud != -1 {
-					if ud <= tw {
-						ud = tw
-					}
-					if ud > uh {
-						ud = -1
-					}
-				}
-			}
-			fmt.Println(ud)
-		}
-		ud = 15
-		uh = 30
+		processConditions(numConditions)
 	}
 }
