@@ -12,7 +12,14 @@ func (h *IntHeap) Less(i, j int) bool { return (*h)[i] < (*h)[j] }
 func (h *IntHeap) Swap(i, j int)      { (*h)[i], (*h)[j] = (*h)[j], (*h)[i] }
 
 func (h *IntHeap) Push(x any) {
-	*h = append(*h, x.(int))
+	value, err := x.(int)
+	if !err {
+		fmt.Println("push error:", err)
+
+		return
+	}
+
+	*h = append(*h, value)
 }
 
 func (h *IntHeap) Pop() any {
@@ -31,7 +38,6 @@ func main() {
 		fmt.Printf("Bad count dishes value: %v\n", err)
 
 		return
-
 	}
 
 	if countDishes < 0 {
@@ -42,7 +48,7 @@ func main() {
 
 	dishes := make([]int, countDishes)
 
-	for indexDishesNow := 0; indexDishesNow < countDishes; indexDishesNow++ {
+	for indexDishesNow := range countDishes {
 		if _, err := fmt.Scan(&dishes[indexDishesNow]); err != nil {
 			fmt.Printf("Bad point for dish: %v\n", err)
 
