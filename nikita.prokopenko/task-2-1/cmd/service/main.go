@@ -9,20 +9,20 @@ func processDepartment(staffCount int) {
 	maxtemp := 30
 
 	for i := 0; i < staffCount; i++ {
-		var op string
-		var val int
-
-		if _, err := fmt.Scan(&op, &val); err != nil {
+		var sign string
+		var t int
+		_, err := fmt.Scan(&sign, &t)
+		if err != nil {
 			return
 		}
 
-		if op == "<=" {
-			if val < maxtemp {
-				maxtemp = val
+		if sign == "<=" {
+			if t < maxtemp {
+				maxtemp = t
 			}
-		} else if op == ">=" {
-			if val > mintemp {
-				mintemp = val
+		} else if sign == ">=" {
+			if t > mintemp {
+				mintemp = t
 			}
 		}
 
@@ -35,16 +35,17 @@ func processDepartment(staffCount int) {
 }
 
 func main() {
-	var departments, staffCount int
-
-	if _, err := fmt.Scan(&departments); err != nil {
+	var n, k int
+	_, err := fmt.Scan(&n)
+	if err != nil {
 		return
 	}
-	if _, err := fmt.Scan(&staffCount); err != nil {
+	_, err = fmt.Scan(&k)
+	if err != nil {
 		return
 	}
 
-	for i := 0; i < departments; i++ {
-		processDepartment(staffCount)
+	for i := 0; i < n; i++ {
+		processDepartment(k)
 	}
 }
