@@ -10,80 +10,66 @@ import (
 )
 
 var (
-	ErrInvalidOperation      = errors.New("invalid operation")
-	ErrInvalidNumber         = errors.New("invalid number")
-	ErrReadEmployeesCount    = errors.New("could not read employees count")
-	ErrParsingEmployeesCount = errors.New("failed to parse employees count")
-	ErrProcessEmployeesData  = errors.New("minTemp exceeded maxTemp")
+	errInvalidOperation = errors.New("invalid operation")
+	errInvalidNumber    = errors.New("invalid number")
 )
 
-func parseInputLine(inputLine string) (string, int, error) {
-	inputLine = strings.TrimSpace(inputLine)
+func parseInputLine(input string) (string, int, error) {
+	input = strings.TrimSpace(input)
 
 	var operation string
 	var numberStr string
 
 	switch {
-	case strings.HasPrefix(inputLine, ">="):
+	case strings.HasPrefix(input, ">="):
 		operation = ">="
-		numberStr = strings.TrimSpace(strings.TrimPrefix(inputLine, ">="))
-	case strings.HasPrefix(inputLine, "<="):
+		numberStr = strings.TrimSpace(strings.TrimPrefix(input, ">="))
+	case strings.HasPrefix(input, "<="):
 		operation = "<="
-		numberStr = strings.TrimSpace(strings.TrimPrefix(inputLine, "<="))
+		numberStr = strings.TrimSpace(strings.TrimPrefix(input, "<="))
 	default:
-		return "", 0, ErrInvalidOperation
+		return "", 0, errInvalidOperation
 	}
 
 	value, err := strconv.Atoi(numberStr)
 	if err != nil {
-		return "", 0, ErrInvalidNumber
+		return "", 0, errInvalidNumber
 	}
 
 	return operation, value, nil
 }
 
-func parseEmployeesCount(scanner *bufio.Scanner) (int, error) {
-	if !scanner.Scan() {
-		return 0, ErrReadEmployeesCount
-	}
-
-	employeesCountStr := strings.TrimSpace(scanner.Text())
-
-	employeesCount, err := strconv.Atoi(employeesCountStr)
-	if err != nil {
-		return 0, ErrParsingEmployeesCount
-	}
-
-	return employeesCount, nil
-}
-
-func processEmployeeData(line string, currentMin, currentMax int) (int, int, error) {
+func processSingleEmployeeLine(line string, currentMin, currentMax int) (int, int, bool) {
 	operation, value, parseErr := parseInputLine(line)
-
 	if parseErr != nil || value < 15 || value > 30 {
-		return currentMin, currentMax, parseErr
+		return currentMin, currentMax, true
 	}
 
-	switch operation {
-	case ">=":
+	if operation == ">=" {
 		if value > currentMin {
 			currentMin = value
 		}
-	case "<=":
+	} else {
 		if value < currentMax {
 			currentMax = value
 		}
 	}
 
 	if currentMin > currentMax {
-		return currentMin, currentMax, ErrProcessEmployeesData
+		return currentMin, currentMax, true
 	}
 
-	return currentMin, currentMax, nil
+	return currentMin, currentMax, false
 }
 
 func processDepartment(scanner *bufio.Scanner) {
-	employeesCount, err := parseEmployeesCount(scanner)
+	if !scanner.Scan() {
+		return
+	}
+
+	employeesCountStr := strings.TrimSpace(scanner.Text())
+
+	employeesCount, err := strconv.Atoi(employeesCountStr)
 	if err != nil {
 		fmt.Println(-1)
 
@@ -92,25 +78,30 @@ func processDepartment(scanner *bufio.Scanner) {
 
 	minTemp := 15
 	maxTemp := 30
-	failed := false
+	fail := false
 
 	for i := 0; i < employeesCount; i++ {
-		if failed || !scanner.Scan() {
+		if !scanner.Scan() {
 			fmt.Println(-1)
 
-			failed = true
+			fail = true
+
+			continue
+		}
+
+		if fail {
+			fmt.Println(-1)
 
 			continue
 		}
 
 		line := scanner.Text()
 
-		newMin, newMax, procErr := processEmployeeData(line, minTemp, maxTemp)
-
-		if procErr != nil {
+		newMin, newMax, invalid := processSingleEmployeeLine(line, minTemp, maxTemp)
+		if invalid {
 			fmt.Println(-1)
 
-			failed = true
+			fail = true
 
 			continue
 		}
@@ -136,7 +127,7 @@ func main() {
 		return
 	}
 
-	for deptIndex := 0; deptIndex < departments; deptIndex++ {
+	for d := 0; d < departments; d++ {
 		processDepartment(scanner)
 	}
 }
