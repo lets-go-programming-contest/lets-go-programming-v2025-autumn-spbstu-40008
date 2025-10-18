@@ -12,7 +12,12 @@ func (h *IntHeap) Less(i, j int) bool { return (*h)[i] < (*h)[j] }
 func (h *IntHeap) Swap(i, j int)      { (*h)[i], (*h)[j] = (*h)[j], (*h)[i] }
 
 func (h *IntHeap) Push(x any) {
- *h = append(*h, x.(int))
+ val, ok := x.(int)
+ if !ok {
+  return
+ }
+
+ *h = append(*h, val)
 }
 
 func (h *IntHeap) Pop() any {
@@ -20,6 +25,7 @@ func (h *IntHeap) Pop() any {
  n := len(old)
  x := old[n-1]
  *h = old[:n-1]
+
  return x
 }
 
@@ -42,6 +48,7 @@ func main() {
   if err != nil {
    return
   }
+
   heap.Push(minHeap, value)
  }
 
@@ -51,7 +58,13 @@ func main() {
  }
 
  for minHeap.Len() > 0 {
-  sortedHeap = append(sortedHeap, heap.Pop(minHeap).(int))
+  item := heap.Pop(minHeap)
+  val, ok := item.(int)
+  if !ok {
+   return
+  }
+
+  sortedHeap = append(sortedHeap, val)
  }
 
  fmt.Println(sortedHeap[len(sortedHeap)-kthIndex])
