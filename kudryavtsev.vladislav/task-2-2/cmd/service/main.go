@@ -43,7 +43,7 @@ func main() {
 		return
 	}
 
-	for i := 0; i < numElements; i++ {
+	for range numElements {
 		_, err = fmt.Scan(&value)
 		if err != nil {
 			return
