@@ -17,6 +17,7 @@ func (h *IntHeap) Push(x any) {
 	}
 	*h = append(*h, v)
 }
+
 func (h *IntHeap) Pop() any {
 	old := *h
 	n := len(old)
