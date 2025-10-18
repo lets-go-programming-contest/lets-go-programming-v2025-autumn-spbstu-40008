@@ -1,74 +1,102 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
 )
 
-func processDepartment(deptNum, staffCount int) {
-	maxtemp := 30
-	mintemp := 15
+func parseInputLine(input string) (string, int, error) {
+	input = strings.TrimSpace(input)
+	var op string
+	var numStr string
+
+	if strings.HasPrefix(input, ">=") {
+		op = ">="
+		numStr = strings.TrimSpace(strings.TrimPrefix(input, ">="))
+	} else if strings.HasPrefix(input, "<=") {
+		op = "<="
+		numStr = strings.TrimSpace(strings.TrimPrefix(input, "<="))
+	} else {
+		return "", 0, fmt.Errorf("invalid operation")
+	}
+
+	val, err := strconv.Atoi(numStr)
+	if err != nil {
+		return "", 0, fmt.Errorf("invalid number")
+	}
+
+	return op, val, nil
+}
+
+func processDepartment(scanner *bufio.Scanner) {
+	if !scanner.Scan() {
+		return
+	}
+	employeesCountStr := strings.TrimSpace(scanner.Text())
+	employeesCount, err := strconv.Atoi(employeesCountStr)
+	if err != nil {
+		fmt.Println(-1)
+		return
+	}
+
+	minTemp := 15
+	maxTemp := 30
 	fail := false
 
-	for employeeIndex := 1; employeeIndex <= staffCount; employeeIndex++ {
+	for i := 0; i < employeesCount; i++ {
+		if !scanner.Scan() {
+			fmt.Println(-1)
+			fail = true
+			continue
+		}
+
 		if fail {
 			fmt.Println(-1)
 			continue
 		}
 
-		var temperatureData string
-		var degrees int
-
-		if _, err := fmt.Scan(&temperatureData, &degrees); err != nil {
+		line := scanner.Text()
+		op, val, perr := parseInputLine(line)
+		if perr != nil || val < 15 || val > 30 {
 			fmt.Println(-1)
 			fail = true
 			continue
 		}
 
-		if degrees < 15 || degrees > 30 {
-			fmt.Println(-1)
-			fail = true
-			continue
+		if op == ">=" {
+			if val > minTemp {
+				minTemp = val
+			}
+		} else { 
+			if val < maxTemp {
+				maxTemp = val
+			}
 		}
 
-		if temperatureData != "<=" && temperatureData != ">=" {
-			fmt.Println(-1)
-			fail = true
-			continue
-		}
-
-		if temperatureData == "<=" && degrees < maxtemp {
-			maxtemp = degrees
-		} else if temperatureData == ">=" && degrees > mintemp {
-			mintemp = degrees
-		}
-
-		if mintemp > maxtemp {
+		if minTemp > maxTemp {
 			fmt.Println(-1)
 			fail = true
 		} else {
-			fmt.Println(mintemp)
+			fmt.Println(minTemp)
 		}
 	}
 }
 
 func main() {
-	var departments int
-	if _, err := fmt.Scan(&departments); err != nil {
+	scanner := bufio.NewScanner(os.Stdin)
+	if !scanner.Scan() {
 		return
 	}
-	if departments < 1 || departments > 1000 {
+	departmentsStr := strings.TrimSpace(scanner.Text())
+	departments, err := strconv.Atoi(departmentsStr)
+	if err != nil {
 		return
 	}
 
-	for deptNum := 1; deptNum <= departments; deptNum++ {
-		var staffCount int
-		if _, err := fmt.Scan(&staffCount); err != nil {
-			return
-		}
-		if staffCount < 1 || staffCount > 1000 {
-			return
-		}
-
-		processDepartment(deptNum, staffCount)
+	for d := 0; d < departments; d++ {
+		processDepartment(scanner)
 	}
 }
