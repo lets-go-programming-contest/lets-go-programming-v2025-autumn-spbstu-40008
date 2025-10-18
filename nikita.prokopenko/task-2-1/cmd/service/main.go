@@ -1,46 +1,47 @@
+go
 package main
 
 import (
 	"fmt"
 )
 
-func processDepartment(staffCount int) {
-	maxtemp := 30
-	mintemp := 15
-
-	for i := 0; i < staffCount; i++ {
-		var sign string
-		var temp int
-
-		_, err := fmt.Scan(&sign, &temp)
-		if err != nil {
-			return
-		}
-
-		if sign == "<=" {
-			if temp < maxtemp {
-				maxtemp = temp
-			}
-		} else if sign == ">=" {
-			if temp > mintemp {
-				mintemp = temp
-			}
-		}
-
-		if mintemp > maxtemp {
-			fmt.Println(-1)
-		} else {
-			fmt.Println(mintemp)
-		}
-	}
-}
-
 func main() {
 	var n, k int
-	fmt.Scan(&n)
-	fmt.Scan(&k)
 
-	for i := 0; i < n; i++ {
-		processDepartment(k)
+	if _, err := fmt.Scan(&n); err != nil {
+		return
+	}
+	if _, err := fmt.Scan(&k); err != nil {
+		return
+	}
+
+	for range make([]struct{}, n) {
+		min := 15
+		max := 30
+
+		for range make([]struct{}, k) {
+			var sign string
+			var t int
+
+			if _, err := fmt.Scan(&sign, &t); err != nil {
+				return
+			}
+
+			if sign == ">=" {
+				if t > min {
+					min = t
+				}
+			} else if sign == "<=" {
+				if t < max {
+					max = t
+				}
+			}
+
+			if min > max {
+				fmt.Println(-1)
+			} else {
+				fmt.Println(max)
+			}
+		}
 	}
 }
