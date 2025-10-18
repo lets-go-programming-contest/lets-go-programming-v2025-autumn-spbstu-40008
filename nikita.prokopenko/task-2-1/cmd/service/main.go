@@ -4,48 +4,69 @@ import (
 	"fmt"
 )
 
-func processDepartment(staffCount int) {
-	mintemp := 15
+func processDepartment(deptNum, staffCount int) {
 	maxtemp := 30
+	mintemp := 15
 
-	for i := 0; i < staffCount; i++ {
-		var sign string
-		var t int
-		_, err := fmt.Scan(&sign, &t)
-		if err != nil {
-			return
+	for employeeIndex := 1; employeeIndex <= staffCount; employeeIndex++ {
+		fmt.Printf("Enter operator and temperature (<= or >= value) employee %d department %d:\n", employeeIndex, deptNum)
+
+		var temperatureData string
+
+		var degrees int
+
+		if _, err := fmt.Scan(&temperatureData, &degrees); err != nil {
+			panic(err)
 		}
 
-		if sign == "<=" {
-			if t < maxtemp {
-				maxtemp = t
-			}
-		} else if sign == ">=" {
-			if t > mintemp {
-				mintemp = t
-			}
+		if degrees < 15 || degrees > 30 {
+			panic("Temperature out of allowed range")
+		}
+
+		if temperatureData != "<=" && temperatureData != ">=" {
+			panic("Invalid operator")
+		}
+
+		if temperatureData == "<=" && degrees < maxtemp {
+			maxtemp = degrees
+		} else if temperatureData == ">=" && degrees > mintemp {
+			mintemp = degrees
 		}
 
 		if mintemp > maxtemp {
-			fmt.Println(-1)
+			fmt.Printf("Department %d after employee %d: -1\n", deptNum, employeeIndex)
 		} else {
-			fmt.Println(mintemp)
+			fmt.Printf("Department %d after employee %d: %d\n", deptNum, employeeIndex, mintemp)
 		}
 	}
 }
 
 func main() {
-	var n, k int
-	_, err := fmt.Scan(&n)
-	if err != nil {
-		return
-	}
-	_, err = fmt.Scan(&k)
-	if err != nil {
-		return
+	fmt.Println("Enter number of departments:")
+
+	var departments int
+
+	if _, err := fmt.Scan(&departments); err != nil {
+		panic(err)
 	}
 
-	for i := 0; i < n; i++ {
-		processDepartment(k)
+	if departments < 1 || departments > 1000 {
+		panic("Departments count out of range")
+	}
+
+	fmt.Println("Enter number of employees:")
+
+	var staffCount int
+
+	if _, err := fmt.Scan(&staffCount); err != nil {
+		panic(err)
+	}
+
+	if staffCount < 1 || staffCount > 1000 {
+		panic("Employees count out of range")
+	}
+
+	for deptNum := 1; deptNum <= departments; deptNum++ {
+		processDepartment(deptNum, staffCount)
 	}
 }
