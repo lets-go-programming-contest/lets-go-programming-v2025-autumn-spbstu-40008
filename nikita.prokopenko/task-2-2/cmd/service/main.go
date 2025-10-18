@@ -7,33 +7,52 @@ import (
 
 type IntHeap []int
 
-func (h IntHeap) Len() int            { return len(h) }
-func (h IntHeap) Less(i, j int) bool  { return h[i] < h[j] }
-func (h IntHeap) Swap(i, j int)       { h[i], h[j] = h[j], h[i] }
-func (h *IntHeap) Push(x interface{}) { *h = append(*h, x.(int)) }
+func (h *IntHeap) Len() int            { return len(*h) }
+func (h *IntHeap) Less(i, j int) bool  { return (*h)[i] < (*h)[j] }
+func (h *IntHeap) Swap(i, j int)       { (*h)[i], (*h)[j] = (*h)[j], (*h)[i] }
+func (h *IntHeap) Push(x interface{}) {
+	v, ok := x.(int)
+	if !ok {
+		return
+	}
+	*h = append(*h, v)
+}
+
 func (h *IntHeap) Pop() interface{} {
 	old := *h
 	n := len(old)
 	x := old[n-1]
+
 	*h = old[:n-1]
+
 	return x
 }
 
 func main() {
-	var n, k int
-	fmt.Scan(&n)
-	a := make([]int, n)
-	for i := 0; i < n; i++ {
-		fmt.Scan(&a[i])
+	var count, kth int
+	if _, err := fmt.Scan(&count); err != nil {
+		return
 	}
-	fmt.Scan(&k)
-	h := &IntHeap{}
-	heap.Init(h)
-	for _, v := range a {
-		heap.Push(h, v)
-		if h.Len() > k {
-			heap.Pop(h)
+	arr := make([]int, count)
+	for i := range arr {
+		if _, err := fmt.Scan(&arr[i]); err != nil {
+			return
 		}
 	}
-	fmt.Println((*h)[0])
+	if _, err := fmt.Scan(&kth); err != nil {
+		return
+	}
+	minHeap := &IntHeap{}
+	heap.Init(minHeap)
+	for _, val := range arr {
+		heap.Push(minHeap, val)
+
+		if minHeap.Len() > kth {
+			heap.Pop(minHeap)
+		}
+	}
+
+	top := (*minHeap)[0]
+
+	fmt.Println(top)
 }
