@@ -4,69 +4,43 @@ import (
 	"fmt"
 )
 
-func processDepartment(deptNum, staffCount int) {
+func processDepartment(staffCount int) {
 	maxtemp := 30
 	mintemp := 15
 
-	for employeeIndex := 1; employeeIndex <= staffCount; employeeIndex++ {
-		fmt.Printf("Enter operator and temperature (<= or >= value) employee %d department %d:\n", employeeIndex, deptNum)
+	for i := 0; i < staffCount; i++ {
+		var sign string
+		var temp int
 
-		var temperatureData string
-
-		var degrees int
-
-		if _, err := fmt.Scan(&temperatureData, &degrees); err != nil {
-			panic(err)
+		_, err := fmt.Scan(&sign, &temp)
+		if err != nil {
+			return
 		}
 
-		if degrees < 15 || degrees > 30 {
-			panic("Temperature out of allowed range")
-		}
-
-		if temperatureData != "<=" && temperatureData != ">=" {
-			panic("Invalid operator")
-		}
-
-		if temperatureData == "<=" && degrees < maxtemp {
-			maxtemp = degrees
-		} else if temperatureData == ">=" && degrees > mintemp {
-			mintemp = degrees
+		if sign == "<=" {
+			if temp < maxtemp {
+				maxtemp = temp
+			}
+		} else if sign == ">=" {
+			if temp > mintemp {
+				mintemp = temp
+			}
 		}
 
 		if mintemp > maxtemp {
-			fmt.Printf("Department %d after employee %d: -1\n", deptNum, employeeIndex)
+			fmt.Println(-1)
 		} else {
-			fmt.Printf("Department %d after employee %d: %d\n", deptNum, employeeIndex, mintemp)
+			fmt.Println(mintemp)
 		}
 	}
 }
 
 func main() {
-	fmt.Println("Enter number of departments:")
+	var n, k int
+	fmt.Scan(&n)
+	fmt.Scan(&k)
 
-	var departments int
-
-	if _, err := fmt.Scan(&departments); err != nil {
-		panic(err)
-	}
-
-	if departments < 1 || departments > 1000 {
-		panic("Departments count out of range")
-	}
-
-	fmt.Println("Enter number of employees:")
-
-	var staffCount int
-
-	if _, err := fmt.Scan(&staffCount); err != nil {
-		panic(err)
-	}
-
-	if staffCount < 1 || staffCount > 1000 {
-		panic("Employees count out of range")
-	}
-
-	for deptNum := 1; deptNum <= departments; deptNum++ {
-		processDepartment(deptNum, staffCount)
+	for i := 0; i < n; i++ {
+		processDepartment(k)
 	}
 }
