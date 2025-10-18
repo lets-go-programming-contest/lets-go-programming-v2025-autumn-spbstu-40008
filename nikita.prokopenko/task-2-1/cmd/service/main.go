@@ -4,69 +4,47 @@ import (
 	"fmt"
 )
 
-func processDepartment(deptNum, staffCount int) {
-	maxtemp := 30
+func processDepartment(staffCount int) {
 	mintemp := 15
+	maxtemp := 30
 
-	for employeeIndex := 1; employeeIndex <= staffCount; employeeIndex++ {
-		fmt.Printf("Enter operator and temperature (<= or >= value) employee %d department %d:\n", employeeIndex, deptNum)
+	for i := 0; i < staffCount; i++ {
+		var op string
+		var val int
 
-		var temperatureData string
-
-		var degrees int
-
-		if _, err := fmt.Scan(&temperatureData, &degrees); err != nil {
-			panic(err)
+		if _, err := fmt.Scan(&op, &val); err != nil {
+			return
 		}
 
-		if degrees < 15 || degrees > 30 {
-			panic("Temperature out of allowed range")
-		}
-
-		if temperatureData != "<=" && temperatureData != ">=" {
-			panic("Invalid operator")
-		}
-
-		if temperatureData == "<=" && degrees < maxtemp {
-			maxtemp = degrees
-		} else if temperatureData == ">=" && degrees > mintemp {
-			mintemp = degrees
+		if op == "<=" {
+			if val < maxtemp {
+				maxtemp = val
+			}
+		} else if op == ">=" {
+			if val > mintemp {
+				mintemp = val
+			}
 		}
 
 		if mintemp > maxtemp {
-			fmt.Printf("Department %d after employee %d: -1\n", deptNum, employeeIndex)
+			fmt.Println(-1)
 		} else {
-			fmt.Printf("Department %d after employee %d: %d\n", deptNum, employeeIndex, mintemp)
+			fmt.Println(mintemp)
 		}
 	}
 }
 
 func main() {
-	fmt.Println("Enter number of departments:")
-
-	var departments int
+	var departments, staffCount int
 
 	if _, err := fmt.Scan(&departments); err != nil {
-		panic(err)
+		return
 	}
-
-	if departments < 1 || departments > 1000 {
-		panic("Departments count out of range")
-	}
-
-	fmt.Println("Enter number of employees:")
-
-	var staffCount int
-
 	if _, err := fmt.Scan(&staffCount); err != nil {
-		panic(err)
+		return
 	}
 
-	if staffCount < 1 || staffCount > 1000 {
-		panic("Employees count out of range")
-	}
-
-	for deptNum := 1; deptNum <= departments; deptNum++ {
-		processDepartment(deptNum, staffCount)
+	for i := 0; i < departments; i++ {
+		processDepartment(staffCount)
 	}
 }
