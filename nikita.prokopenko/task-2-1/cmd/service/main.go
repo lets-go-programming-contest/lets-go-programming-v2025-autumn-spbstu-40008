@@ -4,53 +4,69 @@ import (
 	"fmt"
 )
 
-func processDepartment(deptNum, staff int) {
+func processDepartment(deptNum, staffCount int) {
 	maxtemp := 30
 	mintemp := 15
-	for j := 1; j <= staff; j++ {
-		fmt.Printf("Введите оператор и температуру (<= или >= число) сотрудник %d отдел %d:\n", j, deptNum)
+
+	for employeeIndex := 1; employeeIndex <= staffCount; employeeIndex++ {
+		fmt.Printf("Enter operator and temperature (<= or >= value) employee %d department %d:\n", employeeIndex, deptNum)
+
 		var temperatureData string
+
 		var degrees int
+
 		if _, err := fmt.Scan(&temperatureData, &degrees); err != nil {
 			panic(err)
 		}
+
 		if degrees < 15 || degrees > 30 {
-			panic("Температура вне допустимого диапазона")
+			panic("Temperature out of allowed range")
 		}
+
 		if temperatureData != "<=" && temperatureData != ">=" {
-			panic("Неверно введен оператор")
+			panic("Invalid operator")
 		}
+
 		if temperatureData == "<=" && degrees < maxtemp {
 			maxtemp = degrees
 		} else if temperatureData == ">=" && degrees > mintemp {
 			mintemp = degrees
 		}
+
 		if mintemp > maxtemp {
-			fmt.Printf("Температура отдела %d после сотрудника %d: -1\n", deptNum, j)
+			fmt.Printf("Department %d after employee %d: -1\n", deptNum, employeeIndex)
 		} else {
-			fmt.Printf("Температура отдела %d после сотрудника %d: %d\n", deptNum, j, mintemp)
+			fmt.Printf("Department %d after employee %d: %d\n", deptNum, employeeIndex, mintemp)
 		}
 	}
 }
 
 func main() {
-	fmt.Println("Введите количество отделов:")
+	fmt.Println("Enter number of departments:")
+
 	var departments int
+
 	if _, err := fmt.Scan(&departments); err != nil {
 		panic(err)
 	}
+
 	if departments < 1 || departments > 1000 {
-		panic("Количество отделов вне диапазона")
+		panic("Departments count out of range")
 	}
-	fmt.Println("Введите количество сотрудников:")
-	var staff int
-	if _, err := fmt.Scan(&staff); err != nil {
+
+	fmt.Println("Enter number of employees:")
+
+	var staffCount int
+
+	if _, err := fmt.Scan(&staffCount); err != nil {
 		panic(err)
 	}
-	if staff < 1 || staff > 1000 {
-		panic("Количество сотрудников вне диапазона")
+
+	if staffCount < 1 || staffCount > 1000 {
+		panic("Employees count out of range")
 	}
-	for i := 1; i <= departments; i++ {
-		processDepartment(i, staff)
+
+	for deptNum := 1; deptNum <= departments; deptNum++ {
+		processDepartment(deptNum, staffCount)
 	}
 }
