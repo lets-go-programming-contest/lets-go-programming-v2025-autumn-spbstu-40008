@@ -59,7 +59,9 @@ func main() {
 
  for minHeap.Len() > 0 {
   item := heap.Pop(minHeap)
+
   val, ok := item.(int)
+  
   if !ok {
    return
   }
