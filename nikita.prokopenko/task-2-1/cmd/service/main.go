@@ -9,8 +9,10 @@ import (
 	"strings"
 )
 
-var errInvalidOperation = errors.New("invalid operation")
-var errInvalidNumber = errors.New("invalid number")
+var (
+	errInvalidOperation = errors.New("invalid operation")
+	errInvalidNumber    = errors.New("invalid number")
+)
 
 func parseInputLine(input string) (string, int, error) {
 	input = strings.TrimSpace(input)
