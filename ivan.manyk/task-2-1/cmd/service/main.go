@@ -8,19 +8,19 @@ func main() {
 	_, err := fmt.Scan(&numberOfDepartments)
 	if err != nil {
 		fmt.Println("Error with number of departments, code error: ", err)
-		return;
+		return
 	}
 
 	var (
 		minTemp, maxTemp uint8
-		temp uint8
-		operator string
+		temp             uint8
+		operator         string
 	)
 	for range numberOfDepartments {
 		_, err = fmt.Scan(&numberOfPeople)
 		if err != nil {
 			fmt.Println("Error with number of people in department, code error: ", err)
-			return;
+			return
 		}
 
 		minTemp, maxTemp = 15, 30
@@ -28,7 +28,7 @@ func main() {
 			_, err = fmt.Scan(&operator, &temp)
 			if err != nil {
 				fmt.Println("Error with number of people in department, code error: ", err)
-				return;
+				return
 			}
 
 			switch operator {
@@ -38,7 +38,7 @@ func main() {
 				maxTemp = min(maxTemp, temp)
 			default:
 				fmt.Println("Error with operator")
-				return;
+				return
 			}
 
 			if maxTemp < minTemp {
