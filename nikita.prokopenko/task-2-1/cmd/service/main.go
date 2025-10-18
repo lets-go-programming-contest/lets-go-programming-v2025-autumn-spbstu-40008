@@ -9,16 +9,13 @@ import (
 	"strings"
 )
 
-var (
-	errInvalidOperation = errors.New("invalid operation")
-	errInvalidNumber    = errors.New("invalid number")
-)
+var errInvalidOperation = errors.New("invalid operation")
+var errInvalidNumber = errors.New("invalid number")
 
 func parseInputLine(input string) (string, int, error) {
 	input = strings.TrimSpace(input)
 
-	var operation string
-	var numberStr string
+	var operation, numberStr string
 
 	switch {
 	case strings.HasPrefix(input, ">="):
@@ -80,7 +77,7 @@ func processDepartment(scanner *bufio.Scanner) {
 	maxTemp := 30
 	fail := false
 
-	for i := 0; i < employeesCount; i++ {
+	for range make([]struct{}, employeesCount) {
 		if !scanner.Scan() {
 			fmt.Println(-1)
 
@@ -127,7 +124,7 @@ func main() {
 		return
 	}
 
-	for d := 0; d < departments; d++ {
+	for range make([]struct{}, departments) {
 		processDepartment(scanner)
 	}
 }
