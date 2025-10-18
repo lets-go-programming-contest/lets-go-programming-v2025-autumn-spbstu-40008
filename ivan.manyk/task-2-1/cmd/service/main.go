@@ -17,6 +17,7 @@ func main() {
 		temp             uint8
 		operator         string
 	)
+
 	for range numberOfDepartments {
 		_, err = fmt.Scan(&numberOfPeople)
 		if err != nil {
@@ -26,6 +27,7 @@ func main() {
 		}
 
 		minTemp, maxTemp = 15, 30
+
 		for range numberOfPeople {
 			_, err = fmt.Scan(&operator, &temp)
 			if err != nil {
