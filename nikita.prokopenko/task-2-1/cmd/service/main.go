@@ -9,22 +9,19 @@ func processDepartment(deptNum, staffCount int) {
 	mintemp := 15
 
 	for employeeIndex := 1; employeeIndex <= staffCount; employeeIndex++ {
-		fmt.Printf("Enter operator and temperature (<= or >= value) employee %d department %d:\n", employeeIndex, deptNum)
-
 		var temperatureData string
-
 		var degrees int
 
 		if _, err := fmt.Scan(&temperatureData, &degrees); err != nil {
-			panic(err)
+			return 
 		}
 
 		if degrees < 15 || degrees > 30 {
-			panic("Temperature out of allowed range")
+			return
 		}
 
 		if temperatureData != "<=" && temperatureData != ">=" {
-			panic("Invalid operator")
+			return
 		}
 
 		if temperatureData == "<=" && degrees < maxtemp {
@@ -34,36 +31,31 @@ func processDepartment(deptNum, staffCount int) {
 		}
 
 		if mintemp > maxtemp {
-			fmt.Printf("Department %d after employee %d: -1\n", deptNum, employeeIndex)
+			fmt.Println(-1)
 		} else {
-			fmt.Printf("Department %d after employee %d: %d\n", deptNum, employeeIndex, mintemp)
+			fmt.Println(mintemp)
 		}
 	}
 }
 
 func main() {
-	fmt.Println("Enter number of departments:")
-
 	var departments int
+	var staffCount int
 
 	if _, err := fmt.Scan(&departments); err != nil {
-		panic(err)
+		return
 	}
 
 	if departments < 1 || departments > 1000 {
-		panic("Departments count out of range")
+		return
 	}
 
-	fmt.Println("Enter number of employees:")
-
-	var staffCount int
-
 	if _, err := fmt.Scan(&staffCount); err != nil {
-		panic(err)
+		return
 	}
 
 	if staffCount < 1 || staffCount > 1000 {
-		panic("Employees count out of range")
+		return
 	}
 
 	for deptNum := 1; deptNum <= departments; deptNum++ {
