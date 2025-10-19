@@ -26,6 +26,7 @@ func (h *Heap) Push(x interface{}) {
 
 		return
 	}
+
 	*h = append(*h, num)
 }
 
