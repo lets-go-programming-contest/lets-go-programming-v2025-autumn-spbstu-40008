@@ -30,7 +30,6 @@ func readLine(reader *bufio.Reader) (string, error) {
 	return strings.TrimSpace(line), nil
 }
 
-// Возвращаем результат и ошибку
 func updateRange(input string, minTemp, maxTemp *int) (int, error) {
 	const minLen = 2
 	if len(input) < minLen {
@@ -38,6 +37,7 @@ func updateRange(input string, minTemp, maxTemp *int) (int, error) {
 	}
 
 	prefix := input[:2]
+
 	if strings.HasPrefix(prefix, ">=") {
 		numStr := strings.TrimSpace(input[2:])
 		if numStr != "" && numStr[0] == ' ' {
@@ -50,7 +50,9 @@ func updateRange(input string, minTemp, maxTemp *int) (int, error) {
 		if value > *minTemp {
 			*minTemp = value
 		}
-	} else if strings.HasPrefix(prefix, "<=") {
+	}
+
+	if strings.HasPrefix(prefix, "<=") {
 		numStr := strings.TrimSpace(input[2:])
 		if numStr != "" && numStr[0] == ' ' {
 			numStr = strings.TrimSpace(numStr[1:])
