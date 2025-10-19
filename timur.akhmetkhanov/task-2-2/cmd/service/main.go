@@ -2,76 +2,87 @@ package main
 
 import (
 	"container/heap"
-	"errors"
 	"fmt"
-
-	"timur.akhmetkhanov/task-2-2/internal/intheap"
 )
 
-var (
-	errNumberExceedsDishes = errors.New("number exceeds available dishes")
-	errInvalidType         = errors.New("invalid type")
-)
+type PriorityQueue []int
 
-func main() {
-	defer func() {
-		if err := recover(); err != nil {
-			fmt.Println("panic occurred", err)
-
-			return
-		}
-	}()
-
-	var amount int
-	if _, err := fmt.Scan(&amount); err != nil {
-		fmt.Println("cannot scan variable: ", err)
-
-		return
-	}
-
-	dishes := &intheap.IntHeap{}
-
-	for range amount {
-		var pref int
-		if _, err := fmt.Scan(&pref); err != nil {
-			fmt.Println("cannot scan variable: ", err)
-
-			return
-		}
-
-		heap.Push(dishes, pref)
-	}
-
-	var number int
-	if _, err := fmt.Scan(&number); err != nil {
-		fmt.Println("cannot scan variable: ", err)
-
-		return
-	}
-
-	result, err := findDish(dishes, number)
-	if err != nil {
-		fmt.Println("cannot find preferred dish: ", err)
-	}
-
-	fmt.Println(result)
+func (pq *PriorityQueue) Len() int {
+	return len(*pq)
 }
 
-func findDish(dishes *intheap.IntHeap, number int) (int, error) {
-	if number > dishes.Len() {
-		return 0, fmt.Errorf("number %d more than amount of dishes %d: %w", number, dishes.Len(), errNumberExceedsDishes)
-	}
+func (pq *PriorityQueue) Less(i, j int) bool {
+	return (*pq)[i] < (*pq)[j]
+}
 
-	for range dishes.Len() - number {
-		heap.Pop(dishes)
-	}
+func (pq *PriorityQueue) Swap(i, j int) {
+	(*pq)[i], (*pq)[j] = (*pq)[j], (*pq)[i]
+}
 
-	x := heap.Pop(dishes)
-
+func (pq *PriorityQueue) Push(x interface{}) {
 	value, ok := x.(int)
 	if !ok {
-		return 0, errInvalidType
+		return
 	}
 
-	return value, nil
+	*pq = append(*pq, value)
+}
+
+func (pq *PriorityQueue) Pop() interface{} {
+	old := *pq
+	n := len(old)
+	lastElement := old[n-1]
+	*pq = old[:n-1]
+
+	return lastElement
+}
+
+func mustScan(a ...interface{}) error {
+	if _, err := fmt.Scan(a...); err != nil {
+		return fmt.Errorf("error reading the input: %w", err)
+	}
+
+	return nil
+}
+
+func main() {
+	var (
+		countDish, preference int
+		priorityQueue         PriorityQueue
+	)
+
+	heap.Init(&priorityQueue)
+
+	if err := mustScan(&countDish); err != nil {
+		fmt.Printf("Error reading dish count: %v\n", err)
+
+		return
+	}
+
+	rating := make([]int, countDish)
+
+	for i := range countDish {
+		if err := mustScan(&rating[i]); err != nil {
+			fmt.Printf("Error reading raiting[%d]: %v\n", i, err)
+
+			return
+		}
+	}
+
+	if err := mustScan(&preference); err != nil {
+		fmt.Printf("Error reading preference: %v\n", err)
+
+		return
+	}
+
+	for i := range countDish {
+		if priorityQueue.Len() < preference {
+			heap.Push(&priorityQueue, rating[i])
+		} else if priorityQueue[0] < rating[i] {
+			heap.Pop(&priorityQueue)
+			heap.Push(&priorityQueue, rating[i])
+		}
+	}
+
+	fmt.Println(heap.Pop(&priorityQueue))
 }
