@@ -30,10 +30,11 @@ func readLine(reader *bufio.Reader) (string, error) {
 	return strings.TrimSpace(line), nil
 }
 
-func updateRange(input string, minTemp, maxTemp *int) int {
+// Возвращаем результат и ошибку
+func updateRange(input string, minTemp, maxTemp *int) (int, error) {
 	const minLen = 2
 	if len(input) < minLen {
-		return 0
+		return 0, nil
 	}
 
 	prefix := input[:2]
@@ -44,7 +45,7 @@ func updateRange(input string, minTemp, maxTemp *int) int {
 		}
 		value, err := strconv.Atoi(numStr)
 		if err != nil {
-			log.Fatal(err)
+			return 0, fmt.Errorf("ошибка при парсинге числа в >=: %w", err)
 		}
 		if value > *minTemp {
 			*minTemp = value
@@ -56,7 +57,7 @@ func updateRange(input string, minTemp, maxTemp *int) int {
 		}
 		value, err := strconv.Atoi(numStr)
 		if err != nil {
-			log.Fatal(err)
+			return 0, fmt.Errorf("ошибка при парсинге числа в <=: %w", err)
 		}
 		if value < *maxTemp {
 			*maxTemp = value
@@ -64,9 +65,9 @@ func updateRange(input string, minTemp, maxTemp *int) int {
 	}
 
 	if *minTemp <= *maxTemp {
-		return *minTemp
+		return *minTemp, nil
 	}
-	return -1
+	return -1, nil
 }
 
 func main() {
@@ -91,7 +92,10 @@ func main() {
 				log.Fatal(err)
 			}
 
-			result := updateRange(line, &min, &max)
+			result, err := updateRange(line, &min, &max)
+			if err != nil {
+				log.Fatal(err)
+			}
 			fmt.Println(result)
 		}
 	}
