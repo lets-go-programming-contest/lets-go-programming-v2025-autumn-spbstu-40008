@@ -20,7 +20,13 @@ func (h *Heap) Swap(i, j int) {
 }
 
 func (h *Heap) Push(x interface{}) {
-	*h = append(*h, x.(int))
+	num, ok := x.(int)
+	if !ok {
+		fmt.Println("Error with type")
+
+		return
+	}
+	*h = append(*h, num)
 }
 
 func (h *Heap) Pop() interface{} {
@@ -33,6 +39,7 @@ func (h *Heap) Pop() interface{} {
 
 func main() {
 	var countOfDishes int
+
 	_, err := fmt.Scan(&countOfDishes)
 	if err != nil {
 		fmt.Println("Error with count of dishes, code error:", err)
@@ -41,7 +48,7 @@ func main() {
 	}
 
 	ratingOfDishes := make([]int, countOfDishes)
-	for i := 0; i < countOfDishes; i++ {
+	for i := range countOfDishes {
 		_, err = fmt.Scan(&ratingOfDishes[i])
 		if err != nil {
 			fmt.Println("Error with rating of dishes, code error:", err)
@@ -51,9 +58,10 @@ func main() {
 	}
 
 	var dishNumber int
+
 	_, err = fmt.Scan(&dishNumber)
 	if err != nil {
-		fmt.Println("Error with prefered dish, code error:", err)
+		fmt.Println("Error with preferred dish, code error:", err)
 
 		return
 	}
@@ -66,6 +74,7 @@ func main() {
 
 	currentHeap := &Heap{}
 	heap.Init(currentHeap)
+
 	for _, rating := range ratingOfDishes {
 		if currentHeap.Len() < dishNumber {
 			heap.Push(currentHeap, rating)
