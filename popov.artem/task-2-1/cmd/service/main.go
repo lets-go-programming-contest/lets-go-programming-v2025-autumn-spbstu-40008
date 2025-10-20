@@ -9,89 +9,106 @@ import (
 	"strings"
 )
 
-func istreamInt(reader *bufio.Reader) (int, error) {
-	input, err := reader.ReadString('\n')
+func readInt(reader *bufio.Reader) (int, error) {
+	line, err := reader.ReadString('\n')
 	if err != nil {
-		return 0, fmt.Errorf("failed to read input: %w", err)
+		return 0, fmt.Errorf("ошибка чтения: %w", err)
 	}
-
-	input = strings.TrimSpace(input)
-
-	val, err := strconv.Atoi(input)
+	line = strings.TrimSpace(line)
+	num, err := strconv.Atoi(line)
 	if err != nil {
-		return 0, fmt.Errorf("failed to convert to int: %w", err)
+		return 0, fmt.Errorf("ошибка конвертации: %w", err)
 	}
-
-	return val, nil
+	return num, nil
 }
 
-func istreamString(reader *bufio.Reader) (string, error) {
-	input, err := reader.ReadString('\n')
+func readLine(reader *bufio.Reader) (string, error) {
+	line, err := reader.ReadString('\n')
 	if err != nil {
-		return "", fmt.Errorf("failed to read input: %w", err)
+		return "", fmt.Errorf("ошибка чтения: %w", err)
 	}
-
-	return strings.TrimSpace(input), nil
+	return strings.TrimSpace(line), nil
 }
 
-func checkTemperatures(check string, minValue *int, maxValue *int) int {
-	const minLength = 2
-
-	if len(check) < minLength {
-		return 0
+func updateRange(input string, minTemp, maxTemp *int) (int, error) {
+	const minLen = 2
+	if len(input) < minLen {
+		return 0, nil
 	}
 
-	switch check[:2] {
-	case ">=":
-		temp, err := strconv.Atoi(strings.TrimSpace(check[3:]))
+	prefix := input[:2]
+
+	if strings.HasPrefix(prefix, ">=") {
+		numStr := strings.TrimSpace(input[2:])
+		if numStr != "" && numStr[0] == ' ' {
+			numStr = strings.TrimSpace(numStr[1:])
+		}
+		value, err := strconv.Atoi(numStr)
 		if err != nil {
-			log.Fatal(err)
+			return 0, fmt.Errorf("ошибка при парсинге числа в >=: %w", err)
 		}
+		if value > *minTemp {
+			*minTemp = value
+		}
+	}
 
-		if temp > *minValue {
-			*minValue = temp
+	if strings.HasPrefix(prefix, "<=") {
+		numStr := strings.TrimSpace(input[2:])
+		if numStr != "" && numStr[0] == ' ' {
+			numStr = strings.TrimSpace(numStr[1:])
 		}
-	case "<=":
-		temp, err := strconv.Atoi(strings.TrimSpace(check[3:]))
+		value, err := strconv.Atoi(numStr)
 		if err != nil {
-			log.Fatal(err)
+			return 0, fmt.Errorf("ошибка при парсинге числа в <=: %w", err)
 		}
-
-		if temp < *maxValue {
-			*maxValue = temp
+		if value < *maxTemp {
+			*maxTemp = value
 		}
 	}
 
-	if *minValue <= *maxValue {
-		return *minValue
-	} else {
-		return -1
+	if *minTemp <= *maxTemp {
+		return *minTemp, nil
 	}
+	return -1, nil
 }
 
 func main() {
-	reader := bufio.NewReader(os.Stdin)
+	scanner := bufio.NewReader(os.Stdin)
 
-	n, err := istreamInt(reader)
+	testCount, err := readInt(scanner)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	for range n {
-		key, err := istreamInt(reader)
+	testIndices := make([]int, testCount)
+	for idx := range testIndices {
+		testIndices[idx] = idx
+	}
+	for _, i := range testIndices {
+		_ = i
+		conditionCount, err := readInt(scanner)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		mnVal, mxVal := 15, 30
+		min, max := 15, 30
 
-		for range key {
-			str, err := istreamString(reader)
+		conditionIndices := make([]int, conditionCount)
+		for idx := range conditionIndices {
+			conditionIndices[idx] = idx
+		}
+		for _, j := range conditionIndices {
+			_ = j
+			line, err := readLine(scanner)
 			if err != nil {
 				log.Fatal(err)
 			}
 
-			fmt.Println(checkTemperatures(str, &mnVal, &mxVal))
+			result, err := updateRange(line, &min, &max)
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Println(result)
 		}
 	}
 }
