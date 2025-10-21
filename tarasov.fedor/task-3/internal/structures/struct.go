@@ -18,7 +18,6 @@ func (cfg *CustomFloat) UnmarshalXML(d *xml.Decoder, start xml.StartElement) err
 	var valueStr string
 
 	if err := d.DecodeElement(&valueStr, &start); err != nil {
-
 		return ErrDecodeXML
 	}
 
@@ -27,7 +26,6 @@ func (cfg *CustomFloat) UnmarshalXML(d *xml.Decoder, start xml.StartElement) err
 
 	val, err := strconv.ParseFloat(valueStr, 64)
 	if err != nil {
-
 		return ErrParseFloat
 	}
 
@@ -42,10 +40,10 @@ type File struct {
 }
 
 type ValCurs struct {
-	Valute []Valute `xml:"Valute"  json:"valute"`
+	Valute []Valute `json:"valute" xml:"Valute"`
 }
 type Valute struct {
-	NumCode  int         `xml:"NumCode"  json:"num_code"`
-	CharCode string      `xml:"CharCode" json:"char_code"`
-	Value    CustomFloat `xml:"Value"    json:"value"`
+	NumCode  int         `json:"num_code"  xml:"NumCode"`
+	CharCode string      `json:"char_code" xml:"CharCode"`
+	Value    CustomFloat `json:"value"     xml:"Value"`
 }
