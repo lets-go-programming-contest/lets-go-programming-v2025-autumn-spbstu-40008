@@ -91,7 +91,7 @@ func createOutputFile(filename string) *os.File {
 func main() {
 	var configPath string
 
-	flag.StringVar(&configPath, "config", "config.yaml", "Path to the YAML configuration file")
+	flag.StringVar(&configPath, "config", "", "Path to the YAML configuration file")
 	flag.Parse()
 
 	cfg := readFile(configPath)
