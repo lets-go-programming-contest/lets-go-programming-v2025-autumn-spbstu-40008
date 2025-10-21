@@ -2,27 +2,37 @@ package structures
 
 import (
 	"encoding/xml"
+	"errors"
 	"strconv"
 	"strings"
 )
 
 type CustomFloat float64
 
-func (cfg *CustomFloat) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
-	var s string
+var (
+	ErrDecodeXML  = errors.New("failed to decode XML element into string")
+	ErrParseFloat = errors.New("failed to parse float from normalized string")
+)
 
-	if err := d.DecodeElement(&s, &start); err != nil {
-		return err
+func (cfg *CustomFloat) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	var valueStr string
+
+	if err := d.DecodeElement(&valueStr, &start); err != nil {
+
+		return ErrDecodeXML
 	}
 
-	s = strings.ReplaceAll(s, ",", ".")
+	valueStr = strings.TrimSpace(valueStr)
+	valueStr = strings.ReplaceAll(valueStr, ",", ".")
 
-	val, err := strconv.ParseFloat(s, 64)
+	val, err := strconv.ParseFloat(valueStr, 64)
 	if err != nil {
-		return err
+
+		return ErrParseFloat
 	}
 
 	*cfg = CustomFloat(val)
+
 	return nil
 }
 
@@ -32,10 +42,10 @@ type File struct {
 }
 
 type ValCurs struct {
-	Valute []Valute `xml:"Valute" json:"-"`
+	Valute []Valute `json:"-" xml:"Valute"`
 }
 type Valute struct {
-	NumCode  int         `xml:"NumCode" json:"num_code"`
-	CharCode string      `xml:"CharCode" json:"char_code"`
-	Value    CustomFloat `xml:"Value" json:"value"`
+	NumCode  int         `json:"num_code" xml:"NumCode" `
+	CharCode string      `json:"char_code" xml:"CharCode"`
+	Value    CustomFloat `json:"value" xml:"Value"`
 }
