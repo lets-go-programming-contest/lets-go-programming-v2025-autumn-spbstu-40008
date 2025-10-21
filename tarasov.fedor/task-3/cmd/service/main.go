@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/task-3/internal/structures"
@@ -32,7 +31,7 @@ func readFile(configPath string) structures.File {
 	return cfg
 }
 
-func decodeXML(cfg structures.File) structures.ValCursXML {
+func decodeXML(cfg structures.File) structures.ValCurs {
 	xmlFile, err := os.Open(cfg.Input)
 	if err != nil {
 		panic(err)
@@ -44,7 +43,7 @@ func decodeXML(cfg structures.File) structures.ValCursXML {
 		}
 	}()
 
-	var val structures.ValCursXML
+	var val structures.ValCurs
 
 	decoder := xml.NewDecoder(xmlFile)
 
@@ -64,36 +63,10 @@ func decodeXML(cfg structures.File) structures.ValCursXML {
 	return val
 }
 
-func normalizeValues(val structures.ValCursXML) structures.ValCursJSON {
-	jsonValCurs := structures.ValCursJSON{
-		Valute: make([]structures.ValuteJSON, 0, len(val.Valute)),
-	}
-
-	for _, xmlValute := range val.Valute {
-		cleanValueStr := strings.ReplaceAll(xmlValute.Value, ",", ".")
-
-		valueFloat, err := strconv.ParseFloat(cleanValueStr, 64)
-		if err != nil {
-			panic(err)
-		}
-
-		jsonValCurs.Valute = append(jsonValCurs.Valute, structures.ValuteJSON{
-			NumCode:  xmlValute.NumCode,
-			CharCode: xmlValute.CharCode,
-			Value:    valueFloat,
-		})
-	}
-
-	return jsonValCurs
-}
-
-func sortValuteByValue(val structures.ValCursXML) structures.ValCursJSON {
-	valJSON := normalizeValues(val)
-	sort.Slice(valJSON.Valute, func(i, j int) bool {
-		return valJSON.Valute[i].Value > valJSON.Valute[j].Value
+func sortValuteByValue(val structures.ValCurs) {
+	sort.Slice(val.Valute, func(i, j int) bool {
+		return val.Valute[i].Value > val.Valute[j].Value
 	})
-
-	return valJSON
 }
 
 func createOutputFile(filename string) *os.File {
@@ -123,9 +96,10 @@ func main() {
 
 	cfg := readFile(configPath)
 	val := decodeXML(cfg)
-	valJSON := sortValuteByValue(val)
 
-	jsonData, err := json.MarshalIndent(valJSON.Valute, "", "  ")
+	sortValuteByValue(val)
+
+	jsonData, err := json.MarshalIndent(val.Valute, "", "  ")
 	if err != nil {
 		panic(err)
 	}
