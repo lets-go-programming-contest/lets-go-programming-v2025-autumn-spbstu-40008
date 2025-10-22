@@ -14,13 +14,11 @@ func readInt(reader *bufio.Reader) (int, error) {
 	if err != nil {
 		return 0, fmt.Errorf("ошибка чтения: %w", err)
 	}
-
 	line = strings.TrimSpace(line)
 	num, err := strconv.Atoi(line)
 	if err != nil {
 		return 0, fmt.Errorf("ошибка конвертации: %w", err)
 	}
-
 	return num, nil
 }
 
@@ -29,56 +27,42 @@ func readLine(reader *bufio.Reader) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("ошибка чтения: %w", err)
 	}
-
 	return strings.TrimSpace(line), nil
 }
 
-func parseCondition(input string, minTemp, maxTemp int) (int, int, error) {
-	const minLen = 2
-	if len(input) < minLen {
-		return minTemp, maxTemp, nil
+func parseCondition(input string, currentMin, currentMax int) (int, int, error) {
+	if len(input) < 2 {
+		return currentMin, currentMax, nil
 	}
 
 	prefix := input[:2]
+	numStr := strings.TrimSpace(input[2:])
 
-	if strings.HasPrefix(prefix, ">=") {
-		numStr := strings.TrimSpace(input[2:])
-		if numStr != "" && len(numStr) > 0 && numStr[0] == ' ' {
-			numStr = strings.TrimSpace(numStr[1:])
-		}
+	if prefix == ">=" {
 		value, err := strconv.Atoi(numStr)
 		if err != nil {
-			return minTemp, maxTemp, fmt.Errorf("ошибка при парсинге числа в >=: %w", err)
+			return currentMin, currentMax, fmt.Errorf("ошибка при парсинге числа в >=: %w", err)
 		}
-		if value > minTemp {
-			minTemp = value
+		if value > currentMin {
+			currentMin = value
 		}
-		return minTemp, maxTemp, nil
-	}
-
-	if strings.HasPrefix(prefix, "<=") {
-		numStr := strings.TrimSpace(input[2:])
-		if numStr != "" && len(numStr) > 0 && numStr[0] == ' ' {
-			numStr = strings.TrimSpace(numStr[1:])
-		}
+	} else if prefix == "<=" {
 		value, err := strconv.Atoi(numStr)
 		if err != nil {
-			return minTemp, maxTemp, fmt.Errorf("ошибка при парсинге числа в <=: %w", err)
+			return currentMin, currentMax, fmt.Errorf("ошибка при парсинге числа в <=: %w", err)
 		}
-		if value < maxTemp {
-			maxTemp = value
+		if value < currentMax {
+			currentMax = value
 		}
-		return minTemp, maxTemp, nil
 	}
-
-	return minTemp, maxTemp, nil
+	return currentMin, currentMax, nil
 }
 
-func updateRangeResult(minTemp, maxTemp int) (int, error) {
-	if minTemp <= maxTemp {
-		return minTemp, nil
+func checkRange(min, max int) int {
+	if min <= max {
+		return min
 	}
-	return -1, nil
+	return -1
 }
 
 func main() {
@@ -89,11 +73,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	testIndices := make([]int, testCount)
-	for idx := range testIndices {
-		testIndices[idx] = idx
-	}
-	for _, i := range testIndices {
+	for i := 0; i < testCount; i++ {
 		_ = i
 		conditionCount, err := readInt(scanner)
 		if err != nil {
@@ -102,11 +82,7 @@ func main() {
 
 		minVal, maxVal := 15, 30
 
-		conditionIndices := make([]int, conditionCount)
-		for idx := range conditionIndices {
-			conditionIndices[idx] = idx
-		}
-		for _, j := range conditionIndices {
+		for j := 0; j < conditionCount; j++ {
 			_ = j
 			line, err := readLine(scanner)
 			if err != nil {
@@ -117,10 +93,8 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			result, err := updateRangeResult(minVal, maxVal)
-			if err != nil {
-				log.Fatal(err)
-			}
+
+			result := checkRange(minVal, maxVal)
 			fmt.Println(result)
 		}
 	}
