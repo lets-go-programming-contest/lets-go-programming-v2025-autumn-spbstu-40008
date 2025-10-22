@@ -10,17 +10,21 @@ import (
 	"container/heap"
 )
 
-type IntHeap []int
+type MaxHeap []int
 
-func (h IntHeap) Len() int           { return len(h) }
-func (h IntHeap) Less(i, j int) bool { return h[i] > h[j] }
-func (h IntHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
+func (h MaxHeap) Len() int           { return len(h) }
+func (h MaxHeap) Less(i, j int) bool { return h[i] > h[j] }
+func (h MaxHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
 
-func (h *IntHeap) Push(x interface{}) {
-	*h = append(*h, x.(int))
+func (h *MaxHeap) Push(x interface{}) {
+	item, ok := x.(int)
+	if !ok {
+		return
+	}
+	*h = append(*h, item)
 }
 
-func (h *IntHeap) Pop() interface{} {
+func (h *MaxHeap) Pop() interface{} {
 	old := *h
 	n := len(old)
 	x := old[n-1]
@@ -47,16 +51,17 @@ func main() {
 	kLine = strings.TrimSpace(kLine)
 	k, _ := strconv.Atoi(kLine)
 
-	h := &IntHeap{}
-	heap.Init(h)
+	maxHeap := &MaxHeap{}
+	heap.Init(maxHeap)
 
 	for _, num := range nums {
-		heap.Push(h, num)
+		heap.Push(maxHeap, num)
 	}
 
 	var result int
-	for i := 0; i < k; i++ {
-		result = heap.Pop(h).(int)
+	for range k {
+		item := heap.Pop(maxHeap)
+		result = item.(int)
 	}
 
 	fmt.Println(result)
