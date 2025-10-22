@@ -14,11 +14,14 @@ func readInt(reader *bufio.Reader) (int, error) {
 	if err != nil {
 		return 0, fmt.Errorf("ошибка чтения: %w", err)
 	}
+
 	line = strings.TrimSpace(line)
 	num, err := strconv.Atoi(line)
+
 	if err != nil {
 		return 0, fmt.Errorf("ошибка конвертации: %w", err)
 	}
+
 	return num, nil
 }
 
@@ -27,6 +30,7 @@ func readLine(reader *bufio.Reader) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("ошибка чтения: %w", err)
 	}
+
 	return strings.TrimSpace(line), nil
 }
 
@@ -40,27 +44,35 @@ func updateRange(input string, minTemp, maxTemp *int) (int, error) {
 
 	if strings.HasPrefix(prefix, ">=") {
 		numStr := strings.TrimSpace(input[2:])
+
 		if numStr != "" && numStr[0] == ' ' {
 			numStr = strings.TrimSpace(numStr[1:])
 		}
+
 		value, err := strconv.Atoi(numStr)
 		if err != nil {
 			return 0, fmt.Errorf("ошибка при парсинге числа в >=: %w", err)
 		}
+
 		if value > *minTemp {
 			*minTemp = value
 		}
+
 	}
 
 	if strings.HasPrefix(prefix, "<=") {
 		numStr := strings.TrimSpace(input[2:])
+
 		if numStr != "" && numStr[0] == ' ' {
 			numStr = strings.TrimSpace(numStr[1:])
 		}
+
 		value, err := strconv.Atoi(numStr)
+
 		if err != nil {
 			return 0, fmt.Errorf("ошибка при парсинге числа в <=: %w", err)
 		}
+
 		if value < *maxTemp {
 			*maxTemp = value
 		}
@@ -69,6 +81,7 @@ func updateRange(input string, minTemp, maxTemp *int) (int, error) {
 	if *minTemp <= *maxTemp {
 		return *minTemp, nil
 	}
+
 	return -1, nil
 }
 
@@ -76,6 +89,7 @@ func main() {
 	scanner := bufio.NewReader(os.Stdin)
 
 	testCount, err := readInt(scanner)
+	
 	if err != nil {
 		log.Fatal(err)
 	}
