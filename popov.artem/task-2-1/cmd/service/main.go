@@ -33,55 +33,51 @@ func readLine(reader *bufio.Reader) (string, error) {
 	return strings.TrimSpace(line), nil
 }
 
-func parseCondition(input string, minTemp, maxTemp *int) error {
+func parseCondition(input string, minTemp, maxTemp int) (int, int, error) {
 	const minLen = 2
 	if len(input) < minLen {
-		return nil
+		return minTemp, maxTemp, nil
 	}
 
 	prefix := input[:2]
 
 	if strings.HasPrefix(prefix, ">=") {
 		numStr := strings.TrimSpace(input[2:])
-		if numStr != "" && numStr[0] == ' ' {
+		if numStr != "" && len(numStr) > 0 && numStr[0] == ' ' {
 			numStr = strings.TrimSpace(numStr[1:])
 		}
 		value, err := strconv.Atoi(numStr)
 		if err != nil {
-			return fmt.Errorf("ошибка при парсинге числа в >=: %w", err)
+			return minTemp, maxTemp, fmt.Errorf("ошибка при парсинге числа в >=: %w", err)
 		}
-		if value > *minTemp {
-			*minTemp = value
+		if value > minTemp {
+			minTemp = value
 		}
-		return nil
+		return minTemp, maxTemp, nil
 	}
 
 	if strings.HasPrefix(prefix, "<=") {
 		numStr := strings.TrimSpace(input[2:])
-		if numStr != "" && numStr[0] == ' ' {
+		if numStr != "" && len(numStr) > 0 && numStr[0] == ' ' {
 			numStr = strings.TrimSpace(numStr[1:])
 		}
 		value, err := strconv.Atoi(numStr)
 		if err != nil {
-			return fmt.Errorf("ошибка при парсинге числа в <=: %w", err)
+			return minTemp, maxTemp, fmt.Errorf("ошибка при парсинге числа в <=: %w", err)
 		}
-		if value < *maxTemp {
-			*maxTemp = value
+		if value < maxTemp {
+			maxTemp = value
 		}
+		return minTemp, maxTemp, nil
 	}
-	return nil
+
+	return minTemp, maxTemp, nil
 }
 
-func updateRange(input string, minTemp, maxTemp *int) (int, error) {
-	err := parseCondition(input, minTemp, maxTemp)
-	if err != nil {
-		return 0, err
+func updateRangeResult(minTemp, maxTemp int) (int, error) {
+	if minTemp <= maxTemp {
+		return minTemp, nil
 	}
-
-	if *minTemp <= *maxTemp {
-		return *minTemp, nil
-	}
-
 	return -1, nil
 }
 
@@ -117,7 +113,11 @@ func main() {
 				log.Fatal(err)
 			}
 
-			result, err := updateRange(line, &minVal, &maxVal)
+			minVal, maxVal, err = parseCondition(line, minVal, maxVal)
+			if err != nil {
+				log.Fatal(err)
+			}
+			result, err := updateRangeResult(minVal, maxVal)
 			if err != nil {
 				log.Fatal(err)
 			}
