@@ -29,6 +29,7 @@ func (h *MaxHeap) Pop() interface{} {
 	n := len(old)
 	x := old[n-1]
 	*h = old[0 : n-1]
+
 	return x
 }
 
@@ -49,7 +50,7 @@ func main() {
 
 	kLine, _ := scanner.ReadString('\n')
 	kLine = strings.TrimSpace(kLine)
-	k, _ := strconv.Atoi(kLine)
+	kValue, _ := strconv.Atoi(kLine)
 
 	maxHeap := &MaxHeap{}
 	heap.Init(maxHeap)
@@ -59,9 +60,13 @@ func main() {
 	}
 
 	var result int
-	for range k {
+	for range kValue {
 		item := heap.Pop(maxHeap)
-		result = item.(int)
+		value, ok := item.(int)
+		if !ok {
+			continue
+		}
+		result = value
 	}
 
 	fmt.Println(result)
