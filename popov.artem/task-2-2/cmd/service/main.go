@@ -21,6 +21,7 @@ func (h *MaxHeap) Push(x interface{}) {
 	if !ok {
 		return
 	}
+
 	*h = append(*h, item)
 }
 
@@ -66,6 +67,7 @@ func main() {
 		if !ok {
 			continue
 		}
+
 		result = value
 	}
 
