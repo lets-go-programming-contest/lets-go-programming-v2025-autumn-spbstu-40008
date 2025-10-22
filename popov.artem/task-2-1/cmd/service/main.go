@@ -17,7 +17,6 @@ func readInt(reader *bufio.Reader) (int, error) {
 
 	line = strings.TrimSpace(line)
 	num, err := strconv.Atoi(line)
-
 	if err != nil {
 		return 0, fmt.Errorf("ошибка конвертации: %w", err)
 	}
@@ -34,48 +33,49 @@ func readLine(reader *bufio.Reader) (string, error) {
 	return strings.TrimSpace(line), nil
 }
 
-func updateRange(input string, minTemp, maxTemp *int) (int, error) {
+func parseCondition(input string, minTemp, maxTemp *int) error {
 	const minLen = 2
 	if len(input) < minLen {
-		return 0, nil
+		return nil
 	}
 
 	prefix := input[:2]
 
 	if strings.HasPrefix(prefix, ">=") {
 		numStr := strings.TrimSpace(input[2:])
-
 		if numStr != "" && numStr[0] == ' ' {
 			numStr = strings.TrimSpace(numStr[1:])
 		}
-
 		value, err := strconv.Atoi(numStr)
 		if err != nil {
-			return 0, fmt.Errorf("ошибка при парсинге числа в >=: %w", err)
+			return fmt.Errorf("ошибка при парсинге числа в >=: %w", err)
 		}
-
 		if value > *minTemp {
 			*minTemp = value
 		}
-
+		return nil
 	}
 
 	if strings.HasPrefix(prefix, "<=") {
 		numStr := strings.TrimSpace(input[2:])
-
 		if numStr != "" && numStr[0] == ' ' {
 			numStr = strings.TrimSpace(numStr[1:])
 		}
-
 		value, err := strconv.Atoi(numStr)
-
 		if err != nil {
-			return 0, fmt.Errorf("ошибка при парсинге числа в <=: %w", err)
+			return fmt.Errorf("ошибка при парсинге числа в <=: %w", err)
 		}
-
 		if value < *maxTemp {
 			*maxTemp = value
 		}
+	}
+	return nil
+}
+
+func updateRange(input string, minTemp, maxTemp *int) (int, error) {
+	err := parseCondition(input, minTemp, maxTemp)
+	if err != nil {
+		return 0, err
 	}
 
 	if *minTemp <= *maxTemp {
@@ -89,7 +89,6 @@ func main() {
 	scanner := bufio.NewReader(os.Stdin)
 
 	testCount, err := readInt(scanner)
-	
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -105,7 +104,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		min, max := 15, 30
+		minVal, maxVal := 15, 30
 
 		conditionIndices := make([]int, conditionCount)
 		for idx := range conditionIndices {
@@ -118,7 +117,7 @@ func main() {
 				log.Fatal(err)
 			}
 
-			result, err := updateRange(line, &min, &max)
+			result, err := updateRange(line, &minVal, &maxVal)
 			if err != nil {
 				log.Fatal(err)
 			}
