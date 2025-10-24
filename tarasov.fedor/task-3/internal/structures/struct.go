@@ -2,23 +2,18 @@ package structures
 
 import (
 	"encoding/xml"
-	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 )
 
 type CustomFloat float64
 
-var (
-	ErrDecodeXML  = errors.New("failed to decode XML element into string")
-	ErrParseFloat = errors.New("failed to parse float from normalized string")
-)
-
 func (cfg *CustomFloat) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	var valueStr string
 
 	if err := d.DecodeElement(&valueStr, &start); err != nil {
-		return ErrDecodeXML
+		return fmt.Errorf("failed to decode XML element into string: %w", err)
 	}
 
 	valueStr = strings.TrimSpace(valueStr)
@@ -26,7 +21,7 @@ func (cfg *CustomFloat) UnmarshalXML(d *xml.Decoder, start xml.StartElement) err
 
 	val, err := strconv.ParseFloat(valueStr, 64)
 	if err != nil {
-		return ErrParseFloat
+		return fmt.Errorf("failed to parse float from normalized string: %w", err)
 	}
 
 	*cfg = CustomFloat(val)

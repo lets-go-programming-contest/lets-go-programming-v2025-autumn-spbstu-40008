@@ -83,7 +83,6 @@ func main() {
 		panic(err)
 	}
 	val := decodeXML(cfg)
-
 	sortValuteByValue(val)
 
 	jsonData, err := json.MarshalIndent(val.Valute, "", "  ")
