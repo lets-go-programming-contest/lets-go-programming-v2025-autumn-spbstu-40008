@@ -21,7 +21,6 @@ var ErrUnsupportedOutputFormat = errors.New("unsupported output format")
 
 func DecodeXML(xmlPath string) ([]*ResultValute, error) {
 	file, err := os.ReadFile(xmlPath)
-
 	if err != nil {
 		return nil, fmt.Errorf("read xml: %w", err)
 	}
@@ -39,7 +38,6 @@ func DecodeXML(xmlPath string) ([]*ResultValute, error) {
 
 	var valcurs ValCurs
 	err = decoder.Decode(&valcurs)
-
 	if err != nil {
 		return nil, fmt.Errorf("decode XML data: %w", err)
 	}
