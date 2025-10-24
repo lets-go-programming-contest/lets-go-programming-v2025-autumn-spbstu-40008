@@ -16,6 +16,8 @@ import (
 	"golang.org/x/text/encoding/charmap"
 )
 
+var ErrUnsupportedCharset = fmt.Errorf("unsupported charset")
+
 func decodeXML(cfg config.File) structures.ValCurs {
 	xmlFile, err := os.Open(cfg.Input)
 	if err != nil {
@@ -37,7 +39,7 @@ func decodeXML(cfg config.File) structures.ValCurs {
 			return charmap.Windows1251.NewDecoder().Reader(input), nil
 		}
 
-		return nil, fmt.Errorf("unsupported charset: %s", charset)
+		return nil, ErrUnsupportedCharset
 	}
 
 	err = decoder.Decode(&val)
