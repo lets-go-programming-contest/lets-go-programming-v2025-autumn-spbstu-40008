@@ -46,7 +46,7 @@ func DecodeXML(xmlPath string) ([]*ResultValute, error) {
 		numcode, err := strconv.Atoi(elem.NumCode)
 
 		if err != nil {
-			return nil, err
+			continue
 		}
 
 		strValue := elem.Value
@@ -55,7 +55,7 @@ func DecodeXML(xmlPath string) ([]*ResultValute, error) {
 		value, err := strconv.ParseFloat(strValue, 64)
 
 		if err != nil {
-			return nil, err
+			continue
 		}
 
 		valute := &ResultValute{numcode, elem.CharCode, value}
