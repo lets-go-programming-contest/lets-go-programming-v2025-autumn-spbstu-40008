@@ -34,11 +34,6 @@ func (cfg *CustomFloat) UnmarshalXML(d *xml.Decoder, start xml.StartElement) err
 	return nil
 }
 
-type File struct {
-	Input  string `yaml:"input-file"`
-	Output string `yaml:"output-file"`
-}
-
 type ValCurs struct {
 	Valute []Valute `json:"valute" xml:"Valute"`
 }

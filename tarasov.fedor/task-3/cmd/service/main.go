@@ -10,28 +10,12 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/task-3/internal/config"
 	"github.com/task-3/internal/structures"
 	"golang.org/x/text/encoding/charmap"
-	"gopkg.in/yaml.v2"
 )
 
-func readFile(configPath string) structures.File {
-	var cfg structures.File
-
-	yamlFile, err := os.ReadFile(configPath)
-	if err != nil {
-		panic(err)
-	}
-
-	err = yaml.Unmarshal(yamlFile, &cfg)
-	if err != nil {
-		panic(err)
-	}
-
-	return cfg
-}
-
-func decodeXML(cfg structures.File) structures.ValCurs {
+func decodeXML(cfg config.File) structures.ValCurs {
 	xmlFile, err := os.Open(cfg.Input)
 	if err != nil {
 		panic(err)
@@ -94,7 +78,10 @@ func main() {
 	flag.StringVar(&configPath, "config", "", "Path to the YAML configuration file")
 	flag.Parse()
 
-	cfg := readFile(configPath)
+	cfg, err := config.ReadFile(configPath)
+	if err != nil {
+		panic(err)
+	}
 	val := decodeXML(cfg)
 
 	sortValuteByValue(val)
