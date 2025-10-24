@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"flag"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -36,7 +37,7 @@ func decodeXML(cfg config.File) structures.ValCurs {
 			return charmap.Windows1251.NewDecoder().Reader(input), nil
 		}
 
-		return nil, io.EOF
+		return nil, fmt.Errorf("unsupported charset: %s", charset)
 	}
 
 	err = decoder.Decode(&val)
