@@ -33,6 +33,7 @@ func DecodeXML(xmlPath string) ([]*ResultValute, error) {
 		if charset == "windows-1251" {
 			return charmap.Windows1251.NewDecoder().Reader(input), nil
 		}
+
 		return nil, fmt.Errorf("%w: %s", ErrUnsupportedCharset, charset)
 	}
 
