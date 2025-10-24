@@ -37,8 +37,7 @@ func DecodeXML(xmlPath string) ([]*ResultValute, error) {
 	}
 
 	var valcurs ValCurs
-	err = decoder.Decode(&valcurs)
-	if err != nil {
+	if err = decoder.Decode(&valcurs); err != nil {
 		return nil, fmt.Errorf("decode XML data: %w", err)
 	}
 
@@ -49,8 +48,7 @@ func DecodeXML(xmlPath string) ([]*ResultValute, error) {
 		if err != nil {
 			numcode = 0
 		}
-		strValue := elem.Value
-		strValue = strings.ReplaceAll(strValue, ",", ".")
+		strValue := strings.ReplaceAll(elem.Value, ",", ".")
 
 		value, err := strconv.ParseFloat(strValue, 64)
 
