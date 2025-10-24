@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -14,6 +15,9 @@ import (
 	"golang.org/x/text/encoding/charmap"
 	"gopkg.in/yaml.v3"
 )
+
+var ErrUnsupportedCharset = errors.New("unsupported charset")
+var ErrUnsupportedOutputFormat = errors.New("unsupported output format")
 
 func DecodeXML(xmlPath string) ([]*ResultValute, error) {
 	file, err := os.ReadFile(xmlPath)
@@ -29,7 +33,7 @@ func DecodeXML(xmlPath string) ([]*ResultValute, error) {
 		if charset == "windows-1251" {
 			return charmap.Windows1251.NewDecoder().Reader(input), nil
 		}
-		return nil, fmt.Errorf("unsupported charset: %s", charset)
+		return nil, fmt.Errorf("%w: %s", ErrUnsupportedCharset, charset)
 	}
 
 	var valcurs ValCurs
@@ -83,7 +87,7 @@ func EncodeFile(valutes []*ResultValute, outputFormat string, outputPath string)
 			encodedData = append([]byte(xml.Header), encodedData...)
 		}
 	default:
-		return fmt.Errorf("unsupported output format: %s", outputFormat)
+		return fmt.Errorf("%w: %s", ErrUnsupportedOutputFormat, outputFormat)
 	}
 
 	if err != nil {
