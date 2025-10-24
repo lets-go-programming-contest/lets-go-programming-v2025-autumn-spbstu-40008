@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -30,7 +29,7 @@ func DecodeXML(xmlPath string) ([]*ResultValute, error) {
 		if charset == "windows-1251" {
 			return charmap.Windows1251.NewDecoder().Reader(input), nil
 		}
-		return nil, errors.New("unsupported charset: " + charset)
+		return nil, fmt.Errorf("unsupported charset: %s", charset)
 	}
 
 	var valcurs ValCurs
@@ -38,7 +37,7 @@ func DecodeXML(xmlPath string) ([]*ResultValute, error) {
 	err = decoder.Decode(&valcurs)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("decode XML data: %w", err)
 	}
 
 	result := make([]*ResultValute, 0, len(valcurs.Valutes))
@@ -84,7 +83,7 @@ func EncodeFile(valutes []*ResultValute, outputFormat string, outputPath string)
 			encodedData = append([]byte(xml.Header), encodedData...)
 		}
 	default:
-		return errors.New("unsupported output format: " + outputFormat)
+		return fmt.Errorf("unsupported output format: %s", outputFormat)
 	}
 
 	if err != nil {
