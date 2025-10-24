@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -19,7 +20,7 @@ func DecodeXML(xmlPath string) ([]*ResultValute, error) {
 	file, err := os.ReadFile(xmlPath)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("read xml: %w", err)
 	}
 
 	reader := bytes.NewReader(file)
@@ -29,7 +30,7 @@ func DecodeXML(xmlPath string) ([]*ResultValute, error) {
 		if charset == "windows-1251" {
 			return charmap.Windows1251.NewDecoder().Reader(input), nil
 		}
-		return nil, fmt.Errorf("unknowm charset: %s", charset)
+		return nil, errors.New("unsupported charset: " + charset)
 	}
 
 	var valcurs ValCurs
@@ -40,7 +41,7 @@ func DecodeXML(xmlPath string) ([]*ResultValute, error) {
 		return nil, err
 	}
 
-	var result []*ResultValute
+	result := make([]*ResultValute, 0, len(valcurs.Valutes))
 
 	for _, elem := range valcurs.Valutes {
 		numcode, err := strconv.Atoi(elem.NumCode)
@@ -50,7 +51,7 @@ func DecodeXML(xmlPath string) ([]*ResultValute, error) {
 		}
 
 		strValue := elem.Value
-		strValue = strings.Replace(strValue, ",", ".", -1)
+		strValue = strings.ReplaceAll(strValue, ",", ".")
 
 		value, err := strconv.ParseFloat(strValue, 64)
 
@@ -83,11 +84,11 @@ func EncodeFile(valutes []*ResultValute, outputFormat string, outputPath string)
 			encodedData = append([]byte(xml.Header), encodedData...)
 		}
 	default:
-		return fmt.Errorf("unsupported output format: %s", outputFormat)
+		return errors.New("unsupported output format: " + outputFormat)
 	}
 
 	if err != nil {
-		return fmt.Errorf("error marshalling data to %s: %w", outputFormat, err)
+		return fmt.Errorf("error marshalling data: %w", err)
 	}
 
 	dir := filepath.Dir(outputPath)
@@ -96,8 +97,8 @@ func EncodeFile(valutes []*ResultValute, outputFormat string, outputPath string)
 		return fmt.Errorf("error creating output directory %s: %w", dir, err)
 	}
 
-	if err := os.WriteFile(outputPath, encodedData, 0644); err != nil {
-		return fmt.Errorf("error writing to file %s: %w", outputPath, err)
+	if err := os.WriteFile(outputPath, encodedData, 0600); err != nil {
+		return fmt.Errorf("error writing file: %w", err)
 	}
 
 	return nil

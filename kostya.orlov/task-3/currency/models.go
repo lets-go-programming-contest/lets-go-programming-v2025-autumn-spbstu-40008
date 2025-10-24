@@ -14,7 +14,7 @@ type ValCurs struct {
 }
 
 type ResultValute struct {
-	NumCode  int     `json:"num_code" yaml:"num_code"`
-	CharCode string  `json:"char_code" yaml:"char_code"`
-	Value    float64 `json:"value" yaml:"value"`
+	NumCode  int     `json:"num_code"  yaml:"num_code"  xml:"num_code"`
+	CharCode string  `json:"char_code" yaml:"char_code" xml:"char_code"`
+	Value    float64 `json:"value"     yaml:"value"     xml:"value"`
 }
