@@ -82,6 +82,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
 	val := decodeXML(cfg)
 	sortValuteByValue(val)
 
