@@ -38,7 +38,6 @@ func DecodeXML(xmlPath string) ([]*ResultValute, error) {
 	}
 
 	var valcurs ValCurs
-
 	err = decoder.Decode(&valcurs)
 
 	if err != nil {
