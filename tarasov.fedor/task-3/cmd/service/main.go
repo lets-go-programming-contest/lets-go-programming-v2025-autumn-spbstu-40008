@@ -3,8 +3,8 @@ package main
 import (
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"flag"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -16,7 +16,7 @@ import (
 	"golang.org/x/text/encoding/charmap"
 )
 
-var ErrUnsupportedCharset = fmt.Errorf("unsupported charset")
+var ErrUnsupportedCharset = errors.New("unsupported charset")
 
 func decodeXML(cfg config.File) structures.ValCurs {
 	xmlFile, err := os.Open(cfg.Input)
