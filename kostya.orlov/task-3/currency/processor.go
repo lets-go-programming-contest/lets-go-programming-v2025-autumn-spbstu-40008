@@ -43,14 +43,12 @@ func DecodeXML(xmlPath string) ([]*ResultValute, error) {
 	}
 
 	result := make([]*ResultValute, 0, len(valcurs.Valutes))
-
 	for _, elem := range valcurs.Valutes {
 		numcode, err := strconv.Atoi(elem.NumCode)
 
 		if err != nil {
 			numcode = 0
 		}
-
 		strValue := elem.Value
 		strValue = strings.ReplaceAll(strValue, ",", ".")
 
