@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"golang.org/x/text/encoding/charmap"
+
 	"gopkg.in/yaml.v2"
 
 	"task-3/internal/structures"
@@ -78,6 +79,7 @@ func SortAndProcessCurrencies(xmlData structures.ReadingXML) []structures.Proces
 	processed := make([]structures.ProcessedCurrency, 0, len(xmlData.Information))
 
 	for _, item := range xmlData.Information {
+
 		stringValue := strings.ReplaceAll(item.Value, ",", ".")
 		value, errValue := strconv.ParseFloat(stringValue, 64)
 
@@ -87,14 +89,16 @@ func SortAndProcessCurrencies(xmlData structures.ReadingXML) []structures.Proces
 
 		nominal := 1
 		if item.Nominal != "" {
-			if parsed, errNominal := strconv.Atoi(item.Nominal); errNominal == nil && parsed > 0 {
+			parsed, errNominal := strconv.Atoi(strings.TrimSpace(item.Nominal))
+			if errNominal == nil && parsed > 0 {
 				nominal = parsed
 			}
 		}
 
 		numCode := 0
 		if item.NumCode != "" {
-			if parsed, errNumCode := strconv.Atoi(strings.TrimSpace(item.NumCode)); errNumCode == nil {
+			parsed, errNumCode := strconv.Atoi(strings.TrimSpace(item.NumCode))
+			if errNumCode == nil {
 				numCode = parsed
 			}
 		}
@@ -103,7 +107,7 @@ func SortAndProcessCurrencies(xmlData structures.ReadingXML) []structures.Proces
 
 		processed = append(processed, structures.ProcessedCurrency{
 			NumCode:  numCode,
-			CharCode: item.CharCode,
+			CharCode: strings.TrimSpace(item.CharCode),
 			Value:    realValue,
 			Nominal:  nominal,
 		})
