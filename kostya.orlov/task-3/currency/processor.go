@@ -16,6 +16,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	dirPerm  = 0o755
+	filePerm = 0o600
+)
+
 var (
 	ErrUnsupportedCharset      = errors.New("unsupported charset")
 	ErrUnsupportedOutputFormat = errors.New("unsupported output format")
@@ -90,11 +95,11 @@ func EncodeFile(valutes []*ResultValute, outputFormat string, outputPath string)
 
 	dir := filepath.Dir(outputPath)
 
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, dirPerm); err != nil {
 		return fmt.Errorf("error creating output directory %s: %w", dir, err)
 	}
 
-	if err := os.WriteFile(outputPath, encodedData, 0o600); err != nil {
+	if err := os.WriteFile(outputPath, encodedData, filePerm); err != nil {
 		return fmt.Errorf("error writing file: %w", err)
 	}
 
