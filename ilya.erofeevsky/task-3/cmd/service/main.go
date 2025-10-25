@@ -16,7 +16,7 @@ import (
 	"golang.org/x/text/encoding/charmap"
 	"gopkg.in/yaml.v2"
 
-	"github.com/task-3/internal/structures"
+	"task-3/internal/structures"
 )
 
 var (
