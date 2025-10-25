@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -16,6 +17,10 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"task-3/internal/structures"
+)
+
+var (
+	ErrUnsupportedCharset = errors.New("Unsupported charset")
 )
 
 func ReadFile(configPath string) structures.File {
@@ -57,7 +62,7 @@ func decodeXML(cfg structures.File) structures.ReadingXML {
 		if strings.ToLower(charset) == "windows-1251" {
 			return charmap.Windows1251.NewDecoder().Reader(input), nil
 		}
-		return nil, fmt.Errorf("unsupported charset: %s", charset)
+		return nil, fmt.Errorf("%w: %s", ErrUnsupportedCharset, charset)
 	}
 
 	err = decoder.Decode(&xmlData)
@@ -69,10 +74,9 @@ func decodeXML(cfg structures.File) structures.ReadingXML {
 }
 
 func SortAndProcessCurrencies(xmlData structures.ReadingXML) []structures.ProcessedCurrency {
-	var processed []structures.ProcessedCurrency
+	processed := make([]structures.ProcessedCurrency, 0, len(xmlData.Information))
 
 	for _, item := range xmlData.Information {
-
 		stringValue := item.Value
 		stringValue = strings.Replace(stringValue, ",", ".", 1)
 
@@ -105,13 +109,17 @@ func SortAndProcessCurrencies(xmlData structures.ReadingXML) []structures.Proces
 
 func createOutputFile(filename string) *os.File {
 	dirPath := filepath.Dir(filename)
+
 	const DirPerm = 0o775
+
 	if err := os.MkdirAll(dirPath, DirPerm); err != nil {
 		panic(fmt.Sprintf("Error creating output directory %s: %v", dirPath, err))
 	}
 
 	const FilePerm = 0o644
+
 	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, FilePerm)
+
 	if err != nil {
 		panic(fmt.Sprintf("Error openin/creating output file %s: %v", filename, err))
 	}
@@ -148,6 +156,7 @@ func main() {
 	}
 
 	outputFile := createOutputFile(cfg.Output)
+
 	defer func() {
 		if err := outputFile.Close(); err != nil {
 			fmt.Printf("Error closing output file: %v\n", err)
