@@ -82,7 +82,8 @@ func SortAndProcessCurrencies(xmlData structures.ReadingXML) []structures.Proces
 
 		value, errValue := strconv.ParseFloat(stringValue, 64)
 		if errValue != nil {
-			value = 0.0
+
+			continue
 		}
 
 		nominal, errNominal := strconv.Atoi(item.Nominal)
