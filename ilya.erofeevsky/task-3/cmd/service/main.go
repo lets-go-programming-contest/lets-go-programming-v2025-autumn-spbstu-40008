@@ -13,10 +13,10 @@ import (
 	"strconv"
 	"strings"
 
-	"task-3/internal/structures"
-
 	"golang.org/x/text/encoding/charmap"
 	"gopkg.in/yaml.v2"
+
+	"task-3/internal/structures"
 )
 
 var (
@@ -86,7 +86,7 @@ func SortAndProcessCurrencies(xmlData structures.ReadingXML) []structures.Proces
 		numCode, errNumCode := strconv.Atoi(item.NumCode)
 
 		if errValue != nil || errNominal != nil || errNumCode != nil {
-			panic(fmt.Sprintf("Err translate data for valute '%s': Value='%s' (Error: %v), Nominal='%s' (Error: %v), "+
+			panic(fmt.Sprintf("Error translate data for valute '%s': Value='%s' (Error: %v), Nominal='%s' (Error: %v), "+
 				"NumCode='%s' (Error: %v)",
 				item.Name, item.Value, errValue, item.Nominal, errNominal, item.NumCode, errNumCode))
 		}
@@ -137,9 +137,7 @@ func main() {
 	}
 
 	cfg := ReadFile(configPath)
-
 	xmlData := decodeXML(cfg)
-
 	sortedCurrencies := SortAndProcessCurrencies(xmlData)
 
 	resultItems := make([]structures.ResultItem, 0, len(sortedCurrencies))
