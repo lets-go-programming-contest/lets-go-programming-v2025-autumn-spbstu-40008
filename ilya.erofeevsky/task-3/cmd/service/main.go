@@ -44,7 +44,6 @@ func ReadFile(configPath string) structures.File {
 }
 
 func decodeXML(cfg structures.File) structures.ReadingXML {
-
 	xmlFile, err := os.Open(cfg.Input)
 	if err != nil {
 		panic(fmt.Sprintf("Error opening XML input file %s: %v", cfg.Input, err))
@@ -79,15 +78,14 @@ func SortAndProcessCurrencies(xmlData structures.ReadingXML) []structures.Proces
 	processed := make([]structures.ProcessedCurrency, 0, len(xmlData.Information))
 
 	for _, item := range xmlData.Information {
-
-		if item.NumCode == "" {
-			fmt.Printf("Warning: Skipping valute '%s' due to empty NumCode.\n", item.Name)
-
+		if item.NumCode == "" || item.Nominal == "" || item.Value == "" {
+			fmt.Printf("Warning: Skipping valute '%s' due to empty data (NumCode: '%s', Nominal: '%s', Value: '%s').\n",
+				item.Name, item.NumCode, item.Nominal, item.Value)
 			continue
 		}
 
 		stringValue := item.Value
-		stringValue = strings.Replace(stringValue, ",", ".", 1)
+		stringValue = strings.ReplaceAll(stringValue, ",", ".")
 
 		value, errValue := strconv.ParseFloat(stringValue, 64)
 		nominal, errNominal := strconv.Atoi(item.Nominal)
@@ -97,6 +95,11 @@ func SortAndProcessCurrencies(xmlData structures.ReadingXML) []structures.Proces
 			panic(fmt.Sprintf("Err translate data for valute '%s': Value='%s' (Error: %v), Nominal='%s' (Error: %v), "+
 				"NumCode='%s' (Error: %v)",
 				item.Name, item.Value, errValue, item.Nominal, errNominal, item.NumCode, errNumCode))
+		}
+
+		if nominal <= 0 {
+			fmt.Printf("Warning: Skipping valute '%s' due to invalid Nominal value: %d.\n", item.Name, nominal)
+			continue
 		}
 
 		realValue := value / float64(nominal)
