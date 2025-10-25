@@ -78,6 +78,11 @@ func SortAndProcessCurrencies(xmlData structures.ReadingXML) []structures.Proces
 	processed := make([]structures.ProcessedCurrency, 0, len(xmlData.Information))
 
 	for _, item := range xmlData.Information {
+		if item.NumCode == "" {
+			fmt.Printf("Warning: Skipping valute '%s' due to empty NumCode.\n", item.Name)
+			continue
+		}
+
 		stringValue := item.Value
 		stringValue = strings.Replace(stringValue, ",", ".", 1)
 
@@ -86,7 +91,7 @@ func SortAndProcessCurrencies(xmlData structures.ReadingXML) []structures.Proces
 		numCode, errNumCode := strconv.Atoi(item.NumCode)
 
 		if errValue != nil || errNominal != nil || errNumCode != nil {
-			panic(fmt.Sprintf("Error translate data for valute '%s': Value='%s' (Error: %v), Nominal='%s' (Error: %v), "+
+			panic(fmt.Sprintf("Err translate data for valute '%s': Value='%s' (Error: %v), Nominal='%s' (Error: %v), "+
 				"NumCode='%s' (Error: %v)",
 				item.Name, item.Value, errValue, item.Nominal, errNominal, item.NumCode, errNumCode))
 		}
@@ -112,11 +117,13 @@ func createOutputFile(filename string) *os.File {
 	dirPath := filepath.Dir(filename)
 
 	const DirPerm = 0o755
+
 	if err := os.MkdirAll(dirPath, DirPerm); err != nil {
 		panic(fmt.Sprintf("Error creating output directory %s: %v", dirPath, err))
 	}
 
 	const FilePerm = 0o644
+
 	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, FilePerm)
 
 	if err != nil {
