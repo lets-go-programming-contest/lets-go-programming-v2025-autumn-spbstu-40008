@@ -19,9 +19,7 @@ import (
 	"github.com/task-3/internal/structures"
 )
 
-var (
-	ErrUnsupportedCharset = errors.New("unsupported charset")
-)
+var ErrUnsupportedCharset = errors.New("unsupported charset")
 
 func ReadFile(configPath string) structures.File {
 	var cfg structures.File
@@ -85,7 +83,7 @@ func SortAndProcessCurrencies(xmlData structures.ReadingXML) []structures.Proces
 			continue
 		}
 
-		var numCode int
+		numCode := 0
 		if item.NumCode != "" {
 			if parsed, errNumCode := strconv.Atoi(strings.TrimSpace(item.NumCode)); errNumCode == nil {
 				numCode = parsed
