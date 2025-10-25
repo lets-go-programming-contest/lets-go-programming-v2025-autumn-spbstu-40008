@@ -13,10 +13,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/task-3/internal/structures"
 	"golang.org/x/text/encoding/charmap"
 	"gopkg.in/yaml.v2"
-
-	"github.com/task-3/internal/structures"
 )
 
 var ErrUnsupportedCharset = errors.New("unsupported charset")
