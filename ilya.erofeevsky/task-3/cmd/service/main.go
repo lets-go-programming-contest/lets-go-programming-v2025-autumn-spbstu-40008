@@ -85,10 +85,9 @@ func SortAndProcessCurrencies(xmlData structures.ReadingXML) []structures.Proces
 			continue
 		}
 
-		numCode := 0
+		var numCode int
 		if item.NumCode != "" {
-			parsed, errNumCode := strconv.Atoi(strings.TrimSpace(item.NumCode))
-			if errNumCode == nil {
+			if parsed, errNumCode := strconv.Atoi(strings.TrimSpace(item.NumCode)); errNumCode == nil {
 				numCode = parsed
 			}
 		}
