@@ -10,7 +10,6 @@ type ValuteXML struct {
 	Nominal  string `xml:"Nominal"`
 	Name     string `xml:"Name"`
 	Value    string `xml:"Value"`
-	ID       string `xml: "ID,attr"`
 }
 
 type ReadingXML struct {

@@ -81,8 +81,9 @@ func SortAndProcessCurrencies(xmlData structures.ReadingXML) []structures.Proces
 		numCode, errNumCode := strconv.Atoi(item.NumCode)
 
 		if errValue != nil || errNominal != nil || errNumCode != nil {
-			panic(fmt.Sprintf("Error translate data for valute '%s': Value='%s' (Error: %v), Nominal='%s' (Error: %v), NumCode='%s' (Error: %v)",
-				item.Name, item.Value, errValue, item.Nominal, errNominal, item.NumCode, errNumCode))
+			panic(fmt.Sprintf("Error translate data for valute '%s': Value='%s' (Error: %v), "+
+				"Nominal='%s' (Error: %v), NumCode='%s' (Error: %v)",
+				item.CharCode, item.Value, errValue, item.Nominal, errNominal, item.NumCode, errNumCode))
 		}
 
 		realValue := value / float64(nominal)
@@ -105,7 +106,6 @@ func SortAndProcessCurrencies(xmlData structures.ReadingXML) []structures.Proces
 func createOutputFile(filename string) *os.File {
 	dirPath := filepath.Dir(filename)
 	const DirPerm = 0o775
-
 	if err := os.MkdirAll(dirPath, DirPerm); err != nil {
 		panic(fmt.Sprintf("Error creating output directory %s: %v", dirPath, err))
 	}
@@ -130,12 +130,10 @@ func main() {
 	}
 
 	cfg := ReadFile(configPath)
-
 	xmlData := decodeXML(cfg)
-
 	sortedCurrencies := SortAndProcessCurrencies(xmlData)
 
-	var resultItems []structures.ResultItem
+	resultItems := make([]structures.ResultItem, 0, len(sortedCurrencies))
 	for _, curr := range sortedCurrencies {
 		resultItems = append(resultItems, structures.ResultItem{
 			NumCode:  curr.NumCode,
