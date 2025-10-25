@@ -142,11 +142,7 @@ func main() {
 
 	resultItems := make([]structures.ResultItem, 0, len(sortedCurrencies))
 	for _, curr := range sortedCurrencies {
-		resultItems = append(resultItems, structures.ResultItem{
-			NumCode:  curr.NumCode,
-			CharCode: curr.CharCode,
-			Value:    curr.Value,
-		})
+		resultItems = append(resultItems, structures.ResultItem(curr))
 	}
 
 	jsonData, err := json.MarshalIndent(resultItems, "", "  ")
