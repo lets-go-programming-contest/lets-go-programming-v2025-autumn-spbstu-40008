@@ -78,12 +78,6 @@ func SortAndProcessCurrencies(xmlData structures.ReadingXML) []structures.Proces
 	processed := make([]structures.ProcessedCurrency, 0, len(xmlData.Information))
 
 	for _, item := range xmlData.Information {
-		if item.NumCode == "" || item.Nominal == "" || item.Value == "" {
-			fmt.Printf("Warning: Skipping valute '%s' due to empty data (NumCode: '%s', Nominal: '%s', Value: '%s').\n",
-				item.Name, item.NumCode, item.Nominal, item.Value)
-			continue
-		}
-
 		stringValue := item.Value
 		stringValue = strings.ReplaceAll(stringValue, ",", ".")
 
@@ -92,13 +86,12 @@ func SortAndProcessCurrencies(xmlData structures.ReadingXML) []structures.Proces
 		numCode, errNumCode := strconv.Atoi(item.NumCode)
 
 		if errValue != nil || errNominal != nil || errNumCode != nil {
-			panic(fmt.Sprintf("Err translate data for valute '%s': Value='%s' (Error: %v), Nominal='%s' (Error: %v), "+
-				"NumCode='%s' (Error: %v)",
+			panic(fmt.Sprintf("Error translate data for valute '%s': Value='%s' (Error: %v), Nominal='%s'
+			\\ (Error: %v), NumCode='%s' (Error: %v)",
 				item.Name, item.Value, errValue, item.Nominal, errNominal, item.NumCode, errNumCode))
 		}
 
 		if nominal <= 0 {
-			fmt.Printf("Warning: Skipping valute '%s' due to invalid Nominal value: %d.\n", item.Name, nominal)
 			continue
 		}
 
