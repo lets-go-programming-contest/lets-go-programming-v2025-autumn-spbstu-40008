@@ -14,7 +14,6 @@ import (
 	"strings"
 
 	"golang.org/x/text/encoding/charmap"
-
 	"gopkg.in/yaml.v2"
 
 	"task-3/internal/structures"
@@ -79,20 +78,11 @@ func SortAndProcessCurrencies(xmlData structures.ReadingXML) []structures.Proces
 	processed := make([]structures.ProcessedCurrency, 0, len(xmlData.Information))
 
 	for _, item := range xmlData.Information {
-
 		stringValue := strings.ReplaceAll(item.Value, ",", ".")
 		value, errValue := strconv.ParseFloat(stringValue, 64)
 
 		if errValue != nil {
 			continue
-		}
-
-		nominal := 1
-		if item.Nominal != "" {
-			parsed, errNominal := strconv.Atoi(strings.TrimSpace(item.Nominal))
-			if errNominal == nil && parsed > 0 {
-				nominal = parsed
-			}
 		}
 
 		numCode := 0
@@ -103,13 +93,10 @@ func SortAndProcessCurrencies(xmlData structures.ReadingXML) []structures.Proces
 			}
 		}
 
-		realValue := value / float64(nominal)
-
 		processed = append(processed, structures.ProcessedCurrency{
 			NumCode:  numCode,
 			CharCode: strings.TrimSpace(item.CharCode),
-			Value:    realValue,
-			Nominal:  nominal,
+			Value:    value,
 		})
 	}
 

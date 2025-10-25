@@ -27,7 +27,6 @@ type ProcessedCurrency struct {
 	NumCode  int
 	CharCode string
 	Value    float64
-	Nominal  int
 }
 
 type ResultItem struct {
