@@ -78,23 +78,27 @@ func SortAndProcessCurrencies(xmlData structures.ReadingXML) []structures.Proces
 	processed := make([]structures.ProcessedCurrency, 0, len(xmlData.Information))
 
 	for _, item := range xmlData.Information {
-		stringValue := item.Value
-		stringValue = strings.ReplaceAll(stringValue, ",", ".")
+		stringValue := strings.ReplaceAll(item.Value, ",", ".")
 
 		value, errValue := strconv.ParseFloat(stringValue, 64)
+		if errValue != nil {
+			value = 0.0
+		}
+
 		nominal, errNominal := strconv.Atoi(item.Nominal)
+		if errNominal != nil {
+			nominal = 1
+		}
+
 		numCode, errNumCode := strconv.Atoi(item.NumCode)
-
-		if errValue != nil || errNominal != nil || errNumCode != nil {
-
-			continue
+		if errNumCode != nil {
+			numCode = 0
 		}
 
-		if nominal <= 0 {
-			continue
+		realValue := value
+		if nominal > 0 {
+			realValue = value / float64(nominal)
 		}
-
-		realValue := value / float64(nominal)
 
 		processed = append(processed, structures.ProcessedCurrency{
 			NumCode:  numCode,
