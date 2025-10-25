@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	ErrUnsupportedCharset = errors.New("Unsupported charset")
+	ErrUnsupportedCharset = errors.New("unsupported charset")
 )
 
 func ReadFile(configPath string) structures.File {
@@ -48,6 +48,7 @@ func decodeXML(cfg structures.File) structures.ReadingXML {
 	if err != nil {
 		panic(fmt.Sprintf("Error opening XML input file %s: %v", cfg.Input, err))
 	}
+
 	defer func() {
 		if err := xmlFile.Close(); err != nil {
 			fmt.Printf("Error closing XML file: %v\n", err)
@@ -57,17 +58,17 @@ func decodeXML(cfg structures.File) structures.ReadingXML {
 	var xmlData structures.ReadingXML
 
 	decoder := xml.NewDecoder(xmlFile)
-
 	decoder.CharsetReader = func(charset string, input io.Reader) (io.Reader, error) {
 		if strings.ToLower(charset) == "windows-1251" {
 			return charmap.Windows1251.NewDecoder().Reader(input), nil
 		}
-		return nil, fmt.Errorf("%w: %s", ErrUnsupportedCharset, charset)
+
+		return nil, ErrUnsupportedCharset
 	}
 
 	err = decoder.Decode(&xmlData)
 	if err != nil {
-		panic(fmt.Sprintf("Error decoding XML data from %s: %v", cfg.Input, err))
+		panic(fmt.Sprintf("Error decoding XML from file %s: %v", cfg.Input, err))
 	}
 
 	return xmlData
@@ -85,9 +86,8 @@ func SortAndProcessCurrencies(xmlData structures.ReadingXML) []structures.Proces
 		numCode, errNumCode := strconv.Atoi(item.NumCode)
 
 		if errValue != nil || errNominal != nil || errNumCode != nil {
-			panic(fmt.Sprintf("Error translate data for valute '%s': Value='%s' (Error: %v), "+
-				"Nominal='%s' (Error: %v), NumCode='%s' (Error: %v)",
-				item.CharCode, item.Value, errValue, item.Nominal, errNominal, item.NumCode, errNumCode))
+			panic(fmt.Sprintf("Error translate data for valute '%s': Value='%s' (Error: %v), Nominal='%s' (Error: %v), NumCode='%s' (Error: %v)",
+				item.Name, item.Value, errValue, item.Nominal, errNominal, item.NumCode, errNumCode))
 		}
 
 		realValue := value / float64(nominal)
@@ -110,14 +110,12 @@ func SortAndProcessCurrencies(xmlData structures.ReadingXML) []structures.Proces
 func createOutputFile(filename string) *os.File {
 	dirPath := filepath.Dir(filename)
 
-	const DirPerm = 0o775
-
+	const DirPerm = 0o755
 	if err := os.MkdirAll(dirPath, DirPerm); err != nil {
 		panic(fmt.Sprintf("Error creating output directory %s: %v", dirPath, err))
 	}
 
 	const FilePerm = 0o644
-
 	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, FilePerm)
 
 	if err != nil {
@@ -138,7 +136,9 @@ func main() {
 	}
 
 	cfg := ReadFile(configPath)
+
 	xmlData := decodeXML(cfg)
+
 	sortedCurrencies := SortAndProcessCurrencies(xmlData)
 
 	resultItems := make([]structures.ResultItem, 0, len(sortedCurrencies))
@@ -150,7 +150,7 @@ func main() {
 		})
 	}
 
-	jsonData, err := json.MarshalIndent(resultItems, "", "  ") // Используем MarshalIndent для форматирования
+	jsonData, err := json.MarshalIndent(resultItems, "", "  ")
 	if err != nil {
 		panic(fmt.Sprintf("Error marshaling data to JSON: %v", err))
 	}
@@ -163,10 +163,7 @@ func main() {
 		}
 	}()
 
-	_, err = outputFile.Write(jsonData)
-	if err != nil {
-		panic(fmt.Sprintf("Error writing data to output file %s: %v", cfg.Output, err))
+	if _, err := outputFile.Write(jsonData); err != nil {
+		panic(fmt.Sprintf("Error writing JSON data to file %s: %v", cfg.Output, err))
 	}
-
-	fmt.Printf("Successfully processed %d currencies and saved results to '%s'\n", len(resultItems), cfg.Output)
 }
