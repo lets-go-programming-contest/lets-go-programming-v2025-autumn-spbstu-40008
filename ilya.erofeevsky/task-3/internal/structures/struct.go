@@ -5,6 +5,7 @@ import (
 )
 
 type ValuteXML struct {
+	ID       string `xml:"ID,attr"`
 	NumCode  string `xml:"NumCode"`
 	CharCode string `xml:"CharCode"`
 	Nominal  string `xml:"Nominal"`
