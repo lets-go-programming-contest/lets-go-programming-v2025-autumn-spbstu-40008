@@ -80,6 +80,7 @@ func SortAndProcessCurrencies(xmlData structures.ReadingXML) []structures.Proces
 	for _, item := range xmlData.Information {
 		if item.NumCode == "" {
 			fmt.Printf("Warning: Skipping valute '%s' due to empty NumCode.\n", item.Name)
+
 			continue
 		}
 
