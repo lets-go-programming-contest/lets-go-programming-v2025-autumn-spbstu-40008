@@ -85,20 +85,21 @@ func SortAndProcessCurrencies(xmlData structures.ReadingXML) []structures.Proces
 			continue
 		}
 
-		nominal, errNominal := strconv.Atoi(item.Nominal)
-		if errNominal != nil {
-			nominal = 1
+		nominal := 1
+		if item.Nominal != "" {
+			if parsed, errNominal := strconv.Atoi(item.Nominal); errNominal == nil && parsed > 0 {
+				nominal = parsed
+			}
 		}
 
-		numCode, errNumCode := strconv.Atoi(item.NumCode)
-		if errNumCode != nil {
-			numCode = 0
+		numCode := 0
+		if item.NumCode != "" {
+			if parsed, errNumCode := strconv.Atoi(strings.TrimSpace(item.NumCode)); errNumCode == nil {
+				numCode = parsed
+			}
 		}
 
-		realValue := value
-		if nominal > 0 {
-			realValue = value / float64(nominal)
-		}
+		realValue := value / float64(nominal)
 
 		processed = append(processed, structures.ProcessedCurrency{
 			NumCode:  numCode,
