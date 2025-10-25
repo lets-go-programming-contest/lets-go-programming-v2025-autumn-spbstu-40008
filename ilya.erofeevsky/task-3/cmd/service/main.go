@@ -86,8 +86,8 @@ func SortAndProcessCurrencies(xmlData structures.ReadingXML) []structures.Proces
 		numCode, errNumCode := strconv.Atoi(item.NumCode)
 
 		if errValue != nil || errNominal != nil || errNumCode != nil {
-			panic(fmt.Sprintf("Error translate data for valute '%s': Value='%s' (Error: %v), Nominal='%s'
-			\\ (Error: %v), NumCode='%s' (Error: %v)",
+			panic(fmt.Sprintf("Error translate data for valute '%s': Value='%s' (Error: %v), "+
+				"Nominal='%s' (Error: %v), NumCode='%s' (Error: %v)",
 				item.Name, item.Value, errValue, item.Nominal, errNominal, item.NumCode, errNumCode))
 		}
 
