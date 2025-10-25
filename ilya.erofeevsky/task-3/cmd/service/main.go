@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.comtask-3/internal/structures"
+	"task-3/internal/structures"
 
 	"golang.org/x/text/encoding/charmap"
 	"gopkg.in/yaml.v2"
