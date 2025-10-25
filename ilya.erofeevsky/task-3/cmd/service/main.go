@@ -44,6 +44,7 @@ func ReadFile(configPath string) structures.File {
 }
 
 func decodeXML(cfg structures.File) structures.ReadingXML {
+
 	xmlFile, err := os.Open(cfg.Input)
 	if err != nil {
 		panic(fmt.Sprintf("Error opening XML input file %s: %v", cfg.Input, err))
@@ -78,6 +79,7 @@ func SortAndProcessCurrencies(xmlData structures.ReadingXML) []structures.Proces
 	processed := make([]structures.ProcessedCurrency, 0, len(xmlData.Information))
 
 	for _, item := range xmlData.Information {
+
 		if item.NumCode == "" {
 			fmt.Printf("Warning: Skipping valute '%s' due to empty NumCode.\n", item.Name)
 
