@@ -48,7 +48,6 @@ func decodeXML(cfg structures.File) structures.ReadingXML {
 	if err != nil {
 		panic(fmt.Sprintf("Error opening XML input file %s: %v", cfg.Input, err))
 	}
-
 	defer func() {
 		if err := xmlFile.Close(); err != nil {
 			fmt.Printf("Error closing XML file: %v\n", err)
@@ -62,7 +61,6 @@ func decodeXML(cfg structures.File) structures.ReadingXML {
 		if strings.ToLower(charset) == "windows-1251" {
 			return charmap.Windows1251.NewDecoder().Reader(input), nil
 		}
-
 		return nil, ErrUnsupportedCharset
 	}
 
@@ -79,10 +77,8 @@ func SortAndProcessCurrencies(xmlData structures.ReadingXML) []structures.Proces
 
 	for _, item := range xmlData.Information {
 		stringValue := strings.ReplaceAll(item.Value, ",", ".")
-
 		value, errValue := strconv.ParseFloat(stringValue, 64)
 		if errValue != nil {
-
 			continue
 		}
 
@@ -118,7 +114,6 @@ func SortAndProcessCurrencies(xmlData structures.ReadingXML) []structures.Proces
 
 func createOutputFile(filename string) *os.File {
 	dirPath := filepath.Dir(filename)
-
 	const DirPerm = 0o755
 
 	if err := os.MkdirAll(dirPath, DirPerm); err != nil {
@@ -128,9 +123,8 @@ func createOutputFile(filename string) *os.File {
 	const FilePerm = 0o644
 
 	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, FilePerm)
-
 	if err != nil {
-		panic(fmt.Sprintf("Error openin/creating output file %s: %v", filename, err))
+		panic(fmt.Sprintf("Error opening/creating output file %s: %v", filename, err))
 	}
 
 	return file
@@ -165,7 +159,6 @@ func main() {
 	}
 
 	outputFile := createOutputFile(cfg.Output)
-
 	defer func() {
 		if err := outputFile.Close(); err != nil {
 			fmt.Printf("Error closing output file: %v\n", err)
