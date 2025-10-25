@@ -1,0 +1,165 @@
+package main
+
+import (
+	"encoding/json"
+	"encoding/xml"
+	"flag"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"sort"
+	"strconv"
+	"strings"
+
+	"github.com/task-3/internal/structures"
+
+	"golang.org/x/text/encoding/charmap"
+	"gopkg.in/yaml.v2"
+)
+
+func ReadFile(configPath string) structures.File {
+	var cfg structures.File
+
+	yamlFile, err := os.ReadFile(configPath)
+	if err != nil {
+		panic(fmt.Sprintf("Error reading config file %s: %v", configPath, err))
+	}
+
+	err = yaml.Unmarshal(yamlFile, &cfg)
+	if err != nil {
+		panic(fmt.Sprintf("Error decoding YAML config: %v", err))
+	}
+
+	if cfg.Input == "" || cfg.Output == "" {
+		panic("Config file must contain 'input-file' and 'output-file' paths.")
+	}
+
+	return cfg
+}
+
+func decodeXML(cfg structures.File) structures.ReadingXML {
+	xmlFile, err := os.Open(cfg.Input)
+	if err != nil {
+		panic(fmt.Sprintf("Error opening XML input file %s: %v", cfg.Input, err))
+	}
+	defer func() {
+		if err := xmlFile.Close(); err != nil {
+			fmt.Printf("Error closing XML file: %v\n", err)
+		}
+	}()
+
+	var xmlData structures.ReadingXML
+
+	decoder := xml.NewDecoder(xmlFile)
+
+	decoder.CharsetReader = func(charset string, input io.Reader) (io.Reader, error) {
+		if strings.ToLower(charset) == "windows-1251" {
+			return charmap.Windows1251.NewDecoder().Reader(input), nil
+		}
+		return nil, fmt.Errorf("unsupported charset: %s", charset)
+	}
+
+	err = decoder.Decode(&xmlData)
+	if err != nil {
+		panic(fmt.Sprintf("Error decoding XML data from %s: %v", cfg.Input, err))
+	}
+
+	return xmlData
+}
+
+func SortAndProcessCurrencies(xmlData structures.ReadingXML) []structures.ProcessedCurrency {
+	var processed []structures.ProcessedCurrency
+
+	for _, item := range xmlData.Information {
+
+		stringValue := item.Value
+		stringValue = strings.Replace(stringValue, ",", ".", 1)
+
+		value, errValue := strconv.ParseFloat(stringValue, 64)
+		nominal, errNominal := strconv.Atoi(item.Nominal)
+		numCode, errNumCode := strconv.Atoi(item.NumCode)
+
+		if errValue != nil || errNominal != nil || errNumCode != nil {
+			panic(fmt.Sprintf("Error translate data for valute '%s': Value='%s' (Error: %v), Nominal='%s' (Error: %v), NumCode='%s' (Error: %v)",
+				item.Name, item.Value, errValue, item.Nominal, errNominal, item.NumCode, errNumCode))
+		}
+
+		realValue := value / float64(nominal)
+
+		processed = append(processed, structures.ProcessedCurrency{
+			NumCode:  numCode,
+			CharCode: item.CharCode,
+			Value:    realValue,
+			Nominal:  nominal,
+		})
+	}
+
+	sort.Slice(processed, func(i, j int) bool {
+		return processed[i].Value > processed[j].Value
+	})
+
+	return processed
+}
+
+func createOutputFile(filename string) *os.File {
+	dirPath := filepath.Dir(filename)
+	const DirPerm = 0o775
+
+	if err := os.MkdirAll(dirPath, DirPerm); err != nil {
+		panic(fmt.Sprintf("Error creating output directory %s: %v", dirPath, err))
+	}
+
+	const FilePerm = 0o644
+	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, FilePerm)
+	if err != nil {
+		panic(fmt.Sprintf("Error openin/creating output file %s: %v", filename, err))
+	}
+
+	return file
+}
+
+func main() {
+	var configPath string
+
+	flag.StringVar(&configPath, "config", "", "Path to the YAML configuration file")
+	flag.Parse()
+
+	if configPath == "" {
+		panic("Flag --config must be set to the path of the YAML configuration file.")
+	}
+
+	cfg := ReadFile(configPath)
+
+	xmlData := decodeXML(cfg)
+
+	sortedCurrencies := SortAndProcessCurrencies(xmlData)
+
+	var resultItems []structures.ResultItem
+	for _, curr := range sortedCurrencies {
+		resultItems = append(resultItems, structures.ResultItem{
+			NumCode:  curr.NumCode,
+			CharCode: curr.CharCode,
+			Value:    curr.Value,
+		})
+	}
+
+	jsonData, err := json.MarshalIndent(resultItems, "", "  ") // Используем MarshalIndent для форматирования
+	if err != nil {
+		panic(fmt.Sprintf("Error marshaling data to JSON: %v", err))
+	}
+
+	outputFile := createOutputFile(cfg.Output)
+	defer func() {
+		if err := outputFile.Close(); err != nil {
+			fmt.Printf("Error closing output file: %v\n", err)
+		}
+	}()
+
+	_, err = outputFile.Write(jsonData)
+	if err != nil {
+		panic(fmt.Sprintf("Error writing data to output file %s: %v", cfg.Output, err))
+	}
+
+	fmt.Printf("Successfully processed %d currencies and saved results to '%s'\n", len(resultItems), cfg.Output)
+}
