@@ -16,8 +16,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var ErrUnsupportedCharset = errors.New("unsupported charset")
-var ErrUnsupportedOutputFormat = errors.New("unsupported output format")
+var (
+	ErrUnsupportedCharset      = errors.New("unsupported charset")
+	ErrUnsupportedOutputFormat = errors.New("unsupported output format")
+)
 
 func DecodeXML(xmlPath string) ([]*ResultValute, error) {
 	file, err := os.ReadFile(xmlPath)
@@ -44,14 +46,12 @@ func DecodeXML(xmlPath string) ([]*ResultValute, error) {
 	result := make([]*ResultValute, 0, len(valcurs.Valutes))
 	for _, elem := range valcurs.Valutes {
 		numcode, err := strconv.Atoi(elem.NumCode)
-
 		if err != nil {
 			numcode = 0
 		}
 		strValue := strings.ReplaceAll(elem.Value, ",", ".")
 
 		value, err := strconv.ParseFloat(strValue, 64)
-
 		if err != nil {
 			value = 0.0
 		}
@@ -90,11 +90,11 @@ func EncodeFile(valutes []*ResultValute, outputFormat string, outputPath string)
 
 	dir := filepath.Dir(outputPath)
 
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("error creating output directory %s: %w", dir, err)
 	}
 
-	if err := os.WriteFile(outputPath, encodedData, 0600); err != nil {
+	if err := os.WriteFile(outputPath, encodedData, 0o600); err != nil {
 		return fmt.Errorf("error writing file: %w", err)
 	}
 

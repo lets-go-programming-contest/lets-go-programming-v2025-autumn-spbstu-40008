@@ -14,13 +14,11 @@ func main() {
 	flag.Parse()
 
 	cfg, err := config.Load(*configFile)
-
 	if err != nil {
 		panic(err)
 	}
 
 	valutes, err := currency.DecodeXML(cfg.InputFile)
-
 	if err != nil {
 		panic(err)
 	}
@@ -28,7 +26,6 @@ func main() {
 	currency.SortValutes(valutes)
 
 	err = currency.EncodeFile(valutes, *outputFormat, cfg.OutputFile)
-
 	if err != nil {
 		panic(err)
 	}
