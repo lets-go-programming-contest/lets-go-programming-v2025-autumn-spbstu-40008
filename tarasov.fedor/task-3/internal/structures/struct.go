@@ -13,7 +13,7 @@ func (cfg *CustomFloat) UnmarshalXML(d *xml.Decoder, start xml.StartElement) err
 	var valueStr string
 
 	if err := d.DecodeElement(&valueStr, &start); err != nil {
-		return fmt.Errorf("failed to decode XML element into string: %w", err)
+		return fmt.Errorf("couldn't to decode XML element into string: %w", err)
 	}
 
 	valueStr = strings.TrimSpace(valueStr)
@@ -21,7 +21,7 @@ func (cfg *CustomFloat) UnmarshalXML(d *xml.Decoder, start xml.StartElement) err
 
 	val, err := strconv.ParseFloat(valueStr, 64)
 	if err != nil {
-		return fmt.Errorf("failed to parse float from normalized string: %w", err)
+		return fmt.Errorf("couldn't to parse float from normalized string: %w", err)
 	}
 
 	*cfg = CustomFloat(val)
