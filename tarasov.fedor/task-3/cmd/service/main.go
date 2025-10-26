@@ -5,10 +5,9 @@ import (
 	"flag"
 	"sort"
 
+	"github.com/task-3/internal/config"
 	"github.com/task-3/internal/decoder"
 	"github.com/task-3/internal/output"
-
-	"github.com/task-3/internal/config"
 	"github.com/task-3/internal/structures"
 )
 

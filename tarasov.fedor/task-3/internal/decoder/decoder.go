@@ -2,6 +2,7 @@ package decoder
 
 import (
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -11,6 +12,8 @@ import (
 	"github.com/task-3/internal/structures"
 	"golang.org/x/text/encoding/charmap"
 )
+
+var ErrUnsupportedCharset = errors.New("unsupported charset")
 
 func DecodeXML(cfg config.File) (structures.ValCurs, error) {
 	xmlFile, err := os.Open(cfg.Input)
@@ -33,7 +36,7 @@ func DecodeXML(cfg config.File) (structures.ValCurs, error) {
 			return charmap.Windows1251.NewDecoder().Reader(input), nil
 		}
 
-		return nil, fmt.Errorf("unsupported charset: %s", charset)
+		return nil, ErrUnsupportedCharset
 	}
 
 	err = decoder.Decode(&val)
