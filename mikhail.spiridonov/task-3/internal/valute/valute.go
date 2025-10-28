@@ -1,7 +1,9 @@
 package valute
 
 import (
-
+	"encoding/xml"
+	"strconv"
+	"strings"
 )
 
 type StructOfXMLandJSON struct {
@@ -11,15 +13,21 @@ type StructOfXMLandJSON struct {
 }
 
 type ValuteCurs struct {
-
-}
-
-type Valute struct {
 	XMLName xml.Name               `xml:"ValCurs"`
 	Valutes []StructOfXMLandJSON   `xml:"Valute"`
 }
 
-type Convertion struct {
-
+func (s *StructOfXMLandJSON) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	type temp struct {
+		NumCode  string `xml:"NumCode"`
+		CharCode string `xml:"CharCode"`
+		Value    string `xml:"Value"`
+	}
+	var t temp
+	d.DecodeElement(&t, &start)
+	
+	s.NumCode, _ = strconv.Atoi(t.NumCode)
+	s.CharCode = t.CharCode
+	s.Value, _ = strconv.ParseFloat(strings.Replace(t.Value, ",", ".", -1), 64)
+	return nil
 }
-
