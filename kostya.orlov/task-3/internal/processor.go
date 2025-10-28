@@ -26,6 +26,30 @@ var (
 	ErrUnsupportedOutputFormat = errors.New("unsupported output format")
 )
 
+func processValuteElement(decoder *xml.Decoder, start xml.StartElement) (*ResultValute, error) {
+	var valuteXML ValuteXML // Используем экспортируемую структуру
+
+	if err := decoder.DecodeElement(&valuteXML, &start); err != nil {
+		return nil, fmt.Errorf("decode Valute element: %w", err)
+	}
+
+	numcode, err := strconv.Atoi(valuteXML.NumCode)
+	if err != nil {
+		numcode = 0
+	}
+
+	strValue := strings.ReplaceAll(valuteXML.Value, ",", ".")
+
+	value, err := strconv.ParseFloat(strValue, 64)
+	if err != nil {
+		value = 0.0
+	}
+
+	valute := &ResultValute{numcode, valuteXML.CharCode, value}
+
+	return valute, nil
+}
+
 func DecodeXML(xmlPath string) ([]*ResultValute, error) {
 	file, err := os.ReadFile(xmlPath)
 	if err != nil {
@@ -57,25 +81,10 @@ func DecodeXML(xmlPath string) ([]*ResultValute, error) {
 
 		if start, ok := tkn.(xml.StartElement); ok {
 			if start.Name.Local == "Valute" {
-				var valuteXML ValuteXML
-
-				if err := decoder.DecodeElement(&valuteXML, &start); err != nil {
-					return nil, fmt.Errorf("decode valute element: %w", err)
-				}
-
-				numcode, err := strconv.Atoi(valuteXML.NumCode)
+				valute, err := processValuteElement(decoder, start)
 				if err != nil {
-					numcode = 0
+					return nil, err
 				}
-
-				strValue := strings.ReplaceAll(valuteXML.Value, ",", ".")
-
-				value, err := strconv.ParseFloat(strValue, 64)
-				if err != nil {
-					value = 0.0
-				}
-
-				valute := &ResultValute{numcode, valuteXML.CharCode, value}
 
 				result = append(result, valute)
 			}
