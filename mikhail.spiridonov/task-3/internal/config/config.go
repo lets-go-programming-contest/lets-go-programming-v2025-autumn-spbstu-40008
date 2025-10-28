@@ -1,6 +1,7 @@
 package config
 
 import (
+	"os"
 	"gopkg.in/yaml.v3"
 )
 
@@ -9,6 +10,9 @@ type Cfg struct {
 	OutputFile string `yaml:"output-file"`
 }
 
-func LoadFile() {
-	
+func LoadFile(filePath string) Cfg {
+	data, _ := os.ReadFile(filePath)
+	var cfg Cfg
+	yaml.Unmarshal(data, &cfg)
+	return cfg
 }
