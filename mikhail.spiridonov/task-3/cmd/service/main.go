@@ -7,9 +7,9 @@ import (
 )
 
 func main() {
-	configPath := flag.String("config", "", "Path to config file")
+	inputFile := flag.String("input", "in/currencies.xml", "path to input XML file")
+	outputFile := flag.String("output", "out/converted.json", "path to output JSON file")
 	flag.Parse()
 	
-	cfg := config.LoadFile(*configPath)
-	parser.ParseAndSortXML(cfg.InputFile, cfg.OutputFile)
+	parser.ParseAndSortXML(*inputFile, *outputFile)
 }
