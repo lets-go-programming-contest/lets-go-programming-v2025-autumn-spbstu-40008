@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	
+
 	"github.com/mordw1n/task-3/internal/config"
 	"github.com/mordw1n/task-3/internal/parser"
 )
