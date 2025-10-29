@@ -15,6 +15,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	
-	parser.ParseAndSortXML(config.InputFile, config.OutputFile)
+
+	err = parser.ParseAndSortXML(config.InputFile, config.OutputFile)
+	if err != nil {
+		panic(err)
+	}
 }

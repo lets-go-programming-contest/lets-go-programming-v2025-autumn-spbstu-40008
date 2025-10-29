@@ -14,7 +14,7 @@ func WriteInFile(filePath string, currencies []valute.StructOfXMLandJSON) error 
 		return fmt.Errorf("Create directory for %q: %w", filePath, err)
 	}
 
-	file, _ := os.Create(filePath)
+	file, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("Create JSON %q: %w", filePath, err)
 	}
