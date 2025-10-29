@@ -1,6 +1,7 @@
 package jsonpack
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"encoding/json"
