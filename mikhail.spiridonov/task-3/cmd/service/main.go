@@ -8,9 +8,13 @@ import (
 )
 
 func main() {
-	configPath := flag.String("config", "config.yaml", "path to config YAML file")
+	configPath := flag.String("config", "config/config.yaml", "path to config YAML file")
 	flag.Parse()
 
-	config := config.LoadFile(*configPath)
+	config, err := config.LoadFile(*configPath)
+	if err != nil {
+		panic(err)
+	}
+	
 	parser.ParseAndSortXML(config.InputFile, config.OutputFile)
 }
