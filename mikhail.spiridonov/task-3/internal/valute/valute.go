@@ -52,10 +52,11 @@ func (strct *StructOfXMLandJSON) UnmarshalXML(dcdr *xml.Decoder, start xml.Start
 
 	normVal := strings.ReplaceAll(tempStrct.Value, ",", ".")
 	value, err := strconv.ParseFloat(normVal, 64)
+	
 	if err != nil {
 		return fmt.Errorf("parse value %q: %w", tempStrct.Value, err)
 	}
-	
+
 	strct.Value = value
 
 	return nil
