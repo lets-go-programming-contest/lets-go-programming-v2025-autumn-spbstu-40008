@@ -4,7 +4,7 @@ import (
 	"os"
 	"encoding/xml"
 
-	"github.com/mordw1n/task-3/valute"
+	"github.com/mordw1n/task-3/internal/valute"
 )
 
 func ReadFile(filePath string) valute.ValuteCurs {

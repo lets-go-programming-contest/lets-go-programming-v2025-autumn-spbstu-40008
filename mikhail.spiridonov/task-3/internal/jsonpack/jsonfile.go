@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"encoding/json"
-	"github.com/mordw1n/task-3/valute"
+	"github.com/mordw1n/task-3/internal/valute"
 )
 
 func WriteInFile(filePath string, currencies []valute.StructOfXMLandJSON) {

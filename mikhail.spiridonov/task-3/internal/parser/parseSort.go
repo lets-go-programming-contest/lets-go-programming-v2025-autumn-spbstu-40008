@@ -2,9 +2,9 @@ package parser
 
 import (
 	"sort"
-	"github.com/mordw1n/task-3/jsonpack"
-	"github.com/mordw1n/task-3/valute"
-	"github.com/mordw1n/task-3/xmlpack"
+	"github.com/mordw1n/task-3/internal/jsonpack"
+	//"github.com/mordw1n/task-3/internal/valute"
+	"github.com/mordw1n/task-3/internal/xmlpack"
 )
 
 func ParseAndSortXML(inputFile, outputFile string) {
