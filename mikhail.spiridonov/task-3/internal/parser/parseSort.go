@@ -2,8 +2,8 @@ package parser
 
 import (
 	"sort"
+	
 	"github.com/mordw1n/task-3/internal/jsonpack"
-	//"github.com/mordw1n/task-3/internal/valute"
 	"github.com/mordw1n/task-3/internal/xmlpack"
 )
 

@@ -17,17 +17,17 @@ type ValuteCurs struct {
 	Valutes []StructOfXMLandJSON   `xml:"Valute"`
 }
 
-func (s *StructOfXMLandJSON) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+func (strct *StructOfXMLandJSON) UnmarshalXML(dcdr *xml.Decoder, start xml.StartElement) error {
 	type temp struct {
 		NumCode  string `xml:"NumCode"`
 		CharCode string `xml:"CharCode"`
 		Value    string `xml:"Value"`
 	}
-	var t temp
-	d.DecodeElement(&t, &start)
+	var tempStrct temp
+	dcdr.DecodeElement(&tempStrct, &start)
 	
-	s.NumCode, _ = strconv.Atoi(t.NumCode)
-	s.CharCode = t.CharCode
-	s.Value, _ = strconv.ParseFloat(strings.Replace(t.Value, ",", ".", -1), 64)
+	strct.NumCode, _ = strconv.Atoi(tempStrct.NumCode)
+	strct.CharCode = tempStrct.CharCode
+	strct.Value, _ = strconv.ParseFloat(strings.Replace(tempStrct.Value, ",", ".", -1), 64)
 	return nil
 }
