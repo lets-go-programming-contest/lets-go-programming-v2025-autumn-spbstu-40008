@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"encoding/xml"
 	"flag"
@@ -12,6 +13,8 @@ import (
 	"strconv"
 	"strings"
 
+	"golang.org/x/text/encoding/charmap"
+	"golang.org/x/text/transform"
 	"gopkg.in/yaml.v3"
 )
 
@@ -48,19 +51,28 @@ func main() {
 		panic("flag --config is required")
 	}
 
-	// Шаг 1: Чтение конфига
 	config, err := loadConfig(*configPath)
 	if err != nil {
 		panic(err)
 	}
 
-	xmlData, err := os.ReadFile(config.InputFile)
+	xmlFile, err := os.Open(config.InputFile)
 	if err != nil {
 		panic(fmt.Sprintf("failed to read input file: %v", err))
 	}
+	defer xmlFile.Close()
+
+	decoder := charmap.Windows1251.NewDecoder()
+	content, err := io.ReadAll(transform.NewReader(xmlFile, decoder))
+	if err != nil {
+		panic(fmt.Sprintf("failed to decode XML file from windows-1251: %v", err))
+	}
+
+	content = bytes.Replace(content, []byte(`<?xml version="1.0" encoding="windows-1251"?>`), []byte(`<?xml version="1.0" encoding="UTF-8"?>`), 1)
+	content = bytes.Replace(content, []byte(`encoding="windows-1251"`), []byte(`encoding="UTF-8"`), -1)
 
 	var valCurs ValCurs
-	err = xml.Unmarshal(xmlData, &valCurs)
+	err = xml.Unmarshal(content, &valCurs)
 	if err != nil {
 		panic(fmt.Sprintf("failed to unmarshal XML: %v", err))
 	}
