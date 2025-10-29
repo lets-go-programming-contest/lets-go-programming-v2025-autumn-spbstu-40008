@@ -2,8 +2,8 @@ package config
 
 import (
 	"fmt"
-	"os"
 	"gopkg.in/yaml.v3"
+	"os"
 )
 
 type Config struct {

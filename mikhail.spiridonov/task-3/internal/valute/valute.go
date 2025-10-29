@@ -13,8 +13,8 @@ type StructOfXMLandJSON struct {
 }
 
 type ValuteCurs struct {
-	XMLName xml.Name               `xml:"ValCurs"`
-	Valutes []StructOfXMLandJSON   `xml:"Valute"`
+	XMLName xml.Name             `xml:"ValCurs"`
+	Valutes []StructOfXMLandJSON `xml:"Valute"`
 }
 
 func (strct *StructOfXMLandJSON) UnmarshalXML(dcdr *xml.Decoder, start xml.StartElement) error {
@@ -25,7 +25,7 @@ func (strct *StructOfXMLandJSON) UnmarshalXML(dcdr *xml.Decoder, start xml.Start
 	}
 	var tempStrct temp
 	dcdr.DecodeElement(&tempStrct, &start)
-	
+
 	strct.NumCode, _ = strconv.Atoi(tempStrct.NumCode)
 	strct.CharCode = tempStrct.CharCode
 	normVal := strings.ReplaceAll(tempStrct.Value, ",", ".")
