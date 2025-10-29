@@ -11,7 +11,7 @@ import (
 
 func WriteInFile(filePath string, currencies []valute.StructOfXMLandJSON) error {
 	dir := filepath.Dir(filePath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("create directory for %q: %w", filePath, err)
 	}
 
