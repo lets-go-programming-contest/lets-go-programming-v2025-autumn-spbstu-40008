@@ -15,6 +15,7 @@ func ReadFile(filePath string) (valute.ValuteCurs, error) {
 		return valute.ValuteCurs{}, fmt.Errorf("Read XML %q: %w", filePath, err)
 	}
 
+	var valCurs valute.ValuteCurs
 	dcdr := xml.NewDecoder(data)
 	dcdr.CharsetReader = charset.NewReaderLabel
 
@@ -22,7 +23,6 @@ func ReadFile(filePath string) (valute.ValuteCurs, error) {
 		return valCurs, fmt.Errorf("Decode to %q: %w", filePath, err)
 	}
 
-	var valCurs valute.ValuteCurs
 	if err := xml.Unmarshal(data, &valCurs); err != nil {
 		return valute.ValuteCurs{}, fmt.Errorf("Unmarshal %q: %w", filePath, err)
 	}
