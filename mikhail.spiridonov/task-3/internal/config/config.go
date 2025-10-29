@@ -18,7 +18,6 @@ func LoadFile(filePath string) (Config, error) {
 	}
 
 	var config Config
-
 	if err := yaml.Unmarshal(data, &config); err != nil {
 		return config, fmt.Errorf("unmarshal XML %q: %w", filePath, err)
 	}

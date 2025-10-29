@@ -24,7 +24,9 @@ func (strct *StructOfXMLandJSON) UnmarshalXML(dcdr *xml.Decoder, start xml.Start
 		CharCode string `xml:"CharCode"`
 		Value    string `xml:"Value"`
 	}
+
 	var tempStrct temp
+
 	if err := dcdr.DecodeElement(&tempStrct, &start); err != nil {
 		return fmt.Errorf("decode element: %w", err)
 	}
@@ -36,6 +38,7 @@ func (strct *StructOfXMLandJSON) UnmarshalXML(dcdr *xml.Decoder, start xml.Start
 		if err != nil {
 			return fmt.Errorf("parse num code %q: %w", tempStrct.NumCode, err)
 		}
+
 		strct.NumCode = numCode
 	}
 
@@ -43,7 +46,7 @@ func (strct *StructOfXMLandJSON) UnmarshalXML(dcdr *xml.Decoder, start xml.Start
 
 	if tempStrct.Value == "" {
 		strct.Value = 0
-		
+
 		return nil
 	}
 
@@ -52,6 +55,7 @@ func (strct *StructOfXMLandJSON) UnmarshalXML(dcdr *xml.Decoder, start xml.Start
 	if err != nil {
 		return fmt.Errorf("parse value %q: %w", tempStrct.Value, err)
 	}
+	
 	strct.Value = value
 
 	return nil

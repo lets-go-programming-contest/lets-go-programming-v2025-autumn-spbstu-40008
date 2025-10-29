@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 
@@ -8,6 +9,8 @@ import (
 	"github.com/mordw1n/task-3/internal/valute"
 	"github.com/mordw1n/task-3/internal/xmlpack"
 )
+
+var errNoValidCurrencies = errors.New("no valid currencies with non-empty char code found")
 
 func ParseAndSortXML(inputFile, outputFile string) error {
 	valCurs, err := xmlpack.ReadFile(inputFile)
@@ -23,8 +26,6 @@ func ParseAndSortXML(inputFile, outputFile string) error {
 			validCurrencies = append(validCurrencies, currency)
 		}
 	}
-
-	var errNoValidCurrencies = fmt.Errorf("no valid currencies with non-empty char code found")
 
 	if len(validCurrencies) == 0 {
 		return errNoValidCurrencies

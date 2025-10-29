@@ -10,7 +10,8 @@ import (
 )
 
 func WriteInFile(filePath string, currencies []valute.StructOfXMLandJSON) error {
-	if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
+	dir := filepath.Dir(filePath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("create directory for %q: %w", filePath, err)
 	}
 
@@ -27,6 +28,7 @@ func WriteInFile(filePath string, currencies []valute.StructOfXMLandJSON) error 
 
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", " ")
+
 	if err := encoder.Encode(currencies); err != nil {
 		return fmt.Errorf("encode to JSON %q: %w", filePath, err)
 	}
