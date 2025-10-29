@@ -33,7 +33,7 @@ func ParseAndSortXML(inputFile, outputFile string) error {
 	}
 
 	sort.Slice(validCurrencies, func(first, second int) bool {
-		return validCurrenciess[first].Value > validCurrencies[second].Value
+		return validCurrencies[first].Value > validCurrencies[second].Value
 	})
 
 	if err := jsonpack.WriteInFile(outputFile, validCurrencies); err != nil {
