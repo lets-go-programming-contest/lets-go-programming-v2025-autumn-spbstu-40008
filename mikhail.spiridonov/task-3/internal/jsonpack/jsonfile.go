@@ -9,7 +9,7 @@ import (
 	"github.com/mordw1n/task-3/internal/valute"
 )
 
-func WriteInFile(filePath string, currencies []valute.StructOfXMLandJSON) {
+func WriteInFile(filePath string, currencies []valute.StructOfXMLandJSON) error {
 	if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
 		return fmt.Errorf("Create directory for %q: %w", filePath, err)
 	}
@@ -30,4 +30,6 @@ func WriteInFile(filePath string, currencies []valute.StructOfXMLandJSON) {
 	if err := encoder.Encode(currencies); err != nil {
 		return fmt.Errorf("Encode to JSON %q: %w", filePath, err)
 	}
+
+	return nil
 }
