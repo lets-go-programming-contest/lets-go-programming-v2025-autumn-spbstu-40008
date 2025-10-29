@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"gopkg.in/yaml.v3"
 )
@@ -10,9 +11,16 @@ type Config struct {
 	OutputFile string `yaml:"output-file"`
 }
 
-func LoadFile(filePath string) Config {
-	data, _ := os.ReadFile(filePath)
+func LoadFile(filePath string) (Config, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return Config{}, fmt.Errorf("Read XML %q: %w", filePath, err)
+	}
 	var config Config
-	yaml.Unmarshal(data, &config)
-	return config
+
+	if err := yaml.Unmarshal(data, &config); err != nil {
+		return cfg, fmt.Errorf("Unmarshal XML %q: %w", filePath, err)
+	}
+
+	return config, nil
 }
