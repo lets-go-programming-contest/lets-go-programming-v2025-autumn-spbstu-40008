@@ -14,12 +14,16 @@ func ReadFile(filePath string) (valute.ValuteCurs, error) {
 	if err != nil {
 		return valute.ValuteCurs{}, fmt.Errorf("open XML %q: %w", filePath, err)
 	}
-	defer file.Close()
+
+	defer func() {
+		if fileErr := file.Close(); fileErr != nil {
+			panic(fmt.Errorf("file closed %q: %w", filePath, fileErr))
+		}
+	}()
 
 	var valCurs valute.ValuteCurs
 
 	dcdr := xml.NewDecoder(file)
-	
 	dcdr.CharsetReader = charset.NewReaderLabel
 
 	if err := dcdr.Decode(&valCurs); err != nil {
