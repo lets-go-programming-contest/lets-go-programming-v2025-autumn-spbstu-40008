@@ -21,7 +21,7 @@ func ParseAndSortXML(inputFile, outputFile string) error {
 	currencies := valCurs.Valutes
 
 	validCurrencies := make([]valute.StructOfXMLandJSON, 0, len(currencies))
-
+	
 	for _, currency := range currencies {
 		if currency.CharCode != "" {
 			validCurrencies = append(validCurrencies, currency)
@@ -32,11 +32,11 @@ func ParseAndSortXML(inputFile, outputFile string) error {
 		return errNoValidCurrencies
 	}
 
-	sort.Slice(validCurrencies, func(first, second int) bool {
-		return validCurrencies[first].Value > validCurrencies[second].Value
+	sort.Slice(currencies, func(first, second int) bool {
+		return currencies[first].Value > currencies[second].Value
 	})
 
-	if err := jsonpack.WriteInFile(outputFile, validCurrencies); err != nil {
+	if err := jsonpack.WriteInFile(outputFile, currencies); err != nil {
 		return fmt.Errorf("write in JSON: %w", err)
 	}
 
