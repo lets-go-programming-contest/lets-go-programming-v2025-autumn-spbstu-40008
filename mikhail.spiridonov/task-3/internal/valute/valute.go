@@ -2,6 +2,7 @@ package valute
 
 import (
 	"encoding/xml"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -24,12 +25,33 @@ func (strct *StructOfXMLandJSON) UnmarshalXML(dcdr *xml.Decoder, start xml.Start
 		Value    string `xml:"Value"`
 	}
 	var tempStrct temp
-	dcdr.DecodeElement(&tempStrct, &start)
+	if err := dcdr.DecodeElement(&tempStrct, &start); err != nil {
+		return fmt.Errorf("decode element: %w", err)
+	}
 
-	strct.NumCode, _ = strconv.Atoi(tempStrct.NumCode)
+	if tempStrct.NumCode == "" {
+		strct.NumCode = 0
+	} else {
+		numCode, err := strconv.Atoi(tempStrct.NumCode)
+		if err != nil {
+			return fmt.Errorf("Parse num code %q: %w", tempStrct.NumCode, err)
+		}
+		strct.NumCode = numCode
+	}
+
 	strct.CharCode = tempStrct.CharCode
+
+	if tempStrct.Value == "" {
+		strct.Value = 0
+		return nil
+	}
+
 	normVal := strings.ReplaceAll(tempStrct.Value, ",", ".")
-	strct.Value, _ = strconv.ParseFloat(normVal, 64)
+	value, err := strconv.ParseFloat(normVal, 64)
+	if err != nil {
+		return fmt.Errorf("Parse value %q: %w", tempStrct.Value, err)
+	}
+	strct.Value = value
 
 	return nil
 }
