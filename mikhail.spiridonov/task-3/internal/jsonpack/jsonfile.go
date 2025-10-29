@@ -9,9 +9,11 @@ import (
 	"github.com/mordw1n/task-3/internal/valute"
 )
 
+const dirPermissions = 0o755
+
 func WriteInFile(filePath string, currencies []valute.StructOfXMLandJSON) error {
 	dir := filepath.Dir(filePath)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, dirPermissions); err != nil {
 		return fmt.Errorf("create directory for %q: %w", filePath, err)
 	}
 

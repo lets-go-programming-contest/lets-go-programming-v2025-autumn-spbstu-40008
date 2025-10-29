@@ -10,7 +10,7 @@ import (
 	"github.com/mordw1n/task-3/internal/xmlpack"
 )
 
-var errNoValidCurrencies = errors.New("no valid currencies with non-empty char code found")
+var errNoValidCurrencies = errors.New("no valid currencies found")
 
 func ParseAndSortXML(inputFile, outputFile string) error {
 	valCurs, err := xmlpack.ReadFile(inputFile)
@@ -20,23 +20,15 @@ func ParseAndSortXML(inputFile, outputFile string) error {
 
 	currencies := valCurs.Valutes
 
-	var validCurrencies []valute.StructOfXMLandJSON
-
-	for _, currency := range currencies {
-		if currency.CharCode != "" {
-			validCurrencies = append(validCurrencies, currency)
-		}
-	}
-
-	if len(validCurrencies) == 0 {
+	if len(currencies) == 0 {
 		return errNoValidCurrencies
 	}
 
-	sort.Slice(validCurrencies, func(first, second int) bool {
-		return validCurrencies[first].Value > validCurrencies[second].Value
+	sort.Slice(currencies, func(first, second int) bool {
+		return currencies[first].Value > currencies[second].Value
 	})
 
-	if err := jsonpack.WriteInFile(outputFile, validCurrencies); err != nil {
+	if err := jsonpack.WriteInFile(outputFile, currencies); err != nil {
 		return fmt.Errorf("write in JSON: %w", err)
 	}
 
