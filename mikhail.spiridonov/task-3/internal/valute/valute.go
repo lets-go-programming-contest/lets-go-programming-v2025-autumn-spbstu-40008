@@ -8,7 +8,7 @@ import (
 
 type StructOfXMLandJSON struct {
 	NumCode  int     `json:"num_code"  xml:"NumCode"`
-	CharCode string  `json:"char_code" xml:"CharCode""`
+	CharCode string  `json:"char_code" xml:"CharCode"`
 	Value    float64 `json:"value"     xml:"Value"`
 }
 
@@ -30,6 +30,6 @@ func (strct *StructOfXMLandJSON) UnmarshalXML(dcdr *xml.Decoder, start xml.Start
 	strct.CharCode = tempStrct.CharCode
 	normVal := strings.ReplaceAll(tempStrct.Value, ",", ".")
 	strct.Value, _ = strconv.ParseFloat(normVal, 64)
-	
+
 	return nil
 }
