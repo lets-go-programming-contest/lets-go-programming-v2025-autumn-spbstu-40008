@@ -34,7 +34,7 @@ func (strct *StructOfXMLandJSON) UnmarshalXML(dcdr *xml.Decoder, start xml.Start
 	} else {
 		numCode, err := strconv.Atoi(tempStrct.NumCode)
 		if err != nil {
-			return fmt.Errorf("Parse num code %q: %w", tempStrct.NumCode, err)
+			return fmt.Errorf("parse num code %q: %w", tempStrct.NumCode, err)
 		}
 		strct.NumCode = numCode
 	}
@@ -43,13 +43,14 @@ func (strct *StructOfXMLandJSON) UnmarshalXML(dcdr *xml.Decoder, start xml.Start
 
 	if tempStrct.Value == "" {
 		strct.Value = 0
+		
 		return nil
 	}
 
 	normVal := strings.ReplaceAll(tempStrct.Value, ",", ".")
 	value, err := strconv.ParseFloat(normVal, 64)
 	if err != nil {
-		return fmt.Errorf("Parse value %q: %w", tempStrct.Value, err)
+		return fmt.Errorf("parse value %q: %w", tempStrct.Value, err)
 	}
 	strct.Value = value
 

@@ -11,24 +11,24 @@ import (
 
 func WriteInFile(filePath string, currencies []valute.StructOfXMLandJSON) error {
 	if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
-		return fmt.Errorf("Create directory for %q: %w", filePath, err)
+		return fmt.Errorf("create directory for %q: %w", filePath, err)
 	}
 
 	file, err := os.Create(filePath)
 	if err != nil {
-		return fmt.Errorf("Create JSON %q: %w", filePath, err)
+		return fmt.Errorf("create JSON %q: %w", filePath, err)
 	}
 
 	defer func() {
 		if closeErr := file.Close(); closeErr != nil {
-			panic(fmt.Errorf("Close JSON %q: %w", filePath, closeErr))
+			panic(fmt.Errorf("close JSON %q: %w", filePath, closeErr))
 		}
 	}()
 
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", " ")
 	if err := encoder.Encode(currencies); err != nil {
-		return fmt.Errorf("Encode to JSON %q: %w", filePath, err)
+		return fmt.Errorf("encode to JSON %q: %w", filePath, err)
 	}
 
 	return nil
