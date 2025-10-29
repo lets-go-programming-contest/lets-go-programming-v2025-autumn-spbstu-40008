@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 
@@ -18,7 +19,7 @@ func ParseAndSortXML(inputFile, outputFile string) error {
 	currencies := valCurs.Valutes
 
 	validCurrencies := make([]valute.StructOfXMLandJSON, 0, len(currencies))
-	
+
 	for _, currency := range currencies {
 		if currency.CharCode != "" {
 			validCurrencies = append(validCurrencies, currency)
