@@ -90,9 +90,13 @@ func main() {
 			continue
 		}
 
-		numCode, err := strconv.Atoi(numCodeStr)
+		cleanNum := strings.TrimLeft(numCodeStr, "0")
+		if cleanNum == "" {
+			cleanNum = "0"
+		}
+		numCode, err := strconv.Atoi(cleanNum)
 		if err != nil {
-			continue // не число — пропускаем
+			continue
 		}
 
 		valueStr = strings.Replace(valueStr, ",", ".", -1)
