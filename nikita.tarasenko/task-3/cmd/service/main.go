@@ -28,7 +28,6 @@ type ValCurs struct {
 	Valutes []Valute `xml:"Valute"`
 }
 
-// Парсим только нужные поля; Nominal есть, но мы его не используем
 type Valute struct {
 	NumCode  string `xml:"NumCode"`
 	CharCode string `xml:"CharCode"`
@@ -79,29 +78,27 @@ func main() {
 		panic("XML root element is not ValCurs, invalid signature")
 	}
 
-	if len(valCurs.Valutes) == 0 {
-		panic("XML contains no Valute elements, invalid signature")
-	}
-
-	currencies := make([]Currency, 0, len(valCurs.Valutes))
+	// Собираем только валидные валюты
+	var currencies []Currency
 	for _, v := range valCurs.Valutes {
 		numCodeStr := strings.TrimSpace(v.NumCode)
 		charCodeStr := strings.TrimSpace(v.CharCode)
 		valueStr := strings.TrimSpace(v.Value)
 
+		// Пропускаем валюту, если хоть одно поле пустое
 		if numCodeStr == "" || charCodeStr == "" || valueStr == "" {
-			panic(fmt.Sprintf("Valute has missing required fields: NumCode=%q, CharCode=%q, Value=%q", v.NumCode, v.CharCode, v.Value))
+			continue
 		}
 
 		numCode, err := strconv.Atoi(numCodeStr)
 		if err != nil {
-			panic(fmt.Sprintf("invalid NumCode (not a number): %q", numCodeStr))
+			continue // не число — пропускаем
 		}
 
 		valueStr = strings.Replace(valueStr, ",", ".", -1)
 		value, err := strconv.ParseFloat(valueStr, 64)
 		if err != nil {
-			panic(fmt.Sprintf("invalid Value: %q", v.Value))
+			continue // не число — пропускаем
 		}
 
 		currencies = append(currencies, Currency{
@@ -109,6 +106,11 @@ func main() {
 			CharCode: charCodeStr,
 			Value:    value,
 		})
+	}
+
+	// После фильтрации: если ни одной валюты нет — ошибка
+	if len(currencies) == 0 {
+		panic("no valid currencies found in XML")
 	}
 
 	sort.Slice(currencies, func(i, j int) bool {
