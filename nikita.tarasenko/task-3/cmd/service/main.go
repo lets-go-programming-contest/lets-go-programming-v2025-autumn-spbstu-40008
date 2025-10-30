@@ -78,31 +78,37 @@ func main() {
 		panic("XML root element is not ValCurs, invalid signature")
 	}
 
-	// Собираем только валидные валюты
 	var currencies []Currency
 	for _, v := range valCurs.Valutes {
-		numCodeStr := strings.TrimSpace(v.NumCode)
 		charCodeStr := strings.TrimSpace(v.CharCode)
 		valueStr := strings.TrimSpace(v.Value)
 
-		// Пропускаем валюту, если хоть одно поле пустое
-		if numCodeStr == "" || charCodeStr == "" || valueStr == "" {
-			continue
+		digitsOnly := ""
+		for _, r := range v.NumCode {
+			if r >= '0' && r <= '9' {
+				digitsOnly += string(r)
+			}
 		}
 
-		cleanNum := strings.TrimLeft(numCodeStr, "0")
-		if cleanNum == "" {
-			cleanNum = "0"
-		}
-		numCode, err := strconv.Atoi(cleanNum)
-		if err != nil {
-			continue
+		var numCode int
+		if digitsOnly == "" {
+			numCode = 0
+		} else {
+			cleanNum := strings.TrimLeft(digitsOnly, "0")
+			if cleanNum == "" {
+				cleanNum = "0"
+			}
+			if n, err := strconv.Atoi(cleanNum); err == nil {
+				numCode = n
+			} else {
+				numCode = 0
+			}
 		}
 
 		valueStr = strings.Replace(valueStr, ",", ".", -1)
 		value, err := strconv.ParseFloat(valueStr, 64)
 		if err != nil {
-			continue // не число — пропускаем
+			continue
 		}
 
 		currencies = append(currencies, Currency{
@@ -112,7 +118,6 @@ func main() {
 		})
 	}
 
-	// После фильтрации: если ни одной валюты нет — ошибка
 	if len(currencies) == 0 {
 		panic("no valid currencies found in XML")
 	}
@@ -134,8 +139,7 @@ func main() {
 
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ")
-	err = encoder.Encode(currencies)
-	if err != nil {
+	if err := encoder.Encode(currencies); err != nil {
 		panic(fmt.Sprintf("failed to encode JSON: %v", err))
 	}
 }
@@ -153,8 +157,7 @@ func loadConfig(path string) (*Config, error) {
 	}
 
 	var config Config
-	err = yaml.Unmarshal(data, &config)
-	if err != nil {
+	if err := yaml.Unmarshal(data, &config); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
