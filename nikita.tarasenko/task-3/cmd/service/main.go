@@ -28,12 +28,10 @@ type ValCurs struct {
 	Valutes []Valute `xml:"Valute"`
 }
 
+// Парсим только нужные поля; Nominal есть, но мы его не используем
 type Valute struct {
-	ID       string `xml:"ID,attr"`
 	NumCode  string `xml:"NumCode"`
 	CharCode string `xml:"CharCode"`
-	Nominal  int    `xml:"Nominal"`
-	Name     string `xml:"Name"`
 	Value    string `xml:"Value"`
 }
 
@@ -81,34 +79,36 @@ func main() {
 		panic("XML root element is not ValCurs, invalid signature")
 	}
 
-	currencies := make([]Currency, 0)
+	if len(valCurs.Valutes) == 0 {
+		panic("XML contains no Valute elements, invalid signature")
+	}
 
+	currencies := make([]Currency, 0, len(valCurs.Valutes))
 	for _, v := range valCurs.Valutes {
-		if strings.TrimSpace(v.NumCode) == "" || strings.TrimSpace(v.CharCode) == "" || strings.TrimSpace(v.Value) == "" {
-			continue
-		}
-
-		numCode, err := strconv.Atoi(strings.TrimSpace(v.NumCode))
-		if err != nil {
-			continue
-		}
-
+		numCodeStr := strings.TrimSpace(v.NumCode)
+		charCodeStr := strings.TrimSpace(v.CharCode)
 		valueStr := strings.TrimSpace(v.Value)
+
+		if numCodeStr == "" || charCodeStr == "" || valueStr == "" {
+			panic(fmt.Sprintf("Valute has missing required fields: NumCode=%q, CharCode=%q, Value=%q", v.NumCode, v.CharCode, v.Value))
+		}
+
+		numCode, err := strconv.Atoi(numCodeStr)
+		if err != nil {
+			panic(fmt.Sprintf("invalid NumCode (not a number): %q", numCodeStr))
+		}
+
 		valueStr = strings.Replace(valueStr, ",", ".", -1)
 		value, err := strconv.ParseFloat(valueStr, 64)
 		if err != nil {
-			panic(fmt.Sprintf("failed to parse value for currency %s: %v", v.CharCode, err))
+			panic(fmt.Sprintf("invalid Value: %q", v.Value))
 		}
 
 		currencies = append(currencies, Currency{
 			NumCode:  numCode,
-			CharCode: v.CharCode,
+			CharCode: charCodeStr,
 			Value:    value,
 		})
-	}
-
-	if len(currencies) == 0 {
-		panic("no valid currencies found in XML")
 	}
 
 	sort.Slice(currencies, func(i, j int) bool {
