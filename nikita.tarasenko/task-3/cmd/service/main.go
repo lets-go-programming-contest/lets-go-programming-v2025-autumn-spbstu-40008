@@ -38,7 +38,7 @@ type Valute struct {
 }
 
 type Currency struct {
-	NumCode  string  `json:"num_code"`
+	NumCode  int     `json:"num_code"`
 	CharCode string  `json:"char_code"`
 	Value    float64 `json:"value"`
 }
@@ -80,26 +80,35 @@ func main() {
 	if valCurs.XMLName.Local != "ValCurs" {
 		panic("XML root element is not ValCurs, invalid signature")
 	}
-	if len(valCurs.Valutes) == 0 {
-		panic("XML contains no Valute elements, invalid signature")
-	}
 
-	currencies := make([]Currency, 0, len(valCurs.Valutes))
+	currencies := make([]Currency, 0)
+
 	for _, v := range valCurs.Valutes {
-		if v.NumCode == "" || v.CharCode == "" || v.Value == "" {
-			panic(fmt.Sprintf("Valute with ID %s has missing required fields, invalid signature", v.ID))
+		if strings.TrimSpace(v.NumCode) == "" || strings.TrimSpace(v.CharCode) == "" || strings.TrimSpace(v.Value) == "" {
+			continue
 		}
+
+		numCode, err := strconv.Atoi(strings.TrimSpace(v.NumCode))
+		if err != nil {
+			continue
+		}
+
 		valueStr := strings.TrimSpace(v.Value)
 		valueStr = strings.Replace(valueStr, ",", ".", -1)
 		value, err := strconv.ParseFloat(valueStr, 64)
 		if err != nil {
 			panic(fmt.Sprintf("failed to parse value for currency %s: %v", v.CharCode, err))
 		}
+
 		currencies = append(currencies, Currency{
-			NumCode:  v.NumCode,
+			NumCode:  numCode,
 			CharCode: v.CharCode,
 			Value:    value,
 		})
+	}
+
+	if len(currencies) == 0 {
+		panic("no valid currencies found in XML")
 	}
 
 	sort.Slice(currencies, func(i, j int) bool {
