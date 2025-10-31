@@ -20,6 +20,7 @@ func OrderByExchange(catalog *CurrencyIndex) error {
 	if catalog == nil {
 		return fmt.Errorf("%w", ErrNilCatalog)
 	}
+
 	sort.Slice(catalog.Currencies, func(i, j int) bool {
 		return catalog.Currencies[i].Value > catalog.Currencies[j].Value
 	})
