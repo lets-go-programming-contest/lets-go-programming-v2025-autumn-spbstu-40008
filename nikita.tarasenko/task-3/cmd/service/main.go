@@ -40,98 +40,95 @@ type Currency struct {
 	Value    float64 `json:"value"`
 }
 
-func processValutes(valutes []Valute) []Currency {
-	currencies := make([]Currency, 0, len(valutes))
-	for _, v := range valutes {
-		charCode := strings.TrimSpace(v.CharCode)
-		valueStr := strings.TrimSpace(v.Value)
-
-		if charCode == "" || valueStr == "" {
-			continue
-		}
+func processValutes(inputValutes []Valute) []Currency {
+	valutes := make([]Currency, 0, len(inputValutes))
+	for _, valuteItem := range inputValutes {
+		charCode := strings.TrimSpace(valuteItem.CharCode)
 
 		digits := ""
-		for _, r := range v.NumCode {
-			if r >= '0' && r <= '9' {
-				digits += string(r)
+		for _, ch := range valuteItem.NumCode {
+			if ch >= '0' && ch <= '9' {
+				digits += string(ch)
 			}
 		}
 
 		numCode := 0
 		if digits != "" {
-			clean := strings.TrimLeft(digits, "0")
-			if clean == "" {
-				clean = "0"
+			cleaned := strings.TrimLeft(digits, "0")
+			if cleaned == "" {
+				cleaned = "0"
 			}
-			if n, err := strconv.Atoi(clean); err == nil {
-				numCode = n
+			if parsedNum, err := strconv.Atoi(cleaned); err == nil {
+				numCode = parsedNum
 			}
 		}
 
+		// Обработка Value
+		valueStr := strings.TrimSpace(valuteItem.Value)
 		valueStr = strings.ReplaceAll(valueStr, ",", ".")
 		value, err := strconv.ParseFloat(valueStr, 64)
 		if err != nil {
 			continue
 		}
 
-		currencies = append(currencies, Currency{
+		valutes = append(valutes, Currency{
 			NumCode:  numCode,
 			CharCode: charCode,
 			Value:    value,
 		})
 	}
 
-	if len(currencies) == 0 {
+	if len(valutes) == 0 {
 		panic("no valid currencies found in XML")
 	}
 
-	sort.Slice(currencies, func(i, j int) bool {
-		return currencies[i].Value > currencies[j].Value
+	sort.Slice(valutes, func(i, j int) bool {
+		return valutes[i].Value > valutes[j].Value
 	})
 
-	return currencies
+	return valutes
 }
 
-func fixXMLContent(content []byte) []byte {
-	content = bytes.Replace(
-		content,
+func prepareXMLContent(data []byte) []byte {
+	data = bytes.Replace(
+		data,
 		[]byte(`<?xml version="1.0" encoding="windows-1251"?>`),
 		[]byte(`<?xml version="1.0" encoding="UTF-8"?>`),
 		1,
 	)
-	content = bytes.ReplaceAll(content, []byte(`encoding="windows-1251"`), []byte(`encoding="UTF-8"`))
-	return content
+	data = bytes.ReplaceAll(data, []byte(`encoding="windows-1251"`), []byte(`encoding="UTF-8"`))
+	return data
 }
 
 func main() {
-	configPath := flag.String("config", "", "path to config file")
+	cfgPath := flag.String("config", "", "path to config file")
 	flag.Parse()
 
-	if *configPath == "" {
+	if *cfgPath == "" {
 		panic("flag --config is required")
 	}
 
-	config, err := loadConfig(*configPath)
+	cfg, err := loadConfig(*cfgPath)
 	if err != nil {
 		panic(err)
 	}
 
-	xmlFile, err := os.Open(config.InputFile)
+	xmlFile, err := os.Open(cfg.InputFile)
 	if err != nil {
 		panic(fmt.Sprintf("failed to read input file: %v", err))
 	}
 	defer func() { _ = xmlFile.Close() }()
 
 	decoder := charmap.Windows1251.NewDecoder()
-	rawContent, err := io.ReadAll(transform.NewReader(xmlFile, decoder))
+	rawData, err := io.ReadAll(transform.NewReader(xmlFile, decoder))
 	if err != nil {
 		panic(fmt.Sprintf("failed to decode XML file from windows-1251: %v", err))
 	}
 
-	content := fixXMLContent(rawContent)
+	cleanData := prepareXMLContent(rawData)
 
 	var valCurs ValCurs
-	if err := xml.Unmarshal(content, &valCurs); err != nil {
+	if err := xml.Unmarshal(cleanData, &valCurs); err != nil {
 		panic(fmt.Sprintf("failed to unmarshal XML: %v", err))
 	}
 
@@ -141,20 +138,20 @@ func main() {
 
 	currencies := processValutes(valCurs.Valutes)
 
-	outputDir := filepath.Dir(config.OutputFile)
+	outputDir := filepath.Dir(cfg.OutputFile)
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		panic(fmt.Sprintf("failed to create output directory: %v", err))
 	}
 
-	outFile, err := os.Create(config.OutputFile)
+	outFile, err := os.Create(cfg.OutputFile)
 	if err != nil {
 		panic(fmt.Sprintf("failed to create output file: %v", err))
 	}
 	defer func() { _ = outFile.Close() }()
 
-	encoder := json.NewEncoder(outFile)
-	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(currencies); err != nil {
+	jsonEncoder := json.NewEncoder(outFile)
+	jsonEncoder.SetIndent("", "  ")
+	if err := jsonEncoder.Encode(currencies); err != nil {
 		panic(fmt.Sprintf("failed to encode JSON: %v", err))
 	}
 }
@@ -171,10 +168,10 @@ func loadConfig(path string) (*Config, error) {
 		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}
 
-	var cfg Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
+	var config Config
+	if err := yaml.Unmarshal(data, &config); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
-	return &cfg, nil
+	return &config, nil
 }
