@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/task-3/config"
 	"github.com/task-3/internal/structures"
 
 	"golang.org/x/text/encoding/charmap"
@@ -18,7 +19,7 @@ import (
 
 var ErrUnsupportedCharset = fmt.Errorf("unsupported charset")
 
-func DecodeXML(cfg structures.File) (structures.ReadingXML, error) {
+func DecodeXML(cfg config.File) (structures.ReadingXML, error) {
 	xmlFile, err := os.Open(cfg.Input)
 	if err != nil {
 		return structures.ReadingXML{}, fmt.Errorf("failed to open XML input file %s: %w", cfg.Input, err)

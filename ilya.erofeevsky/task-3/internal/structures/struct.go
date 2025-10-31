@@ -20,8 +20,3 @@ type ReadingXML struct {
 	XMLName     xml.Name   `xml:"ValCurs"`
 	Information []Currency `xml:"Valute"`
 }
-
-type File struct {
-	Input  string `yaml:"input-file"`
-	Output string `yaml:"output-file"`
-}
