@@ -29,9 +29,9 @@ type ValCurs struct {
 }
 
 type Valute struct {
-	NumCode  int     `xml:"NumCode"    json:"num_code"`
-	CharCode string  `xml:"CharCode"   json:"char_code"`
-	Value    float64 `xml:"Value"      json:"value"`
+	NumCode  int     `json:"num_code"  xml:"NumCode"`
+	CharCode string  `json:"char_code" xml:"CharCode"`
+	Value    float64 `json:"value"     xml:"Value"`
 }
 
 func main() {
@@ -67,6 +67,7 @@ func LoadConfig(confPath string) (Config, error) {
 	if err != nil {
 		return Config{}, fmt.Errorf("read yaml file from %q fail cause: %w", confPath, err)
 	}
+
 	var conf Config
 
 	if err := yaml.Unmarshal(data, &conf); err != nil {
@@ -126,6 +127,7 @@ func (val *Valute) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) er
 		if err != nil {
 			return fmt.Errorf("failed to parse NumCode '%s': %w", tmp.NumCode, err)
 		}
+
 		val.NumCode = numCode
 	}
 
@@ -134,11 +136,13 @@ func (val *Valute) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) er
 	if tmp.Value == "" {
 		val.Value = 0.0
 	} else {
+
 		normValue := strings.ReplaceAll(tmp.Value, ",", ".")
 		parsedValue, err := strconv.ParseFloat(normValue, 64)
 		if err != nil {
 			return fmt.Errorf("failed to parse Value '%s': %w", tmp.Value, err)
 		}
+
 		val.Value = parsedValue
 	}
 
@@ -162,7 +166,12 @@ func WriteJSONFile(filePath string, valutes []Valute) error {
 	if err != nil {
 		return fmt.Errorf("create JSON file %q: %w", filePath, err)
 	}
-	defer file.Close()
+
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+			panic(fmt.Errorf("failed to close file %q: %w", filePath, closeErr))
+		}
+	}()
 
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ")
