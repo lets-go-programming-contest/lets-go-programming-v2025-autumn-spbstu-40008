@@ -13,6 +13,11 @@ import (
 	"task-3/internal/structures"
 )
 
+const (
+	dirPermissions  = 0o755
+	filePermissions = 0o600
+)
+
 type ByDescendingValue []structures.Valute
 
 func (a ByDescendingValue) Len() int      { return len(a) }
@@ -23,6 +28,7 @@ func (a ByDescendingValue) Less(i, j int) bool {
 
 func main() {
 	var configPath string
+
 	flag.StringVar(&configPath, "config", "config.yaml", "config path")
 	flag.Parse()
 
@@ -46,12 +52,12 @@ func main() {
 	}
 
 	dir := filepath.Dir(cfg.OutputFile)
-	err = os.MkdirAll(dir, 0o755)
+	err = os.MkdirAll(dir, dirPermissions)
 	if err != nil {
 		panic(fmt.Sprintf("creating output folder error: %v", err))
 	}
 
-	err = os.WriteFile(cfg.OutputFile, jsonData, 0o600)
+	err = os.WriteFile(cfg.OutputFile, jsonData, filePermissions)
 	if err != nil {
 		panic(fmt.Sprintf("writing output file error: %v", err))
 	}
