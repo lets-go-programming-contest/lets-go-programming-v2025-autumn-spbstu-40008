@@ -41,7 +41,7 @@ type Currency struct {
 }
 
 func processValutes(inputValutes []Valute) []Currency {
-	valutes := make([]Currency, 0, len(inputValutes))
+	currencies := make([]Currency, 0, len(inputValutes))
 	for _, valuteItem := range inputValutes {
 		charCode := strings.TrimSpace(valuteItem.CharCode)
 
@@ -70,22 +70,22 @@ func processValutes(inputValutes []Valute) []Currency {
 			continue
 		}
 
-		valutes = append(valutes, Currency{
+		currencies = append(currencies, Currency{
 			NumCode:  numCode,
 			CharCode: charCode,
 			Value:    value,
 		})
 	}
 
-	if len(valutes) == 0 {
+	if len(currencies) == 0 {
 		panic("no valid currencies found in XML")
 	}
 
-	sort.Slice(valutes, func(i, j int) bool {
-		return valutes[i].Value > valutes[j].Value
+	sort.Slice(currencies, func(i, j int) bool {
+		return currencies[i].Value > currencies[j].Value
 	})
 
-	return valutes
+	return currencies
 }
 
 func prepareXMLContent(data []byte) []byte {
