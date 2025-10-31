@@ -4,33 +4,24 @@ import (
 	"encoding/xml"
 )
 
-type ValuteXML struct {
-	ID       string `xml:"ID,attr"`
-	NumCode  string `xml:"NumCode"`
-	CharCode string `xml:"CharCode"`
-	Nominal  string `xml:"Nominal"`
-	Name     string `xml:"Name"`
-	Value    string `xml:"Value"`
+type Currency struct {
+	ID         string `xml:"ID,attr" json:"-"`
+	NumCodeStr string `xml:"NumCode" json:"-"`
+	CharCode   string `xml:"CharCode" json:"char_code"`
+	NominalStr string `xml:"Nominal" json:"-"`
+	Name       string `xml:"Name" json:"-"`
+	ValueStr   string `xml:"Value" json:"-"`
+
+	NumCode int     `xml:"-" json:"num_code"`
+	Value   float64 `xml:"-" json:"value"`
 }
 
 type ReadingXML struct {
-	XMLName     xml.Name    `xml:"ValCurs"`
-	Information []ValuteXML `xml:"Valute"`
+	XMLName     xml.Name   `xml:"ValCurs"`
+	Information []Currency `xml:"Valute"`
 }
 
 type File struct {
 	Input  string `yaml:"input-file"`
 	Output string `yaml:"output-file"`
-}
-
-type ProcessedCurrency struct {
-	NumCode  int
-	CharCode string
-	Value    float64
-}
-
-type ResultItem struct {
-	NumCode  int     `json:"num_code"`
-	CharCode string  `json:"char_code"`
-	Value    float64 `json:"value"`
 }
