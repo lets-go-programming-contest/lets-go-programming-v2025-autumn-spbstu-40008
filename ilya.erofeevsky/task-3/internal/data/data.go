@@ -3,6 +3,7 @@ package data
 import (
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -11,20 +12,23 @@ import (
 	"strconv"
 	"strings"
 
+	"golang.org/x/text/encoding/charmap"
+
 	"github.com/task-3/config"
 	"github.com/task-3/internal/structures"
-
-	"golang.org/x/text/encoding/charmap"
 )
 
-var ErrUnsupportedCharset = fmt.Errorf("unsupported charset")
+var ErrUnsupportedCharset = errors.New("unsupported charset")
 
 func DecodeXML(cfg config.File) (structures.ReadingXML, error) {
 	xmlFile, err := os.Open(cfg.Input)
 	if err != nil {
 		return structures.ReadingXML{}, fmt.Errorf("failed to open XML input file %s: %w", cfg.Input, err)
 	}
-	defer xmlFile.Close() // Закрытие файла
+	defer func() {
+		if closeErr := xmlFile.Close(); closeErr != nil {
+		}
+	}()
 
 	var xmlData structures.ReadingXML
 
@@ -33,6 +37,7 @@ func DecodeXML(cfg config.File) (structures.ReadingXML, error) {
 		if strings.ToLower(charset) == "windows-1251" {
 			return charmap.Windows1251.NewDecoder().Reader(input), nil
 		}
+
 		return nil, ErrUnsupportedCharset
 	}
 
@@ -49,6 +54,7 @@ func ProcessAndSortCurrencies(xmlData structures.ReadingXML) []structures.Curren
 
 	for _, item := range xmlData.Information {
 		numCode, err := strconv.Atoi(strings.TrimSpace(item.NumCodeStr))
+
 		if err != nil {
 			item.NumCode = 0
 		} else {
@@ -57,11 +63,13 @@ func ProcessAndSortCurrencies(xmlData structures.ReadingXML) []structures.Curren
 
 		stringValue := strings.ReplaceAll(item.ValueStr, ",", ".")
 		value, err := strconv.ParseFloat(stringValue, 64)
+
 		if err != nil {
 			value = 0.0
 		}
 
 		nominal, err := strconv.Atoi(strings.TrimSpace(item.NominalStr))
+
 		if err != nil || nominal == 0 {
 			nominal = 1
 		}
@@ -78,6 +86,7 @@ func ProcessAndSortCurrencies(xmlData structures.ReadingXML) []structures.Curren
 
 	return processed
 }
+
 func CreateAndWriteJSON(filename string, data []structures.Currency) error {
 	dirPath := filepath.Dir(filename)
 
@@ -93,7 +102,11 @@ func CreateAndWriteJSON(filename string, data []structures.Currency) error {
 	if err != nil {
 		return fmt.Errorf("failed to open or create output file %s: %w", filename, err)
 	}
-	defer file.Close()
+
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+		}
+	}()
 
 	jsonData, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
@@ -101,7 +114,7 @@ func CreateAndWriteJSON(filename string, data []structures.Currency) error {
 	}
 
 	if _, err := file.Write(jsonData); err != nil {
-		return fmt.Errorf("failed to write JSON data to file %s: %w", filename, err)
+		return fmt.Errorf("failed to write JSON data to file: %w", err)
 	}
 
 	return nil

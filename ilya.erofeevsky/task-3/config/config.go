@@ -17,13 +17,11 @@ func ReadFile(configPath string) (File, error) {
 
 	yamlFile, err := os.ReadFile(configPath)
 	if err != nil {
-
 		return File{}, fmt.Errorf("failed to read config file %s: %w", configPath, err)
 	}
 
 	err = yaml.Unmarshal(yamlFile, &cfg)
 	if err != nil {
-
 		return File{}, fmt.Errorf("failed to unmarshal config file: %w", err)
 	}
 
