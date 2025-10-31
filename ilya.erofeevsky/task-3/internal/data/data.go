@@ -12,10 +12,9 @@ import (
 	"strconv"
 	"strings"
 
-	"golang.org/x/text/encoding/charmap"
-
 	"github.com/task-3/config"
 	"github.com/task-3/internal/structures"
+	"golang.org/x/text/encoding/charmap"
 )
 
 var ErrUnsupportedCharset = errors.New("unsupported charset")
@@ -26,8 +25,7 @@ func DecodeXML(cfg config.File) (structures.ReadingXML, error) {
 		return structures.ReadingXML{}, fmt.Errorf("failed to open XML input file %s: %w", cfg.Input, err)
 	}
 	defer func() {
-		if closeErr := xmlFile.Close(); closeErr != nil {
-		}
+		_ = xmlFile.Close()
 	}()
 
 	var xmlData structures.ReadingXML
@@ -102,10 +100,8 @@ func CreateAndWriteJSON(filename string, data []structures.Currency) error {
 	if err != nil {
 		return fmt.Errorf("failed to open or create output file %s: %w", filename, err)
 	}
-
 	defer func() {
-		if closeErr := file.Close(); closeErr != nil {
-		}
+		_ = file.Close()
 	}()
 
 	jsonData, err := json.MarshalIndent(data, "", "  ")
