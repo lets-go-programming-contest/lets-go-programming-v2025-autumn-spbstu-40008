@@ -1,13 +1,16 @@
 version: 2
-
 run:
   timeout: 5m
 
 linters:
   enable:
-    - gci       # проверка порядка импортов
-    - wsl       # проверка "cuddle assignment" и пробелов
-  disable: []
+    - wsl_v5
+
+  settings:
+    wsl_v5:
+      allow-first-in-block: true
+      allow-whole-block: false
+      branch-max-lines: 2
 
 issues:
   exclude-use-default: false
