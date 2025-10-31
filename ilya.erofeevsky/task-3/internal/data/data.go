@@ -58,14 +58,10 @@ func ProcessAndSortCurrencies(xmlData structures.ReadingXML) []structures.Curren
 		}
 
 		stringValue := strings.ReplaceAll(item.ValueStr, ",", ".")
+
 		value, err := strconv.ParseFloat(stringValue, 64)
 		if err != nil {
 			value = 0.0
-		}
-
-		nominal, err := strconv.Atoi(strings.TrimSpace(item.NominalStr))
-		if err != nil || nominal == 0 {
-			nominal = 1
 		}
 
 		currency := structures.Currency{
@@ -76,7 +72,7 @@ func ProcessAndSortCurrencies(xmlData structures.ReadingXML) []structures.Curren
 			Name:       item.Name,
 			ValueStr:   item.ValueStr,
 			NumCode:    numCode,
-			Value:      value / float64(nominal),
+			Value:      value,
 		}
 
 		processed = append(processed, currency)
