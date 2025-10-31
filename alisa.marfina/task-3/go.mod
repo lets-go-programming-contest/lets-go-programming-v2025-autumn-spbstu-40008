@@ -1,4 +1,4 @@
-module task-3
+module github.com/AliseMarfina/task-3
 
 go 1.22
 
