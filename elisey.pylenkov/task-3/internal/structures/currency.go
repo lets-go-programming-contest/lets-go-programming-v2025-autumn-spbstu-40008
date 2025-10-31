@@ -2,6 +2,7 @@ package structures
 
 import (
 	"encoding/xml"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -9,19 +10,21 @@ import (
 type CustomFloat float64
 
 func (c *CustomFloat) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
-	var s string
-	if err := d.DecodeElement(&s, &start); err != nil {
-		return err
+	var stringValue string
+
+	if err := d.DecodeElement(&stringValue, &start); err != nil {
+		return fmt.Errorf("decode element: %w", err)
 	}
 
-	s = strings.Replace(s, ",", ".", -1)
+	stringValue = strings.ReplaceAll(stringValue, ",", ".")
 
-	f, err := strconv.ParseFloat(s, 64)
+	floatValue, err := strconv.ParseFloat(stringValue, 64)
 	if err != nil {
-		return err
+		return fmt.Errorf("parse float: %w", err)
 	}
 
-	*c = CustomFloat(f)
+	*c = CustomFloat(floatValue)
+
 	return nil
 }
 

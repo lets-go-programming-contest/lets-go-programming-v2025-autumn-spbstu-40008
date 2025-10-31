@@ -2,13 +2,19 @@ package parser
 
 import (
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 
-	"task-3/internal/structures"
-
 	"golang.org/x/text/encoding/charmap"
+
+	"task-3/internal/structures"
+)
+
+var (
+	ErrUnsupportedEncoding = errors.New("unsupported encoding")
+	ErrNoValuteData        = errors.New("xml doesn't contain valute data")
 )
 
 func ParseCurrencyXML(filePath string) (*structures.ValCurs, error) {
@@ -16,7 +22,11 @@ func ParseCurrencyXML(filePath string) (*structures.ValCurs, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error opening xml file %s: %w", filePath, err)
 	}
-	defer file.Close()
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+			fmt.Printf("warning: failed to close file: %v\n", closeErr)
+		}
+	}()
 
 	decoder := xml.NewDecoder(file)
 	decoder.CharsetReader = func(charset string, input io.Reader) (io.Reader, error) {
@@ -24,7 +34,7 @@ func ParseCurrencyXML(filePath string) (*structures.ValCurs, error) {
 		case "windows-1251":
 			return charmap.Windows1251.NewDecoder().Reader(input), nil
 		default:
-			return nil, fmt.Errorf("unsupported encoding %s", charset)
+			return nil, fmt.Errorf("%w: %s", ErrUnsupportedEncoding, charset)
 		}
 	}
 
@@ -35,14 +45,14 @@ func ParseCurrencyXML(filePath string) (*structures.ValCurs, error) {
 	}
 
 	if len(valCurs.Valutes) == 0 {
-		return nil, fmt.Errorf("xml doesn't contain valute data")
+		return nil, ErrNoValuteData
 	}
 
 	return &valCurs, nil
 }
 
 func ConvertToOutput(valutes []structures.Valute) []structures.OutputCurrency {
-	var output []structures.OutputCurrency
+	output := make([]structures.OutputCurrency, 0, len(valutes))
 
 	for _, valute := range valutes {
 		output = append(output, structures.OutputCurrency{

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+
 	"task-3/internal/config"
 	"task-3/internal/parser"
 	"task-3/internal/structures"
@@ -39,18 +40,18 @@ func main() {
 
 	outputData := parser.ConvertToOutput(valCurs.Valutes)
 
-	jsonData, err := json.MarshalIndent(outputData, "", "	")
+	jsonData, err := json.MarshalIndent(outputData, "", "    ")
 	if err != nil {
 		panic(fmt.Sprintf("json saving error: %v", err))
 	}
 
 	dir := filepath.Dir(cfg.OutputFile)
-	err = os.MkdirAll(dir, 0755)
+	err = os.MkdirAll(dir, 0o755)
 	if err != nil {
 		panic(fmt.Sprintf("creating output folder error: %v", err))
 	}
 
-	err = os.WriteFile(cfg.OutputFile, jsonData, 0644)
+	err = os.WriteFile(cfg.OutputFile, jsonData, 0o600)
 	if err != nil {
 		panic(fmt.Sprintf("writing output file error: %v", err))
 	}
