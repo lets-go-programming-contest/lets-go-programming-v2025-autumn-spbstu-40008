@@ -1,0 +1,13 @@
+version: 2
+
+run:
+  timeout: 5m
+
+linters:
+  enable:
+    - gci       # проверка порядка импортов
+    - wsl       # проверка "cuddle assignment" и пробелов
+  disable: []
+
+issues:
+  exclude-use-default: false
