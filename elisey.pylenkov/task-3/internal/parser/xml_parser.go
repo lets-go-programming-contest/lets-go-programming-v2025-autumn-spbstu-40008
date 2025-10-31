@@ -7,8 +7,9 @@ import (
 	"io"
 	"os"
 
-	"golang.org/x/text/encoding/charmap"
 	"task-3/internal/structures"
+
+	"golang.org/x/text/encoding/charmap"
 )
 
 var (
@@ -22,12 +23,11 @@ func ParseCurrencyXML(filePath string) (*structures.ValCurs, error) {
 		return nil, fmt.Errorf("error opening xml file %s: %w", filePath, err)
 	}
 
-	deferFunc := func() {
+	defer func() {
 		if closeErr := file.Close(); closeErr != nil {
 			fmt.Printf("warning: failed to close file: %v\n", closeErr)
 		}
-	}
-	defer deferFunc()
+	}()
 
 	decoder := xml.NewDecoder(file)
 	decoder.CharsetReader = func(charset string, input io.Reader) (io.Reader, error) {
@@ -40,9 +40,7 @@ func ParseCurrencyXML(filePath string) (*structures.ValCurs, error) {
 	}
 
 	var valCurs structures.ValCurs
-
-	err = decoder.Decode(&valCurs)
-	if err != nil {
+	if err := decoder.Decode(&valCurs); err != nil {
 		return nil, fmt.Errorf("error reading xml: %w", err)
 	}
 
