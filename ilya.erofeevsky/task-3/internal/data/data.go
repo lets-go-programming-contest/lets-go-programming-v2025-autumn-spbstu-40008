@@ -101,6 +101,7 @@ func CreateAndWriteJSON(filename string, data []structures.Currency) error {
 	if err != nil {
 		return fmt.Errorf("failed to open or create output file %s: %w", filename, err)
 	}
+
 	defer func() {
 		_ = file.Close()
 	}()
