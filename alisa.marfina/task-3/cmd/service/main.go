@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-
 	"task-3/internal/config"
 	"task-3/internal/currency"
 )
