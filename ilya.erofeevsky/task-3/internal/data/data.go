@@ -50,19 +50,20 @@ func ProcessAndSortCurrencies(xmlData structures.ReadingXML) []structures.Curren
 	for _, item := range xmlData.Information {
 		numCode, err := strconv.Atoi(strings.TrimSpace(item.NumCodeStr))
 		if err != nil {
-			continue
+			item.NumCode = 0
+		} else {
+			item.NumCode = numCode
 		}
-		item.NumCode = numCode
 
 		stringValue := strings.ReplaceAll(item.ValueStr, ",", ".")
 		value, err := strconv.ParseFloat(stringValue, 64)
 		if err != nil {
-			continue
+			value = 0.0
 		}
 
 		nominal, err := strconv.Atoi(strings.TrimSpace(item.NominalStr))
 		if err != nil || nominal == 0 {
-			continue
+			nominal = 1
 		}
 
 		item.Value = value / float64(nominal)
@@ -77,7 +78,6 @@ func ProcessAndSortCurrencies(xmlData structures.ReadingXML) []structures.Curren
 
 	return processed
 }
-
 func CreateAndWriteJSON(filename string, data []structures.Currency) error {
 	dirPath := filepath.Dir(filename)
 
