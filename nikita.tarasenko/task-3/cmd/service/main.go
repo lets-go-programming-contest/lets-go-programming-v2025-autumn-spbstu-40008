@@ -71,7 +71,6 @@ func processValutes(inputValutes []Valute) []Currency {
 		valueStr := strings.TrimSpace(valuteItem.Value)
 		valueStr = strings.ReplaceAll(valueStr, ",", ".")
 		value, err := strconv.ParseFloat(valueStr, 64)
-
 		if err != nil {
 			continue
 		}
@@ -128,7 +127,6 @@ func main() {
 
 	decoder := charmap.Windows1251.NewDecoder()
 	rawData, err := io.ReadAll(transform.NewReader(xmlFile, decoder))
-
 	if err != nil {
 		panic(fmt.Sprintf("failed to decode XML file from windows-1251: %v", err))
 	}
@@ -146,8 +144,10 @@ func main() {
 
 	currencies := processValutes(valCurs.Valutes)
 
+	const dirPerm = 0o755
+
 	outputDir := filepath.Dir(cfg.OutputFile)
-	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+	if err := os.MkdirAll(outputDir, dirPerm); err != nil {
 		panic(fmt.Sprintf("failed to create output directory: %v", err))
 	}
 
