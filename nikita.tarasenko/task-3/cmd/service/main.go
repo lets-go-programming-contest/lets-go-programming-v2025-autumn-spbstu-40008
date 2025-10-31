@@ -47,6 +47,7 @@ func processValutes(inputValutes []Valute) []Currency {
 		charCode := strings.TrimSpace(valuteItem.CharCode)
 
 		digits := ""
+
 		for _, ch := range valuteItem.NumCode {
 			if ch >= '0' && ch <= '9' {
 				digits += string(ch)
@@ -54,6 +55,7 @@ func processValutes(inputValutes []Valute) []Currency {
 		}
 
 		numCode := 0
+
 		if digits != "" {
 			cleaned := strings.TrimLeft(digits, "0")
 			if cleaned == "" {
@@ -69,6 +71,7 @@ func processValutes(inputValutes []Valute) []Currency {
 		valueStr := strings.TrimSpace(valuteItem.Value)
 		valueStr = strings.ReplaceAll(valueStr, ",", ".")
 		value, err := strconv.ParseFloat(valueStr, 64)
+
 		if err != nil {
 			continue
 		}
@@ -120,10 +123,12 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("failed to read input file: %v", err))
 	}
+
 	defer func() { _ = xmlFile.Close() }()
 
 	decoder := charmap.Windows1251.NewDecoder()
 	rawData, err := io.ReadAll(transform.NewReader(xmlFile, decoder))
+
 	if err != nil {
 		panic(fmt.Sprintf("failed to decode XML file from windows-1251: %v", err))
 	}
@@ -150,6 +155,7 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("failed to create output file: %v", err))
 	}
+
 	defer func() { _ = outFile.Close() }()
 
 	jsonEncoder := json.NewEncoder(outFile)
@@ -165,6 +171,7 @@ func loadConfig(path string) (*Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open config file: %w", err)
 	}
+
 	defer func() { _ = file.Close() }()
 
 	data, err := io.ReadAll(file)
