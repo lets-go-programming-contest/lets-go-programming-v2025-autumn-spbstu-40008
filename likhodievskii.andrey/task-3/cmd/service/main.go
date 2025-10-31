@@ -5,6 +5,7 @@ import (
 	"encoding/xml"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -12,6 +13,8 @@ import (
 	"strings"
 
 	"github.com/go-yaml/yaml"
+	"golang.org/x/text/encoding/charmap"
+	"golang.org/x/text/transform"
 )
 
 type Config struct {
@@ -42,15 +45,9 @@ func main() {
 		panic(err)
 	}
 
-	xmlDate, err := LoadXMLFile(config.InputFile)
+	valCurs, err := ParseXMLFile(config.InputFile)
 	if err != nil {
-		panic(err)
-	}
-
-	var valCurs ValCurs
-	err = xml.Unmarshal(xmlDate, &valCurs)
-	if err != nil {
-		panic(fmt.Errorf("unmarshal XML data failed: %w", err))
+		panic(err) // Ошибка будет содержать "xml: encoding..." и т.д.
 	}
 
 	SortCurrenciesByValue(valCurs.Valutes)
@@ -73,12 +70,28 @@ func LoadConfig(confPath string) (Config, error) {
 	return conf, nil
 }
 
-func LoadXMLFile(inputPath string) ([]byte, error) {
-	data, err := os.ReadFile(inputPath)
+func ParseXMLFile(path string) (ValCurs, error) {
+	file, err := os.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("read xml file from %q failed: %w", inputPath, err)
+		return ValCurs{}, fmt.Errorf("failed to open XML file %q: %w", path, err)
 	}
-	return data, nil
+	defer file.Close()
+
+	var valCurs ValCurs
+
+	decoder := xml.NewDecoder(file)
+	decoder.CharsetReader = func(charset string, input io.Reader) (io.Reader, error) {
+		if strings.EqualFold(charset, "windows-1251") || strings.EqualFold(charset, "cp1251") {
+			return transform.NewReader(input, charmap.Windows1251.NewDecoder()), nil
+		}
+		return input, nil
+	}
+
+	if err := decoder.Decode(&valCurs); err != nil {
+		return ValCurs{}, fmt.Errorf("failed to decode XML file %q: %w", path, err)
+	}
+
+	return valCurs, nil
 }
 
 func (val *Valute) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) error {
