@@ -136,7 +136,6 @@ func (val *Valute) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) er
 	if tmp.Value == "" {
 		val.Value = 0.0
 	} else {
-
 		normValue := strings.ReplaceAll(tmp.Value, ",", ".")
 		parsedValue, err := strconv.ParseFloat(normValue, 64)
 		if err != nil {
