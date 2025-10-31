@@ -28,7 +28,6 @@ func (a ByDescendingValue) Less(i, j int) bool {
 
 func main() {
 	var configPath string
-
 	flag.StringVar(&configPath, "config", "config.yaml", "config path")
 	flag.Parse()
 
@@ -52,13 +51,11 @@ func main() {
 	}
 
 	dir := filepath.Dir(cfg.OutputFile)
-	err = os.MkdirAll(dir, dirPermissions)
-	if err != nil {
+	if err := os.MkdirAll(dir, dirPermissions); err != nil {
 		panic(fmt.Sprintf("creating output folder error: %v", err))
 	}
 
-	err = os.WriteFile(cfg.OutputFile, jsonData, filePermissions)
-	if err != nil {
+	if err := os.WriteFile(cfg.OutputFile, jsonData, filePermissions); err != nil {
 		panic(fmt.Sprintf("writing output file error: %v", err))
 	}
 }
