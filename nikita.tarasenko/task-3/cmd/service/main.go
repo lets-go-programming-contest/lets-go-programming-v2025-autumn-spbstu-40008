@@ -42,6 +42,7 @@ type Currency struct {
 
 func processValutes(inputValutes []Valute) []Currency {
 	currencies := make([]Currency, 0, len(inputValutes))
+
 	for _, valuteItem := range inputValutes {
 		charCode := strings.TrimSpace(valuteItem.CharCode)
 
@@ -58,7 +59,9 @@ func processValutes(inputValutes []Valute) []Currency {
 			if cleaned == "" {
 				cleaned = "0"
 			}
-			if parsedNum, err := strconv.Atoi(cleaned); err == nil {
+
+			parsedNum, err := strconv.Atoi(cleaned)
+			if err == nil {
 				numCode = parsedNum
 			}
 		}
@@ -139,7 +142,7 @@ func main() {
 	currencies := processValutes(valCurs.Valutes)
 
 	outputDir := filepath.Dir(cfg.OutputFile)
-	if err := os.MkdirAll(outputDir, 0755); err != nil {
+	if err := os.MkdirAll(outputDir, 0o755); err != nil {
 		panic(fmt.Sprintf("failed to create output directory: %v", err))
 	}
 
@@ -151,6 +154,7 @@ func main() {
 
 	jsonEncoder := json.NewEncoder(outFile)
 	jsonEncoder.SetIndent("", "  ")
+
 	if err := jsonEncoder.Encode(currencies); err != nil {
 		panic(fmt.Sprintf("failed to encode JSON: %v", err))
 	}
