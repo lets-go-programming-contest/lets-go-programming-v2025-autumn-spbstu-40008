@@ -52,12 +52,20 @@ func ProcessAndSortCurrencies(xmlData structures.ReadingXML) []structures.Curren
 	processed := make([]structures.Currency, 0, len(xmlData.Information))
 
 	for _, item := range xmlData.Information {
-		numCode, err := strconv.Atoi(strings.TrimSpace(item.NumCodeStr))
+		currency := structures.Currency{
+			ID:         item.ID,
+			NumCodeStr: item.NumCodeStr,
+			CharCode:   strings.TrimSpace(item.CharCode),
+			NominalStr: item.NominalStr,
+			Name:       item.Name,
+			ValueStr:   item.ValueStr,
+		}
 
+		numCode, err := strconv.Atoi(strings.TrimSpace(item.NumCodeStr))
 		if err != nil {
-			item.NumCode = 0
+			currency.NumCode = 0
 		} else {
-			item.NumCode = numCode
+			currency.NumCode = numCode
 		}
 
 		stringValue := strings.ReplaceAll(item.ValueStr, ",", ".")
@@ -68,15 +76,13 @@ func ProcessAndSortCurrencies(xmlData structures.ReadingXML) []structures.Curren
 		}
 
 		nominal, err := strconv.Atoi(strings.TrimSpace(item.NominalStr))
-
 		if err != nil || nominal == 0 {
 			nominal = 1
 		}
 
-		item.Value = value / float64(nominal)
-		item.CharCode = strings.TrimSpace(item.CharCode)
+		currency.Value = value / float64(nominal)
 
-		processed = append(processed, item)
+		processed = append(processed, currency)
 	}
 
 	sort.Slice(processed, func(i, j int) bool {
