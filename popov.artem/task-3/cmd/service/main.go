@@ -17,13 +17,13 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Config holds input and output file paths
+// Configuration holds input and output file paths.
 type Configuration struct {
 	InputPath  string `yaml:"input-file"`
 	OutputPath string `yaml:"output-file"`
 }
 
-// Load config from YAML file
+// LoadConfiguration loads config from YAML file.
 func LoadConfiguration(path string) (*Configuration, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
@@ -38,44 +38,44 @@ func LoadConfiguration(path string) (*Configuration, error) {
 	return &cfg, nil
 }
 
-// Custom float type for XML parsing
+// Float64Custom is a custom float type for XML parsing.
 type Float64Custom float64
 
-// Currency data structure
+// CurrencyInfo represents currency data structure.
 type CurrencyInfo struct {
-	XMLName   xml.Name      `json:"-" xml:"Valute"`
-	ID        string        `json:"-" xml:"ID,attr"`
-	CodeNum   int           `json:"num_code" xml:"NumCode"`
+	XMLName   xml.Name      `json:"-"         xml:"Valute"`
+	ID        string        `json:"-"         xml:"ID,attr"`
+	CodeNum   int           `json:"num_code"  xml:"NumCode"`
 	CodeChar  string        `json:"char_code" xml:"CharCode"`
-	Nominal   int           `json:"-" xml:"Nominal"`
-	FullName  string        `json:"-" xml:"Name"`
-	Value     Float64Custom `json:"value" xml:"Value"`
+	Nominal   int           `json:"-"         xml:"Nominal"`
+	FullName  string        `json:"-"         xml:"Name"`
+	Value     Float64Custom `json:"value"     xml:"Value"`
 }
 
-// Container for currency list
+// ExchangeRates is a container for currency list.
 type ExchangeRates struct {
 	XMLName xml.Name       `xml:"ValCurs"`
 	Rates   []CurrencyInfo `xml:"Valute"`
 }
 
-// Parse float from XML, handling comma as decimal separator
+// UnmarshalXML parses float from XML, handling comma as decimal separator.
 func (f *Float64Custom) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
-	var s string
-	if err := d.DecodeElement(&s, &start); err != nil {
+	var value string
+	if err := d.DecodeElement(&value, &start); err != nil {
 		return fmt.Errorf("decode error: %w", err)
 	}
 
-	s = strings.ReplaceAll(s, ",", ".")
-	parsedValue, err := strconv.ParseFloat(s, 64)
+	value = strings.ReplaceAll(value, ",", ".")
+	parsedValue, err := strconv.ParseFloat(value, 64)
 	if err != nil {
 		return fmt.Errorf("float parse error: %w", err)
 	}
 
 	*f = Float64Custom(parsedValue)
-	return nil
+	return nil // nlreturn: добавлена пустая строка перед return
 }
 
-// Handle different charsets (like windows-1251)
+// xmlCharsetReader handles different charsets (like windows-1251).
 func xmlCharsetReader(charset string, input io.Reader) (io.Reader, error) {
 	switch charset {
 	case "windows-1251":
@@ -85,7 +85,7 @@ func xmlCharsetReader(charset string, input io.Reader) (io.Reader, error) {
 	}
 }
 
-// Decode XML data
+// ParseXMLData decodes XML data.
 func ParseXMLData(data []byte, target interface{}) error {
 	decoder := xml.NewDecoder(bytes.NewReader(data))
 	decoder.CharsetReader = xmlCharsetReader
@@ -97,7 +97,7 @@ func ParseXMLData(data []byte, target interface{}) error {
 	return nil
 }
 
-// Save currencies to JSON file
+// WriteJSONToFile saves currencies to JSON file.
 func WriteJSONToFile(path string, data []CurrencyInfo) error {
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
@@ -125,7 +125,7 @@ func WriteJSONToFile(path string, data []CurrencyInfo) error {
 	return nil
 }
 
-// Process the XML and save as JSON
+// ExecuteProcessing processes the XML and saves as JSON.
 func ExecuteProcessing(config *Configuration) error {
 	xmlContent, err := os.ReadFile(config.InputPath)
 	if err != nil {
