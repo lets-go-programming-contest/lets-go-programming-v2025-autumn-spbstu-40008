@@ -63,7 +63,6 @@ func ProcessAndSortCurrencies(xmlData structures.ReadingXML) []structures.Curren
 		stringValue := strings.ReplaceAll(item.ValueStr, ",", ".")
 
 		value, err := strconv.ParseFloat(stringValue, 64)
-
 		if err != nil {
 			value = 0.0
 		}
