@@ -16,6 +16,7 @@ func FetchCurrencyRates(filePath string) (*CurrencyIndex, error) {
 	}
 
 	decoder := charmap.Windows1251.NewDecoder()
+
 	decodedData, err := decoder.Bytes(data)
 	if err != nil {
 		return nil, fmt.Errorf("encoding conversion error: %w", err)

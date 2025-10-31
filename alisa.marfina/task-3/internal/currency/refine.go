@@ -2,6 +2,7 @@ package currency
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,19 +14,22 @@ const (
 	dirPerm  = 0o755
 )
 
+var ErrNilCatalog = errors.New("currency catalog is nil")
+
 func OrderByExchange(catalog *CurrencyIndex) error {
 	if catalog == nil {
-		return fmt.Errorf("currency catalog is nil")
+		return fmt.Errorf("%w", ErrNilCatalog)
 	}
 	sort.Slice(catalog.Currencies, func(i, j int) bool {
 		return catalog.Currencies[i].Value > catalog.Currencies[j].Value
 	})
+
 	return nil
 }
 
 func ExportToJSON(filePath string, catalog *CurrencyIndex) error {
 	if catalog == nil {
-		return fmt.Errorf("currency catalog is nil")
+		return fmt.Errorf("%w", ErrNilCatalog)
 	}
 
 	dir := filepath.Dir(filePath)

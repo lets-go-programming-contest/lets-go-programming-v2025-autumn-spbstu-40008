@@ -36,5 +36,6 @@ func (exchangeRate *ExchangeRate) UnmarshalXML(decoder *xml.Decoder, startElemen
 	}
 
 	*exchangeRate = ExchangeRate(value)
+
 	return nil
 }
