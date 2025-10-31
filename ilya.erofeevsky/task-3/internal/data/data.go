@@ -24,7 +24,6 @@ func DecodeXML(cfg config.File) (structures.ReadingXML, error) {
 	if err != nil {
 		return structures.ReadingXML{}, fmt.Errorf("failed to open XML input file %s: %w", cfg.Input, err)
 	}
-
 	defer func() {
 		_ = xmlFile.Close()
 	}()
@@ -46,7 +45,7 @@ func DecodeXML(cfg config.File) (structures.ReadingXML, error) {
 	}
 
 	return xmlData, nil
-} //ы
+}
 
 func ProcessAndSortCurrencies(xmlData structures.ReadingXML) []structures.Currency {
 	processed := make([]structures.Currency, 0, len(xmlData.Information))
@@ -61,8 +60,8 @@ func ProcessAndSortCurrencies(xmlData structures.ReadingXML) []structures.Curren
 		}
 
 		stringValue := strings.ReplaceAll(item.ValueStr, ",", ".")
-
 		value, err := strconv.ParseFloat(stringValue, 64)
+
 		if err != nil {
 			value = 0.0
 		}
@@ -101,7 +100,6 @@ func CreateAndWriteJSON(filename string, data []structures.Currency) error {
 	if err != nil {
 		return fmt.Errorf("failed to open or create output file %s: %w", filename, err)
 	}
-
 	defer func() {
 		_ = file.Close()
 	}()
