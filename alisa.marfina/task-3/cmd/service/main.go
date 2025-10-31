@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"AliseMarfina/task-3/internal/config"
-	"AliseMarfina/task-3/internal/currency"
+	"task-3/internal/config"
+	"task-3/internal/currency"
 )
 
 func main() {
