@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"encoding/xml"
 	"flag"
@@ -13,8 +12,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-
-	"golang.org/x/net/html/charset"
+	"unicode/utf8"
 )
 
 type Config struct {
@@ -49,6 +47,46 @@ type OutCurrenciesXML struct {
 	Currencies []OutCurrency `xml:"Currency"`
 }
 
+func cp1251ToUTF8(in []byte) []byte {
+	var out []byte
+	for i := 0; i < len(in); i++ {
+		b := in[i]
+		if b < 0x80 {
+			out = append(out, b)
+			continue
+		}
+		var r rune
+		switch {
+		case b == 0xA8:
+			r = 0x0401
+		case b == 0xB8:
+			r = 0x0451
+		case b >= 0xC0:
+			r = 0x0410 + rune(b-0xC0)
+		default:
+			r = rune(b)
+		}
+		buf := make([]byte, 4)
+		n := utf8.EncodeRune(buf, r)
+		out = append(out, buf[:n]...)
+	}
+	return out
+}
+
+func detectWindows1251(in []byte) bool {
+	head := strings.ToLower(string(in))
+	if strings.Contains(head, "encoding=\"windows-1251\"") || strings.Contains(head, "encoding='windows-1251'") || strings.Contains(head, "encoding=\"cp1251\"") || strings.Contains(head, "encoding='cp1251'") {
+		return true
+	}
+	if len(in) > 200 {
+		head = strings.ToLower(string(in[:200]))
+		if strings.Contains(head, "encoding=\"windows-1251\"") || strings.Contains(head, "encoding='windows-1251'") {
+			return true
+		}
+	}
+	return false
+}
+
 func main() {
 	cfgPath := flag.String("config", "", "path to YAML config file (contains input-file and output-file)")
 	outputFormat := flag.String("output-format", "json", "output format: json (default), yaml or xml")
@@ -79,10 +117,12 @@ func main() {
 		panic(fmt.Sprintf("cannot read input xml file %q: %v", cfg.InputFile, err))
 	}
 
+	if detectWindows1251(inBytes) {
+		inBytes = cp1251ToUTF8(inBytes)
+	}
+
 	var valcus ValCurs
-	decoder := xml.NewDecoder(bytes.NewReader(inBytes))
-	decoder.CharsetReader = charset.NewReaderLabel
-	if err := decoder.Decode(&valcus); err != nil {
+	if err := xml.Unmarshal(inBytes, &valcus); err != nil {
 		panic(fmt.Sprintf("cannot unmarshal input xml: %v", err))
 	}
 
