@@ -46,7 +46,7 @@ func DecodeXML(cfg config.File) (structures.ReadingXML, error) {
 	}
 
 	return xmlData, nil
-}
+} //ы
 
 func ProcessAndSortCurrencies(xmlData structures.ReadingXML) []structures.Currency {
 	processed := make([]structures.Currency, 0, len(xmlData.Information))
