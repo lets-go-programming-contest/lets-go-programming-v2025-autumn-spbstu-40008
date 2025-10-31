@@ -22,6 +22,7 @@ func ParseCurrencyXML(filePath string) (*structures.ValCurs, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error opening xml file %s: %w", filePath, err)
 	}
+
 	defer func() {
 		if closeErr := file.Close(); closeErr != nil {
 			fmt.Printf("warning: failed to close file: %v\n", closeErr)
