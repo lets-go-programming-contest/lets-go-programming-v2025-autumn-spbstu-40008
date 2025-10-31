@@ -63,7 +63,6 @@ func processValutes(inputValutes []Valute) []Currency {
 			}
 		}
 
-		// Обработка Value
 		valueStr := strings.TrimSpace(valuteItem.Value)
 		valueStr = strings.ReplaceAll(valueStr, ",", ".")
 		value, err := strconv.ParseFloat(valueStr, 64)
@@ -97,6 +96,7 @@ func prepareXMLContent(data []byte) []byte {
 		1,
 	)
 	data = bytes.ReplaceAll(data, []byte(`encoding="windows-1251"`), []byte(`encoding="UTF-8"`))
+
 	return data
 }
 
