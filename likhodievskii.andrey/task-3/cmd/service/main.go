@@ -132,15 +132,16 @@ func (val *Valute) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) er
 	}
 
 	val.CharCode = tmp.CharCode
+	normValue := strings.ReplaceAll(tmp.Value, ",", ".")
 
 	if tmp.Value == "" {
 		val.Value = 0.0
 	} else {
-		normValue := strings.ReplaceAll(tmp.Value, ",", ".")
 		parsedValue, err := strconv.ParseFloat(normValue, 64)
 		if err != nil {
 			return fmt.Errorf("failed to parse Value '%s': %w", tmp.Value, err)
 		}
+
 		val.Value = parsedValue
 	}
 
