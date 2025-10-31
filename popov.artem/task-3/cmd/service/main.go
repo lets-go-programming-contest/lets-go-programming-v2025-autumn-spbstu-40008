@@ -43,13 +43,13 @@ type Float64Custom float64
 
 // CurrencyInfo represents currency data structure.
 type CurrencyInfo struct {
-	XMLName   xml.Name      `json:"-"         xml:"Valute"`
-	ID        string        `json:"-"         xml:"ID,attr"`
-	CodeNum   int           `json:"num_code"  xml:"NumCode"`
-	CodeChar  string        `json:"char_code" xml:"CharCode"`
-	Nominal   int           `json:"-"         xml:"Nominal"`
-	FullName  string        `json:"-"         xml:"Name"`
-	Value     Float64Custom `json:"value"     xml:"Value"`
+	XMLName  xml.Name      `json:"-"         xml:"Valute"`
+	ID       string        `json:"-"         xml:"ID,attr"`
+	CodeNum  int           `json:"num_code"  xml:"NumCode"`
+	CodeChar string        `json:"char_code" xml:"CharCode"`
+	Nominal  int           `json:"-"         xml:"Nominal"`
+	FullName string        `json:"-"         xml:"Name"`
+	Value    Float64Custom `json:"value"     xml:"Value"`
 }
 
 // ExchangeRates is a container for currency list.
@@ -72,7 +72,8 @@ func (f *Float64Custom) UnmarshalXML(d *xml.Decoder, start xml.StartElement) err
 	}
 
 	*f = Float64Custom(parsedValue)
-	return nil // nlreturn: добавлена пустая строка перед return
+
+	return nil
 }
 
 // xmlCharsetReader handles different charsets (like windows-1251).
