@@ -65,7 +65,7 @@ func LoadConfig(confPath string) (Config, error) {
 	}
 	var conf Config
 	if err := yaml.Unmarshal(data, &conf); err != nil {
-		return conf, fmt.Errorf("unmarshal yaml file from %q fail: %w", confPath, &err)
+		return conf, fmt.Errorf("unmarshal yaml file from %q fail: %w", confPath, err)
 	}
 	return conf, nil
 }
