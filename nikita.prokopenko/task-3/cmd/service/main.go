@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"encoding/xml"
 	"flag"
@@ -12,6 +13,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"golang.org/x/net/html/charset"
 )
 
 type Config struct {
@@ -42,7 +45,7 @@ type OutCurrency struct {
 }
 
 type OutCurrenciesXML struct {
-	XMLName    xml.Name       `xml:"Currencies"`
+	XMLName    xml.Name      `xml:"Currencies"`
 	Currencies []OutCurrency `xml:"Currency"`
 }
 
@@ -57,11 +60,12 @@ func main() {
 
 	cfgBytes, err := os.ReadFile(*cfgPath)
 	if err != nil {
-		panic(fmt.Errorf("cannot read config file %q: %w", *cfgPath, err))
+		panic(fmt.Sprintf("cannot read config file %q: %v", *cfgPath, err))
 	}
+
 	var cfg Config
 	if err := yaml.Unmarshal(cfgBytes, &cfg); err != nil {
-		panic(fmt.Errorf("cannot parse config yaml: %w", err))
+		panic(fmt.Sprintf("cannot parse config yaml: %v", err))
 	}
 	if cfg.InputFile == "" {
 		panic("config: input-file is empty")
@@ -72,100 +76,107 @@ func main() {
 
 	inBytes, err := os.ReadFile(cfg.InputFile)
 	if err != nil {
-		panic(fmt.Errorf("cannot read input xml file %q: %w", cfg.InputFile, err))
+		panic(fmt.Sprintf("cannot read input xml file %q: %v", cfg.InputFile, err))
 	}
 
 	var valcus ValCurs
-	if err := xml.Unmarshal(inBytes, &valcus); err != nil {
-		panic(fmt.Errorf("cannot unmarshal input xml: %w", err))
+	decoder := xml.NewDecoder(bytes.NewReader(inBytes))
+	decoder.CharsetReader = charset.NewReaderLabel
+	if err := decoder.Decode(&valcus); err != nil {
+		panic(fmt.Sprintf("cannot unmarshal input xml: %v", err))
 	}
 
-	outs := make([]OutCurrency, 0, len(valcus.Valute))
-	for _, v := range valcus.Valute {
-		numCode, err := strconv.Atoi(strings.TrimSpace(v.NumCode))
-		if err != nil {
-			panic(fmt.Errorf("invalid NumCode %q: %w", v.NumCode, err))
+	outCurrencies := make([]OutCurrency, 0, len(valcus.Valute))
+	for _, val := range valcus.Valute {
+		numCodeInt, errConv := strconv.Atoi(strings.TrimSpace(val.NumCode))
+		if errConv != nil {
+			panic(fmt.Sprintf("invalid NumCode %q: %v", val.NumCode, errConv))
 		}
 
-		nominalStr := strings.TrimSpace(v.Nominal)
+		nominalStr := strings.TrimSpace(val.Nominal)
 		if nominalStr == "" {
 			nominalStr = "1"
 		}
-		nominal, err := strconv.Atoi(nominalStr)
-		if err != nil || nominal == 0 {
-			panic(fmt.Errorf("invalid Nominal %q for %s: %w", v.Nominal, v.CharCode, err))
+		nominal, errConv := strconv.Atoi(nominalStr)
+		if errConv != nil || nominal == 0 {
+			panic(fmt.Sprintf("invalid Nominal %q for %s: %v", val.Nominal, val.CharCode, errConv))
 		}
 
-		valStr := strings.TrimSpace(v.Value)
+		valStr := strings.TrimSpace(val.Value)
 		valStr = strings.ReplaceAll(valStr, " ", "")
 		valStr = strings.ReplaceAll(valStr, "\u00A0", "")
 		valStr = strings.ReplaceAll(valStr, ",", ".")
-		value, err := strconv.ParseFloat(valStr, 64)
-		if err != nil {
-			panic(fmt.Errorf("invalid Value %q for %s: %w", v.Value, v.CharCode, err))
+		parsedValue, errConv := strconv.ParseFloat(valStr, 64)
+		if errConv != nil {
+			panic(fmt.Sprintf("invalid Value %q for %s: %v", val.Value, val.CharCode, errConv))
 		}
 
-		valuePer1 := value / float64(nominal)
+		valuePer1 := parsedValue / float64(nominal)
 
-		out := OutCurrency{
-			NumCode:  numCode,
-			CharCode: strings.TrimSpace(v.CharCode),
+		outCurrency := OutCurrency{
+			NumCode:  numCodeInt,
+			CharCode: strings.TrimSpace(val.CharCode),
 			Value:    valuePer1,
 		}
-		outs = append(outs, out)
+		outCurrencies = append(outCurrencies, outCurrency)
 	}
 
-	sort.Slice(outs, func(i, j int) bool {
-		return outs[i].Value > outs[j].Value
+	sort.Slice(outCurrencies, func(i, j int) bool {
+		return outCurrencies[i].Value > outCurrencies[j].Value
 	})
 
 	outDir := filepath.Dir(cfg.OutputFile)
 	if outDir != "." && outDir != "" {
-		if err := os.MkdirAll(outDir, 0o755); err != nil {
-			panic(fmt.Errorf("cannot create output directory %q: %w", outDir, err))
+		if err := os.MkdirAll(outDir, os.FileMode(0755)); err != nil {
+			panic(fmt.Sprintf("cannot create output directory %q: %v", outDir, err))
 		}
 	}
 
-	f, err := os.Create(cfg.OutputFile)
+	outFile, err := os.Create(cfg.OutputFile)
 	if err != nil {
-		panic(fmt.Errorf("cannot create output file %q: %w", cfg.OutputFile, err))
+		panic(fmt.Sprintf("cannot create output file %q: %v", cfg.OutputFile, err))
 	}
 	defer func() {
-		if cerr := f.Close(); cerr != nil {
-			panic(fmt.Errorf("error closing output file: %w", cerr))
+		if cerr := outFile.Close(); cerr != nil {
+			panic(fmt.Sprintf("error closing output file: %v", cerr))
 		}
 	}()
 
 	switch strings.ToLower(strings.TrimSpace(*outputFormat)) {
 	case "json":
-		enc := json.NewEncoder(f)
+		enc := json.NewEncoder(outFile)
 		enc.SetIndent("", "  ")
-		if err := enc.Encode(outs); err != nil {
-			panic(fmt.Errorf("cannot write json to %q: %w", cfg.OutputFile, err))
+		if err := enc.Encode(outCurrencies); err != nil {
+			panic(fmt.Sprintf("cannot write json to %q: %v", cfg.OutputFile, err))
 		}
 	case "yaml", "yml":
-		yb, err := yaml.Marshal(outs)
+		yb, err := yaml.Marshal(outCurrencies)
 		if err != nil {
-			panic(fmt.Errorf("cannot marshal yaml: %w", err))
+			panic(fmt.Sprintf("cannot marshal yaml: %v", err))
 		}
-		if _, err := f.Write(yb); err != nil {
-			panic(fmt.Errorf("cannot write yaml to %q: %w", cfg.OutputFile, err))
+		if _, err := outFile.Write(yb); err != nil {
+			panic(fmt.Sprintf("cannot write yaml to %q: %v", cfg.OutputFile, err))
 		}
 	case "xml":
-		wrap := OutCurrenciesXML{Currencies: outs}
-		xb, err := xml.MarshalIndent(wrap, "", "  ")
+		wrap := OutCurrenciesXML{
+			XMLName:    xml.Name{Local: "Currencies"},
+			Currencies: outCurrencies,
+		}
+		xmlBytes, err := xml.MarshalIndent(wrap, "", "  ")
 		if err != nil {
-			panic(fmt.Errorf("cannot marshal xml: %w", err))
+			panic(fmt.Sprintf("cannot marshal xml: %v", err))
 		}
-		if _, err := io.WriteString(f, xml.Header); err != nil {
-			panic(fmt.Errorf("cannot write xml header: %w", err))
+		if _, err := io.WriteString(outFile, xml.Header); err != nil {
+			panic(fmt.Sprintf("cannot write xml header: %v", err))
 		}
-		if _, err := f.Write(xb); err != nil {
-			panic(fmt.Errorf("cannot write xml to %q: %w", cfg.OutputFile, err))
+		if _, err := outFile.Write(xmlBytes); err != nil {
+			panic(fmt.Sprintf("cannot write xml to %q: %v", cfg.OutputFile, err))
 		}
 	default:
-		panic(fmt.Errorf("unsupported output-format %q (use json, yaml or xml)", *outputFormat))
+		panic(fmt.Sprintf("unsupported output-format %q (use json, yaml or xml)", *outputFormat))
 	}
 
-	fmt.Fprintf(os.Stdout, "Wrote %d records to %s (format=%s)\n", len(outs), cfg.OutputFile, *outputFormat)
+	if _, err := fmt.Fprintf(os.Stdout, "Wrote %d records to %s (format=%s)\n", len(outCurrencies), cfg.OutputFile, *outputFormat); err != nil {
+		panic(fmt.Sprintf("failed to write status to stdout: %v", err))
+	}
 }
