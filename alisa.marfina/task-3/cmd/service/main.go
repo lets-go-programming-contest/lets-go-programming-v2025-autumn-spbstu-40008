@@ -1,12 +1,11 @@
 package main
 
 import (
+	"AliseMarfina/task-3/internal/config"
+	"AliseMarfina/task-3/internal/currency"
 	"flag"
 	"fmt"
 	"os"
-
-	"AliseMarfina/task-3/internal/config"
-	"AliseMarfina/task-3/internal/currency"
 )
 
 func main() {
