@@ -1,4 +1,7 @@
+# configs/task.yml
 tasks:
   - name: "Convert XML to JSON"
     type: "xml_to_json"
-    config: "configs/config.yaml"
+    config: "config.yaml"
+
+    

@@ -135,3 +135,4 @@ func saveJSON(filename string, valutes []ValuteJSON) {
 		panic("Ошибка кодирования JSON: " + err.Error())
 	}
 }
+
