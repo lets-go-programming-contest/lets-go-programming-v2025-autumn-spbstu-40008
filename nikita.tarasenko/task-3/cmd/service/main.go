@@ -71,6 +71,7 @@ func processValutes(inputValutes []Valute) []Currency {
 		valueStr := strings.TrimSpace(valuteItem.Value)
 		valueStr = strings.ReplaceAll(valueStr, ",", ".")
 		value, err := strconv.ParseFloat(valueStr, 64)
+
 		if err != nil {
 			continue
 		}
@@ -127,6 +128,7 @@ func main() {
 
 	decoder := charmap.Windows1251.NewDecoder()
 	rawData, err := io.ReadAll(transform.NewReader(xmlFile, decoder))
+
 	if err != nil {
 		panic(fmt.Sprintf("failed to decode XML file from windows-1251: %v", err))
 	}
