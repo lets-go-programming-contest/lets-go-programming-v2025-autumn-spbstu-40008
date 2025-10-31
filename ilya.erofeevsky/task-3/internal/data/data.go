@@ -24,6 +24,7 @@ func DecodeXML(cfg config.File) (structures.ReadingXML, error) {
 	if err != nil {
 		return structures.ReadingXML{}, fmt.Errorf("failed to open XML input file %s: %w", cfg.Input, err)
 	}
+
 	defer func() {
 		_ = xmlFile.Close()
 	}()
@@ -100,6 +101,7 @@ func CreateAndWriteJSON(filename string, data []structures.Currency) error {
 	if err != nil {
 		return fmt.Errorf("failed to open or create output file %s: %w", filename, err)
 	}
+
 	defer func() {
 		_ = file.Close()
 	}()
