@@ -5,15 +5,15 @@ import (
 )
 
 type Currency struct {
-	ID         string `xml:"ID,attr" json:"-"`
-	NumCodeStr string `xml:"NumCode" json:"-"`
-	CharCode   string `xml:"CharCode" json:"char_code"`
-	NominalStr string `xml:"Nominal" json:"-"`
-	Name       string `xml:"Name" json:"-"`
-	ValueStr   string `xml:"Value" json:"-"`
+	ID         string `json:"-"         xml:"ID,attr"`
+	NumCodeStr string `json:"-"         xml:"NumCode"`
+	CharCode   string `json:"char_code" xml:"CharCode"`
+	NominalStr string `json:"-"         xml:"Nominal"`
+	Name       string `json:"-"         xml:"Name"`
+	ValueStr   string `json:"-"         xml:"Value"`
 
-	NumCode int     `xml:"-" json:"num_code"`
-	Value   float64 `xml:"-" json:"value"`
+	NumCode int     `json:"num_code" xml:"-"`
+	Value   float64 `json:"value"    xml:"-"`
 }
 
 type ReadingXML struct {
