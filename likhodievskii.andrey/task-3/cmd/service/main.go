@@ -17,6 +17,8 @@ import (
 	"golang.org/x/text/transform"
 )
 
+const dirPermissions = 0o755
+
 type Config struct {
 	InputFile  string `yaml:"input-file"`
 	OutputFile string `yaml:"output-file"`
@@ -27,15 +29,17 @@ type ValCurs struct {
 }
 
 type Valute struct {
-	NumCode  int     `xml:"NumCode" json:"num_code"`
-	CharCode string  `xml:"CharCode" json:"char_code"`
-	Value    float64 `xml:"Value" json:"value"`
+	NumCode  int     `xml:"NumCode"    json:"num_code"`
+	CharCode string  `xml:"CharCode"   json:"char_code"`
+	Value    float64 `xml:"Value"      json:"value"`
 }
 
 func main() {
 	var configPath string
+
 	flag.StringVar(&configPath, "config", "", "Path to config file")
 	flag.Parse()
+
 	if configPath == "" {
 		panic("Flag -config is required")
 	}
@@ -64,9 +68,11 @@ func LoadConfig(confPath string) (Config, error) {
 		return Config{}, fmt.Errorf("read yaml file from %q fail cause: %w", confPath, err)
 	}
 	var conf Config
+
 	if err := yaml.Unmarshal(data, &conf); err != nil {
 		return conf, fmt.Errorf("unmarshal yaml file from %q fail: %w", confPath, err)
 	}
+
 	return conf, nil
 }
 
@@ -75,7 +81,12 @@ func ParseXMLFile(path string) (ValCurs, error) {
 	if err != nil {
 		return ValCurs{}, fmt.Errorf("failed to open XML file %q: %w", path, err)
 	}
-	defer file.Close()
+
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+			panic(fmt.Errorf("failed to close file %q: %w", path, closeErr))
+		}
+	}()
 
 	var valCurs ValCurs
 
@@ -84,6 +95,7 @@ func ParseXMLFile(path string) (ValCurs, error) {
 		if strings.EqualFold(charset, "windows-1251") || strings.EqualFold(charset, "cp1251") {
 			return transform.NewReader(input, charmap.Windows1251.NewDecoder()), nil
 		}
+
 		return input, nil
 	}
 
@@ -102,6 +114,7 @@ func (val *Valute) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) er
 	}
 
 	var tmp TempValute
+
 	if err := decoder.DecodeElement(&tmp, &start); err != nil {
 		return fmt.Errorf("failed to decode Valute element: %w", err)
 	}
@@ -140,7 +153,8 @@ func SortCurrenciesByValue(valutes []Valute) {
 
 func WriteJSONFile(filePath string, valutes []Valute) error {
 	dir := filepath.Dir(filePath)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+
+	if err := os.MkdirAll(dir, dirPermissions); err != nil {
 		return fmt.Errorf("create directory for %q: %w", filePath, err)
 	}
 
