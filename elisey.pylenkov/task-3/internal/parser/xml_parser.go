@@ -7,9 +7,9 @@ import (
 	"io"
 	"os"
 
-	"task-3/internal/structures"
-
 	"golang.org/x/text/encoding/charmap"
+
+	"task-3/internal/structures"
 )
 
 var (

@@ -53,6 +53,7 @@ func main() {
 
 	dir := filepath.Dir(cfg.OutputFile)
 	err = os.MkdirAll(dir, dirPermissions)
+
 	if err != nil {
 		panic(fmt.Sprintf("creating output folder error: %v", err))
 	}
