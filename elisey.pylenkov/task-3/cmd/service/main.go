@@ -28,6 +28,7 @@ func (a ByDescendingValue) Less(i, j int) bool {
 
 func main() {
 	var configPath string
+
 	flag.StringVar(&configPath, "config", "config.yaml", "config path")
 	flag.Parse()
 
