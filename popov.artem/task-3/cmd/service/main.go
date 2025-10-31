@@ -66,7 +66,7 @@ func (f *Float64Custom) UnmarshalXML(d *xml.Decoder, start xml.StartElement) err
 	}
 
 	value = strings.ReplaceAll(value, ",", ".")
-	
+
 	parsedValue, err := strconv.ParseFloat(value, 64)
 	if err != nil {
 		return fmt.Errorf("float parse error: %w", err)
