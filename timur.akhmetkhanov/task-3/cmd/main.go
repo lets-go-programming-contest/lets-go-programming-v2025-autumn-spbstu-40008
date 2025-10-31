@@ -2,8 +2,9 @@ package main
 
 import (
 	"flag"
-	"github.com/task-3/app"
 	"log"
+
+	"github.com/task-3/app"
 )
 
 func handleError(err error) {
