@@ -9,20 +9,22 @@ import (
 )
 
 func ReadXML(path string) (*ExchangeRates, error) {
-	f, err := os.Open(path)
+	file, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("open xml: %w", err)
 	}
+
 	defer func() {
-		if err := f.Close(); err != nil {
+		if err := file.Close(); err != nil {
 			panic(err)
 		}
 	}()
 
-	dec := xml.NewDecoder(f)
+	dec := xml.NewDecoder(file)
 	dec.CharsetReader = charset.NewReaderLabel
 
 	var rates ExchangeRates
+
 	if err := dec.Decode(&rates); err != nil {
 		return nil, fmt.Errorf("decode xml: %w", err)
 	}

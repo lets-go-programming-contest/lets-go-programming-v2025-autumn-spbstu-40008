@@ -16,19 +16,19 @@ var (
 )
 
 func (d *Decimal) UnmarshalText(text []byte) error {
-	s := strings.TrimSpace(string(text))
-	if s == "" {
+	numStr := strings.TrimSpace(string(text))
+	if numStr == "" {
 		return ErrEmptyNumber
 	}
-	s = strings.Replace(s, ",", ".", 1)
-	if strings.Contains(s, ",") {
+	numStr = strings.Replace(numStr, ",", ".", 1)
+	if strings.Contains(numStr, ",") {
 		return fmt.Errorf("%w: %q", ErrMultipleSeparators, text)
 	}
-	f, err := strconv.ParseFloat(s, 64)
+	file, err := strconv.ParseFloat(numStr, 64)
 	if err != nil {
 		return fmt.Errorf("%w: %q: %w", ErrInvalidNumber, text, err)
 	}
-	*d = Decimal(f)
+	*d = Decimal(file)
 
 	return nil
 }
@@ -38,7 +38,7 @@ type ExchangeRates struct {
 }
 
 type Currency struct {
-	NumCode  int     `xml:"NumCode"  json:"num_code"`
-	CharCode string  `xml:"CharCode" json:"char_code"`
-	Value    Decimal `xml:"Value" json:"value"`
+	NumCode  int     `json:"num_code" xml:"NumCode" `
+	CharCode string  `json:"char_code" xml:"CharCode"`
+	Value    Decimal `json:"value" xml:"Value"`
 }
