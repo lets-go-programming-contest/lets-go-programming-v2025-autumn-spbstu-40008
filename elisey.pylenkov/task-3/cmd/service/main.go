@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"sort"
 
-	"task-3/internal/config"
-	"task-3/internal/parser"
-	"task-3/internal/structures"
+	"github.com/elisey_pylenkov/task-3/internal/config"
+	"github.com/elisey_pylenkov/task-3/internal/parser"
+	"github.com/elisey_pylenkov/task-3/internal/structures"
 )
 
 const (
