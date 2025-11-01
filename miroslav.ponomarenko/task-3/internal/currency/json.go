@@ -7,8 +7,13 @@ import (
 	"path/filepath"
 )
 
+const (
+	dirPerm  os.FileMode = 0o755
+	filePerm os.FileMode = 0o600
+)
+
 func WriteJSON(list []Currency, outPath string) error {
-	if err := os.MkdirAll(filepath.Dir(outPath), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(outPath), dirPerm); err != nil {
 		return fmt.Errorf("create dir: %w", err)
 	}
 
@@ -19,7 +24,7 @@ func WriteJSON(list []Currency, outPath string) error {
 
 	data = append(data, '\n')
 
-	if err := os.WriteFile(outPath, data, 0o600); err != nil {
+	if err := os.WriteFile(outPath, data, filePerm); err != nil {
 		return fmt.Errorf("write file: %w", err)
 	}
 

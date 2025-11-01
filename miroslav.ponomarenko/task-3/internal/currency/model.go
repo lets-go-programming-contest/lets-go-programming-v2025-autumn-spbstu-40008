@@ -29,6 +29,7 @@ func (d *Decimal) UnmarshalText(text []byte) error {
 		return fmt.Errorf("%w: %q: %w", ErrInvalidNumber, text, err)
 	}
 	*d = Decimal(f)
+
 	return nil
 }
 
