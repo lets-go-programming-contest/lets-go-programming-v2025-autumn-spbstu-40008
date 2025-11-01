@@ -16,17 +16,17 @@ func main() {
 	flag.Parse()
 
 	if configPath == "" {
-		panic("No config provided")
+		panic("no config provided")
 	}
 
 	cfg, err := config.Load(configPath)
 	if err != nil {
-		panic(fmt.Errorf("Load config: %w", err))
+		panic(fmt.Errorf("load config: %w", err))
 	}
 
 	data, err := currency.ReadXML(cfg.InputFile)
 	if err != nil {
-		panic(fmt.Errorf("Read xml: %w", err))
+		panic(fmt.Errorf("read xml: %w", err))
 	}
 
 	sort.Slice(data.Currencies, func(i, j int) bool {
@@ -34,6 +34,6 @@ func main() {
 	})
 
 	if err := currency.WriteJSON(data.Currencies, cfg.OutputFile); err != nil {
-		panic(fmt.Errorf("Write json: %w", err))
+		panic(fmt.Errorf("write json: %w", err))
 	}
 }

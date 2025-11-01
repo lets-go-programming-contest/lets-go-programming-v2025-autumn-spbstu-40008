@@ -8,7 +8,7 @@ import (
 )
 
 func WriteJSON(list []Currency, outPath string) error {
-	if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(outPath), 0o755); err != nil {
 		return fmt.Errorf("create dir: %w", err)
 	}
 
@@ -19,7 +19,7 @@ func WriteJSON(list []Currency, outPath string) error {
 
 	data = append(data, '\n')
 
-	if err := os.WriteFile(outPath, data, 0600); err != nil {
+	if err := os.WriteFile(outPath, data, 0o600); err != nil {
 		return fmt.Errorf("write file: %w", err)
 	}
 

@@ -16,15 +16,15 @@ func Load(path string) (c Config, err error) {
 
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return c, fmt.Errorf("Open config: %w", err)
+		return c, fmt.Errorf("open config: %w", err)
 	}
 
 	if err := yaml.Unmarshal(data, &c); err != nil {
-		return c, fmt.Errorf("Decode yaml: %w", err)
+		return c, fmt.Errorf("decode yaml: %w", err)
 	}
 
 	if c.InputFile == "" || c.OutputFile == "" {
-		return c, fmt.Errorf("Invalid config fields")
+		return c, fmt.Errorf("invalid config fields")
 	}
 
 	return c, nil
