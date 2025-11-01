@@ -8,6 +8,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+var ErrInvalidConfig = errors.New("invalid config fields")
+
 type Config struct {
 	InputFile  string `yaml:"input-file"`
 	OutputFile string `yaml:"output-file"`
@@ -15,8 +17,6 @@ type Config struct {
 
 func Load(path string) (Config, error) {
 	var cfg Config
-
-	var ErrInvalidConfig = errors.New("invalid config fields")
 
 	data, err := os.ReadFile(path)
 	if err != nil {
