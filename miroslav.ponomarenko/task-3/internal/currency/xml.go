@@ -11,7 +11,7 @@ import (
 func ReadXML(path string) (*ExchangeRates, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("Open xml: %w", err)
+		return nil, fmt.Errorf("open xml: %w", err)
 	}
 	defer func() {
 		if err := f.Close(); err != nil {
@@ -24,7 +24,7 @@ func ReadXML(path string) (*ExchangeRates, error) {
 
 	var rates ExchangeRates
 	if err := dec.Decode(&rates); err != nil {
-		return nil, fmt.Errorf("Decode xml: %w", err)
+		return nil, fmt.Errorf("decode xml: %w", err)
 	}
 
 	return &rates, nil

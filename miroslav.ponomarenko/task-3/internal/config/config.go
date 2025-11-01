@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -15,6 +16,8 @@ type Config struct {
 func Load(path string) (Config, error) {
 	var cfg Config
 
+	var ErrInvalidConfig = errors.New("invalid config fields")
+
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return cfg, fmt.Errorf("open config: %w", err)
@@ -25,7 +28,7 @@ func Load(path string) (Config, error) {
 	}
 
 	if cfg.InputFile == "" || cfg.OutputFile == "" {
-		return cfg, fmt.Errorf("invalid config fields")
+		return cfg, ErrInvalidConfig
 	}
 
 	return cfg, nil
