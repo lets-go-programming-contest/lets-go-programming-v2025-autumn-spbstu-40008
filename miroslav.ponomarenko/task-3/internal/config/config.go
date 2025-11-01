@@ -13,20 +13,20 @@ type Config struct {
 }
 
 func Load(path string) (Config, error) {
-	var c Config
+	var cfg Config
 
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return c, fmt.Errorf("open config: %w", err)
+		return cfg, fmt.Errorf("open config: %w", err)
 	}
 
-	if err := yaml.Unmarshal(data, &c); err != nil {
-		return c, fmt.Errorf("decode yaml: %w", err)
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return cfg, fmt.Errorf("decode yaml: %w", err)
 	}
 
-	if c.InputFile == "" || c.OutputFile == "" {
-		return c, fmt.Errorf("invalid config fields")
+	if cfg.InputFile == "" || cfg.OutputFile == "" {
+		return cfg, fmt.Errorf("invalid config fields")
 	}
 
-	return c, nil
+	return cfg, nil
 }
