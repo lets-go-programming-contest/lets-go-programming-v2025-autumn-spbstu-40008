@@ -68,18 +68,21 @@ func main() {
 func readConfig(path string) (*Config, error) {
 	file, err := os.Open(path)
 	if err != nil {
+
 		return nil, err
 	}
 	defer file.Close()
 
 	data, err := io.ReadAll(file)
 	if err != nil {
+
 		return nil, err
 	}
 
 	var config Config
 	err = yaml.Unmarshal(data, &config)
 	if err != nil {
+
 		return nil, err
 	}
 
@@ -89,18 +92,21 @@ func readConfig(path string) (*Config, error) {
 func parseXML(path string) ([]Currency, error) {
 	file, err := os.Open(path)
 	if err != nil {
+
 		return nil, err
 	}
 	defer file.Close()
 
 	data, err := io.ReadAll(file)
 	if err != nil {
+
 		return nil, err
 	}
 
 	decoder := charmap.Windows1251.NewDecoder()
 	utf8Data, err := decoder.Bytes(data)
 	if err != nil {
+
 		return nil, err
 	}
 
@@ -110,6 +116,7 @@ func parseXML(path string) ([]Currency, error) {
 	var valCurs ValCurs
 	err = xml.Unmarshal([]byte(xmlContent), &valCurs)
 	if err != nil {
+
 		return nil, fmt.Errorf("xml unmarshal: %w", err)
 	}
 
@@ -147,11 +154,13 @@ func saveToJSON(currencies []OutputCurrency, path string) error {
 	dir := filepath.Dir(path)
 	err := os.MkdirAll(dir, 0755)
 	if err != nil {
+
 		return err
 	}
 
 	file, err := os.Create(path)
 	if err != nil {
+
 		return err
 	}
 	defer file.Close()
