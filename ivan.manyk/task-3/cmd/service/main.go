@@ -15,6 +15,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const permissions = 0o755
+
 type Config struct {
 	InputFile  string `yaml:"input-file"`
 	OutputFile string `yaml:"output-file"`
@@ -67,7 +69,6 @@ func main() {
 
 func readConfig(path string) (*Config, error) {
 	file, err := os.Open(path)
-
 	if err != nil {
 		return nil, fmt.Errorf("open config: %w", err)
 	}
@@ -79,14 +80,12 @@ func readConfig(path string) (*Config, error) {
 	}()
 
 	data, err := io.ReadAll(file)
-
 	if err != nil {
 		return nil, fmt.Errorf("read config: %w", err)
 	}
 
 	var config Config
 	err = yaml.Unmarshal(data, &config)
-
 	if err != nil {
 		return nil, fmt.Errorf("parse yaml: %w", err)
 	}
@@ -96,7 +95,6 @@ func readConfig(path string) (*Config, error) {
 
 func parseXML(path string) ([]Currency, error) {
 	file, err := os.Open(path)
-
 	if err != nil {
 		return nil, fmt.Errorf("open xml: %w", err)
 	}
@@ -108,14 +106,12 @@ func parseXML(path string) ([]Currency, error) {
 	}()
 
 	data, err := io.ReadAll(file)
-
 	if err != nil {
 		return nil, fmt.Errorf("read xml: %w", err)
 	}
 
 	decoder := charmap.Windows1251.NewDecoder()
 	utf8Data, err := decoder.Bytes(data)
-
 	if err != nil {
 		return nil, fmt.Errorf("decode windows-1251: %w", err)
 	}
@@ -125,7 +121,6 @@ func parseXML(path string) ([]Currency, error) {
 
 	var valCurs ValCurs
 	err = xml.Unmarshal([]byte(xmlContent), &valCurs)
-
 	if err != nil {
 		return nil, fmt.Errorf("xml unmarshal: %w", err)
 	}
@@ -162,12 +157,11 @@ func convertAndSortCurrencies(currencies []Currency) []OutputCurrency {
 
 func saveToJSON(currencies []OutputCurrency, path string) error {
 	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, permissions); err != nil {
 		return fmt.Errorf("create directory: %w", err)
 	}
 
 	file, err := os.Create(path)
-
 	if err != nil {
 		return fmt.Errorf("create file: %w", err)
 	}
