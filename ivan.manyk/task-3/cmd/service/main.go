@@ -69,21 +69,26 @@ func readConfig(path string) (*Config, error) {
 	file, err := os.Open(path)
 	if err != nil {
 
-		return nil, err
+		return nil, fmt.Errorf("open config: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+
+			fmt.Fprintf(os.Stderr, "Warning: failed to close file: %v\n", closeErr)
+		}
+	}()
 
 	data, err := io.ReadAll(file)
 	if err != nil {
 
-		return nil, err
+		return nil, fmt.Errorf("read config: %w", err)
 	}
 
 	var config Config
 	err = yaml.Unmarshal(data, &config)
 	if err != nil {
 
-		return nil, err
+		return nil, fmt.Errorf("parse yaml: %w", err)
 	}
 
 	return &config, nil
@@ -93,21 +98,25 @@ func parseXML(path string) ([]Currency, error) {
 	file, err := os.Open(path)
 	if err != nil {
 
-		return nil, err
+		return nil, fmt.Errorf("open xml: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to close file: %v\n", closeErr)
+		}
+	}()
 
 	data, err := io.ReadAll(file)
 	if err != nil {
 
-		return nil, err
+		return nil, fmt.Errorf("read xml: %w", err)
 	}
 
 	decoder := charmap.Windows1251.NewDecoder()
 	utf8Data, err := decoder.Bytes(data)
 	if err != nil {
 
-		return nil, err
+		return nil, fmt.Errorf("decode windows-1251: %w", err)
 	}
 
 	xmlContent := string(utf8Data)
@@ -129,7 +138,7 @@ func convertAndSortCurrencies(currencies []Currency) []OutputCurrency {
 	for _, currency := range currencies {
 		numCode, _ := strconv.Atoi(currency.NumCode)
 
-		valueStr := strings.Replace(currency.Value, ",", ".", -1)
+		valueStr := strings.ReplaceAll(currency.Value, ",", ".")
 		value, _ := strconv.ParseFloat(valueStr, 64)
 
 		output = append(output, OutputCurrency{
@@ -155,18 +164,28 @@ func saveToJSON(currencies []OutputCurrency, path string) error {
 	err := os.MkdirAll(dir, 0755)
 	if err != nil {
 
-		return err
+		return fmt.Errorf("create directory: %w", err)
 	}
 
 	file, err := os.Create(path)
 	if err != nil {
 
-		return err
+		return fmt.Errorf("create file: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+
+			fmt.Fprintf(os.Stderr, "Warning: failed to close JSON file: %v\n", closeErr)
+		}
+	}()
 
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "    ")
 
-	return encoder.Encode(currencies)
+	if err := encoder.Encode(currencies); err != nil {
+
+		return fmt.Errorf("encode json: %w", err)
+	}
+
+	return nil
 }
