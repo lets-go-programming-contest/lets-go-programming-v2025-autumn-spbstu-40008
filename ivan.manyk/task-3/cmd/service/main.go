@@ -86,7 +86,6 @@ func readConfig(path string) (*Config, error) {
 
 	var config Config
 	err = yaml.Unmarshal(data, &config)
-
 	if err != nil {
 		return nil, fmt.Errorf("parse yaml: %w", err)
 	}
@@ -113,7 +112,6 @@ func parseXML(path string) ([]Currency, error) {
 
 	decoder := charmap.Windows1251.NewDecoder()
 	utf8Data, err := decoder.Bytes(data)
-
 	if err != nil {
 		return nil, fmt.Errorf("decode windows-1251: %w", err)
 	}
@@ -123,7 +121,6 @@ func parseXML(path string) ([]Currency, error) {
 
 	var valCurs ValCurs
 	err = xml.Unmarshal([]byte(xmlContent), &valCurs)
-
 	if err != nil {
 		return nil, fmt.Errorf("xml unmarshal: %w", err)
 	}
