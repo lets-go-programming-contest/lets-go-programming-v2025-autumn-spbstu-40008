@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<ValCurs Date="08.10.1993" name="Foreign Currency Market">
+    <Valute ID="R01010">
+        <NumCode>036</NumCode>
+        <CharCode>AUD</CharCode>
+        <Nominal>1</Nominal>
+        <Name>Австралийский доллар</Name>
+        <Value>777,8400</Value>
+        <VunitRate>777,84</VunitRate>
+    </Valute>
+    <Valute ID="R01015">
+        <NumCode>040</NumCode>
+        <CharCode>ATS</CharCode>
+        <Nominal>1</Nominal>
+        <Name>Австрийский шиллинг</Name>
+        <Value>104,3000</Value>
+        <VunitRate>104,3</VunitRate>
+    </Valute>
+    <Valute ID="R01035">
+        <NumCode>826</NumCode>
+        <CharCode>GBP</CharCode>
+        <Nominal>1</Nominal>
+        <Name>Фунт стерлингов Соединенного королевства</Name>
+        <Value>1814,0600</Value>
+        <VunitRate>1814,06</VunitRate>
+    </Valute>
+    <Valute ID="R01095">
+        <NumCode>056</NumCode>
+        <CharCode>BEF</CharCode>
+        <Nominal>10</Nominal>
+        <Name>Бельгийских франков</Name>
+        <Value>337,9800</Value>
+        <VunitRate>33,798</VunitRate>
+    </Valute>
+    <Valute ID="R01205">
+        <NumCode>300</NumCode>
+        <CharCode>GRD</CharCode>
+        <Nominal>1000</Nominal>
+        <Name>Греческих драхм</Name>
+        <Value>50,5800</Value>
+        <VunitRate>0,05058</VunitRate>
+    </Valute>
+    <Valute ID="R01215">
+        <NumCode>208</NumCode>
+        <CharCode>DKK</CharCode>
+        <Nominal>1</Nominal>
+        <Name>Датская крона</Name>
+        <Value>181,2000</Value>
+        <VunitRate>181,2</VunitRate>
+    </Valute>
+    <Valute ID="R01235">
+        <NumCode>840</NumCode>
+        <CharCode>USD</CharCode>
+        <Nominal>1</Nominal>
+        <Name>Доллар США</Name>
+        <Value>1189,0000</Value>
+        <VunitRate>1189</VunitRate>
+    </Valute>
+    <Valute ID="R01305">
+        <NumCode>372</NumCode>
+        <CharCode>IEP</CharCode>
+        <Nominal>1</Nominal>
+        <Name>Ирландский фунт</Name>
+        <Value>1729,8800</Value>
+        <VunitRate>1729,88</VunitRate>
+    </Valute>
+    <Valute ID="R01310">
+        <NumCode>352</NumCode>
+        <CharCode>ISK</CharCode>
+        <Nominal>1</Nominal>
+        <Name>Исландская крона</Name>
+        <Value>17,0900</Value>
+        <VunitRate>17,09</VunitRate>
+    </Valute>
+    <Valute ID="R01315">
+        <NumCode>724</NumCode>
+        <CharCode>ESP</CharCode>
+        <Nominal>10</Nominal>
+        <Name>Испанских песет</Name>
+        <Value>90,4900</Value>
+        <VunitRate>9,049</VunitRate>
+    </Valute>
+    <Valute ID="R01325">
+        <NumCode>380</NumCode>
+        <CharCode>ITL</CharCode>
+        <Nominal>100</Nominal>
+        <Name>Итальянских лир</Name>
+        <Value>74,7400</Value>
+        <VunitRate>0,7474</VunitRate>
+    </Valute>
+    <Valute ID="R01350">
+        <NumCode>124</NumCode>
+        <CharCode>CAD</CharCode>
+        <Nominal>1</Nominal>
+        <Name>Канадский доллар</Name>
+        <Value>891,1700</Value>
+        <VunitRate>891,17</VunitRate>
+    </Valute>
+    <Valute ID="R01405">
+        <NumCode>428</NumCode>
+        <CharCode>LVL</CharCode>
+        <Nominal>1</Nominal>
+        <Name>Латвийский лат</Name>
+        <Value>1949,1800</Value>
+        <VunitRate>1949,18</VunitRate>
+    </Valute>
+    <Valute ID="R01435">
+        <NumCode>440</NumCode>
+        <CharCode>LTL</CharCode>
+        <Nominal>1</Nominal>
+        <Name>Литовский лит</Name>
+        <Value>280,4200</Value>
+        <VunitRate>280,42</VunitRate>
+    </Valute>
+    <Valute ID="R01510">
+        <NumCode>276</NumCode>
+        <CharCode>DEM</CharCode>
+        <Nominal>1</Nominal>
+        <Name>Немецкая марка</Name>
+        <Value>733,5900</Value>
+        <VunitRate>733,59</VunitRate>
+    </Valute>
+    <Valute ID="R01523">
+        <NumCode>528</NumCode>
+        <CharCode>NLG</CharCode>
+        <Nominal>1</Nominal>
+        <Name>Нидерландский гульден</Name>
+        <Value>652,7600</Value>
+        <VunitRate>652,76</VunitRate>
+    </Valute>
+    <Valute ID="R01535">
+        <NumCode>578</NumCode>
+        <CharCode>NOK</CharCode>
+        <Nominal>1</Nominal>
+        <Name>Норвежская крона</Name>
+        <Value>167,9300</Value>
+        <VunitRate>167,93</VunitRate>
+    </Valute>
+    <Valute ID="R01570">
+        <NumCode>620</NumCode>
+        <CharCode>PTE</CharCode>
+        <Nominal>10</Nominal>
+        <Name>Португальских эскудо</Name>
+        <Value>71,2000</Value>
+        <VunitRate>7,12</VunitRate>
+    </Valute>
+    <Valute ID="R01589">
+        <NumCode>960</NumCode>
+        <CharCode>XDR</CharCode>
+        <Nominal>1</Nominal>
+        <Name>СДР (специальные права заимствования)</Name>
+        <Value>1682,0700</Value>
+        <VunitRate>1682,07</VunitRate>
+    </Valute>
+    <Valute ID="R01625">
+        <NumCode>702</NumCode>
+        <CharCode>SGD</CharCode>
+        <Nominal>1</Nominal>
+        <Name>Сингапурский доллар</Name>
+        <Value>761,2000</Value>
+        <VunitRate>761,2</VunitRate>
+    </Valute>
+    <Valute ID="R01700">
+        <NumCode>792</NumCode>
+        <CharCode>TRL</CharCode>
+        <Nominal>10</Nominal>
+        <Name>Турецких лир</Name>
+        <Value>0,9700</Value>
+        <VunitRate>0,097</VunitRate>
+    </Valute>
+    <Valute ID="R01720A">
+        <Nominal>10</Nominal>
+        <Name>Украинских карбованецев</Name>
+        <Value>0,6400</Value>
+        <VunitRate></VunitRate>
+    </Valute>
+    <Valute ID="R01740">
+        <NumCode>246</NumCode>
+        <CharCode>FIM</CharCode>
+        <Nominal>1</Nominal>
+        <Name>Финляндская марка</Name>
+        <Value>206,6600</Value>
+        <VunitRate>206,66</VunitRate>
+    </Valute>
+    <Valute ID="R01750">
+        <NumCode>250</NumCode>
+        <CharCode>FRF</CharCode>
+        <Nominal>1</Nominal>
+        <Name>Французский франк</Name>
+        <Value>209,7400</Value>
+        <VunitRate>209,74</VunitRate>
+    </Valute>
+    <Valute ID="R01770">
+        <NumCode>752</NumCode>
+        <CharCode>SEK</CharCode>
+        <Nominal>1</Nominal>
+        <Name>Шведская крона</Name>
+        <Value>147,9600</Value>
+        <VunitRate>147,96</VunitRate>
+    </Valute>
+    <Valute ID="R01775">
+        <NumCode>756</NumCode>
+        <CharCode>CHF</CharCode>
+        <Nominal>1</Nominal>
+        <Name>Швейцарский франк</Name>
+        <Value>835,0900</Value>
+        <VunitRate>835,09</VunitRate>
+    </Valute>
+    <Valute ID="R01790">
+        <NumCode>954</NumCode>
+        <CharCode>XEU</CharCode>
+        <Nominal>1</Nominal>
+        <Name>ЭКЮ</Name>
+        <Value>1388,9900</Value>
+        <VunitRate>1388,99</VunitRate>
+    </Valute>
+    <Valute ID="R01795">
+        <NumCode>233</NumCode>
+        <CharCode>EEK</CharCode>
+        <Nominal>1</Nominal>
+        <Name>Эстонская крона</Name>
+        <Value>91,7000</Value>
+        <VunitRate>91,7</VunitRate>
+    </Valute>
+    <Valute ID="R01820">
+        <NumCode>392</NumCode>
+        <CharCode>JPY</CharCode>
+        <Nominal>10</Nominal>
+        <Name>Японских иен</Name>
+        <Value>113,0000</Value>
+        <VunitRate>11,3</VunitRate>
+    </Valute>
+</ValCurs>
