@@ -70,6 +70,7 @@ func readConfig(path string) (*Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open config: %w", err)
 	}
+
 	defer func() {
 		if closeErr := file.Close(); closeErr != nil {
 			fmt.Fprintf(os.Stderr, "Warning: failed to close file: %v\n", closeErr)
@@ -95,6 +96,7 @@ func parseXML(path string) ([]Currency, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open xml: %w", err)
 	}
+
 	defer func() {
 		if closeErr := file.Close(); closeErr != nil {
 			fmt.Fprintf(os.Stderr, "Warning: failed to close file: %v\n", closeErr)
@@ -153,8 +155,7 @@ func convertAndSortCurrencies(currencies []Currency) []OutputCurrency {
 
 func saveToJSON(currencies []OutputCurrency, path string) error {
 	dir := filepath.Dir(path)
-	err := os.MkdirAll(dir, 0755)
-	if err != nil {
+	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("create directory: %w", err)
 	}
 
@@ -162,6 +163,7 @@ func saveToJSON(currencies []OutputCurrency, path string) error {
 	if err != nil {
 		return fmt.Errorf("create file: %w", err)
 	}
+
 	defer func() {
 		if closeErr := file.Close(); closeErr != nil {
 			fmt.Fprintf(os.Stderr, "Warning: failed to close JSON file: %v\n", closeErr)
