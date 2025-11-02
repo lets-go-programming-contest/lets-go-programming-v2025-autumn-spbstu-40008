@@ -120,16 +120,10 @@ func convertAndSortCurrencies(currencies []Currency) []OutputCurrency {
 	output := make([]OutputCurrency, 0, len(currencies))
 
 	for _, currency := range currencies {
-		numCode, err := strconv.Atoi(currency.NumCode)
-		if err != nil {
-			continue
-		}
+		numCode, _ := strconv.Atoi(currency.NumCode)
 
 		valueStr := strings.Replace(currency.Value, ",", ".", -1)
-		value, err := strconv.ParseFloat(valueStr, 64)
-		if err != nil {
-			continue
-		}
+		value, _ := strconv.ParseFloat(valueStr, 64)
 
 		output = append(output, OutputCurrency{
 			NumCode:  numCode,
