@@ -20,7 +20,7 @@ func main() {
 	minReq := 15
 	maxReq := 30
 
-	for i := 0; i < k; i++ {
+	for range k {
 		scanner.Scan()
 		line := scanner.Text()
 		parts := strings.Split(line, " ")
