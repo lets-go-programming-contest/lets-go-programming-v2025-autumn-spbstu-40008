@@ -61,14 +61,11 @@ func main() {
 	}
 
 	var result int
-	for range kth {
-		item := heap.Pop(maxHeap)
-		value, ok := item.(int)
-		if !ok {
-			continue
-		}
 
-		result = value
+	for range kth {
+		if value, ok := heap.Pop(maxHeap).(int); ok {
+			result = value
+		}
 	}
 
 	fmt.Println(result)
