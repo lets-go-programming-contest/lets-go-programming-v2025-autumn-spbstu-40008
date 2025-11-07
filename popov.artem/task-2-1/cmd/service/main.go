@@ -12,7 +12,7 @@ func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 
 	scanner.Scan()
-	n, _ := strconv.Atoi(scanner.Text())
+	_, _ = strconv.Atoi(scanner.Text())
 
 	scanner.Scan()
 	k, _ := strconv.Atoi(scanner.Text())
