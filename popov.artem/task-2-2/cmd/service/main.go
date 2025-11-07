@@ -2,26 +2,24 @@ package main
 
 import (
 	"bufio"
+	"container/heap"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
-
-	"container/heap"
 )
 
 type MaxHeap []int
 
-func (h MaxHeap) Len() int           { return len(h) }
-func (h MaxHeap) Less(i, j int) bool { return h[i] > h[j] }
-func (h MaxHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
+func (h *MaxHeap) Len() int           { return len(*h) }
+func (h *MaxHeap) Less(i, j int) bool { return (*h)[i] > (*h)[j] }
+func (h *MaxHeap) Swap(i, j int)      { (*h)[i], (*h)[j] = (*h)[j], (*h)[i] }
 
 func (h *MaxHeap) Push(x interface{}) {
 	item, ok := x.(int)
 	if !ok {
 		return
 	}
-
 	*h = append(*h, item)
 }
 
@@ -30,7 +28,6 @@ func (h *MaxHeap) Pop() interface{} {
 	n := len(old)
 	x := old[n-1]
 	*h = old[0 : n-1]
-
 	return x
 }
 
@@ -61,13 +58,12 @@ func main() {
 	}
 
 	var result int
-	for range kValue {
+	for i := 0; i < kValue; i++ {
 		item := heap.Pop(maxHeap)
 		value, ok := item.(int)
 		if !ok {
 			continue
 		}
-
 		result = value
 	}
 
