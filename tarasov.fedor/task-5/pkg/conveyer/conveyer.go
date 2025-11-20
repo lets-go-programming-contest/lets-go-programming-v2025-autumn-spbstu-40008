@@ -123,7 +123,7 @@ func (c *Conveyer) Run(ctx context.Context) error {
 func (c *Conveyer) Send(name string, data string) error {
 	ch, ok := c.getChan(name)
 	if !ok {
-		return errors.New("channel not found")
+		return errors.New("chan not found")
 	}
 	ch <- data
 	return nil
@@ -132,7 +132,7 @@ func (c *Conveyer) Send(name string, data string) error {
 func (c *Conveyer) Recv(name string) (string, error) {
 	ch, ok := c.getChan(name)
 	if !ok {
-		return "", errors.New("channel not found")
+		return "", errors.New("chan not found")
 	}
 	data, ok := <-ch
 	if !ok {

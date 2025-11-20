@@ -8,6 +8,8 @@ import (
 )
 
 func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan string) error {
+	prefix := "decorated: "
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -21,15 +23,14 @@ func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan str
 				return errors.New("can't be decorated")
 			}
 
-			prefix := "decorated: "
-			if strings.HasPrefix(item, prefix) {
+			if !strings.HasPrefix(item, prefix) {
 				item = prefix + item
 			}
 
 			select {
+			case output <- item:
 			case <-ctx.Done():
 				return ctx.Err()
-			case output <- item:
 			}
 		}
 	}
@@ -54,9 +55,9 @@ func SeparatorFunc(ctx context.Context, input chan string, output []chan string)
 			targetChan := output[targetChanIndex]
 
 			select {
+			case targetChan <- item:
 			case <-ctx.Done():
 				return ctx.Err()
-			case targetChan <- item:
 			}
 		}
 	}
@@ -81,9 +82,9 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 					continue
 				}
 				select {
+				case output <- item:
 				case <-ctx.Done():
 					return
-				case output <- item:
 				}
 			}
 		}
