@@ -71,7 +71,6 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 	merge := func(channel chan string) {
 		defer waitGroup.Done()
 
-		// Исправление wsl
 		for {
 			select {
 			case <-ctx.Done():
