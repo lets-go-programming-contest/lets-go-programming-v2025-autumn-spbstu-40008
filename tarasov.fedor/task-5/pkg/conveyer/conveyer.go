@@ -145,14 +145,14 @@ func (c *Conveyer) Send(name string, data string) error {
 }
 
 func (c *Conveyer) Recv(name string) (string, error) {
-	ch, ok := c.getChan(name)
-	if !ok {
+	ch, exists := c.getChan(name)
+	if !exists {
 		return "", ErrChanNotFound
 	}
 
-	data, ok := <-ch
+	data, isOpen := <-ch
 
-	if !ok {
+	if !isOpen {
 		return "undefined", nil
 	}
 
