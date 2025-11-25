@@ -1,0 +1,3 @@
+module github.com/Czeeen/lets-go-programming-v2025-autumn-spbstu-40008/nikita.prokopenko/task-2-2
+
+go 1.22.7

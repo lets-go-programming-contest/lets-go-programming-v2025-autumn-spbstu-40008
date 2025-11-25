@@ -1,0 +1,2 @@
+input-file: "source/currencies.xml"
+output-file: "result/converted.json"
