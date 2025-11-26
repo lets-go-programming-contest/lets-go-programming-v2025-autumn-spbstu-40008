@@ -9,7 +9,6 @@ import (
 
 var ErrCantBeDecorated = errors.New("can't be decorated")
 
-
 func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan string) error {
 	const prefix = "decorated: "
 
@@ -26,7 +25,7 @@ func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan str
 			}
 
 			if strings.Contains(data, errorSubstring) {
-				return ErrCantBeDecorated
+				return fmt.Errorf("%w: %s", ErrCantBeDecorated, data)
 			}
 
 			if !strings.HasPrefix(data, prefix) {
@@ -52,10 +51,6 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 
 		case data, ok := <-input:
 			if !ok {
-				for _, out := range outputs {
-					close(out)
-				}
-
 				return nil
 			}
 
@@ -80,35 +75,50 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 			return fmt.Errorf("context done: %w", ctx.Err())
 
 		default:
-			processed := false
+			hasActiveChannels := false
+			dataSent := false
 
-			for _, inputCh := range inputs {
-				select {
-				case data, ok := <-inputCh:
-					if !ok {
-						continue
-					}
-					processed = true
-
-					if strings.Contains(data, skipSubstring) {
-						continue
-					}
-
-					select {
-					case output <- data:
-					case <-ctx.Done():
-						return fmt.Errorf("context done: %w", ctx.Err())
-					}
-
-				default:
-
-				}
-			}
-
-			if !processed {
+			for i := range inputs {
 				select {
 				case <-ctx.Done():
 					return fmt.Errorf("context done: %w", ctx.Err())
+
+				default:
+					select {
+					case data, ok := <-inputs[i]:
+						if !ok {
+							continue
+						}
+
+						hasActiveChannels = true 
+
+						if strings.Contains(data, skipSubstring) {
+							continue
+						}
+
+						select {
+						case output <- data:
+						case <-ctx.Done():
+							return fmt.Errorf("context done: %w", ctx.Err())
+						}
+
+					default:
+
+						hasActiveChannels = true
+				}
+			}
+
+			if !hasActiveChannels {
+				return nil
+			}
+
+			if !dataSent {
+				select {
+				case <-ctx.Done():
+					return fmt.Errorf("context done: %w", ctx.Err())
+
+				default:
+					
 				}
 			}
 		}
