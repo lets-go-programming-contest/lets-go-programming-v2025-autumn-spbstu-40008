@@ -105,6 +105,7 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 					default:
 
 						hasActiveChannels = true
+					}
 				}
 			}
 
@@ -118,9 +119,9 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 					return fmt.Errorf("context done: %w", ctx.Err())
 
 				default:
-					
+
 				}
 			}
 		}
-	}
+	}		
 }
