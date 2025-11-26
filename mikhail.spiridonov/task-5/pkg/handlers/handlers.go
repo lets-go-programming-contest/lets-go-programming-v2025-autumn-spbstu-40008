@@ -1,10 +1,10 @@
 package handlers
 
 import (
-    "context"
-    "errors"
+	"context"
+	"errors"
 	"fmt"
-    "strings"
+	"strings"
 )
 
 var (
@@ -12,111 +12,108 @@ var (
 )
 
 func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan string) error {
-    const prefix = "decorated: "
-    const errorSubstring = "no decorator"
-    
-    for {
-        select {
-        case <-ctx.Done():
+	const prefix = "decorated: "
+	const errorSubstring = "no decorator"
 
-            return fmt.Errorf("context done: %w", fmt.Errorf("context done: %w", ctx.Err()))
-        case data, ok := <-input:
-            if !ok {
+	for {
+		select {
+		case <-ctx.Done():
 
-                return nil
-            }
-            
-            if strings.Contains(data, errorSubstring) {
+			return fmt.Errorf("context done: %w", fmt.Errorf("context done: %w", ctx.Err()))
+		case data, ok := <-input:
+			if !ok {
 
-                return ErrCantBeDecorated
-            }
-            
-            if !strings.HasPrefix(data, prefix) {
-                data = prefix + data
-            }
-            
-            select {
-            case output <- data:
-            case <-ctx.Done():
+				return nil
+			}
 
-                return fmt.Errorf("context done: %w", ctx.Err())
-            }
-        }
-    }
+			if strings.Contains(data, errorSubstring) {
+
+				return ErrCantBeDecorated
+			}
+
+			if !strings.HasPrefix(data, prefix) {
+				data = prefix + data
+			}
+
+			select {
+			case output <- data:
+			case <-ctx.Done():
+
+				return fmt.Errorf("context done: %w", ctx.Err())
+			}
+		}
+	}
 }
 
-
 func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string) error {
-    counter := 0
-    
-    for {
-        select {
-        case <-ctx.Done():
+	counter := 0
 
-            return fmt.Errorf("context done: %w", ctx.Err())
-        case data, ok := <-input:
-            if !ok {
-                for _, out := range outputs {
-                    close(out)
-                }
+	for {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("context done: %w", ctx.Err())
 
-                return nil
-            }
-            
-            idx := counter % len(outputs)
-            counter++
-            
-            select {
-            case outputs[idx] <- data:
-            case <-ctx.Done():
+		case data, ok := <-input:
+			if !ok {
+				for _, out := range outputs {
+					close(out)
+				}
 
-                return fmt.Errorf("context done: %w", ctx.Err())
-            }
-        }
-    }
+				return nil
+			}
+
+			idx := counter % len(outputs)
+			counter++
+
+			select {
+			case outputs[idx] <- data:
+			case <-ctx.Done():
+				return fmt.Errorf("context done: %w", ctx.Err())
+			}
+		}
+	}
 }
 
 func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan string) error {
-    const skipSubstring = "no multiplexer"
-    
-    for {
-        select {
-        case <-ctx.Done():
+	const skipSubstring = "no multiplexer"
 
-            return fmt.Errorf("context done: %w", ctx.Err())
-        default:
-            processed := false
-            
-            for _, inputCh := range inputs {
-                select {
-                case data, ok := <-inputCh:
-                    if !ok {
-                        continue
-                    }
-                    processed = true
-                    
-                    if strings.Contains(data, skipSubstring) {
-                        continue
-                    }
-                    
-                    select {
-                    case output <- data:
-                    case <-ctx.Done():
+	for {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("context done: %w", ctx.Err())
 
-                        return fmt.Errorf("context done: %w", ctx.Err())
-                    }
-                default:
+		default:
+			processed := false
 
-                }
-            }
-            
-            if !processed {
-                select {
-                case <-ctx.Done():
-				
-                    return fmt.Errorf("context done: %w", ctx.Err())
-                }
-            }
-        }
-    }
+			for _, inputCh := range inputs {
+				select {
+				case data, ok := <-inputCh:
+					if !ok {
+						continue
+					}
+					processed = true
+
+					if strings.Contains(data, skipSubstring) {
+						continue
+					}
+
+					select {
+					case output <- data:
+					case <-ctx.Done():
+						return fmt.Errorf("context done: %w", ctx.Err())
+					}
+
+				default:
+
+				}
+			}
+
+			if !processed {
+				select {
+				case <-ctx.Done():
+					return fmt.Errorf("context done: %w", ctx.Err())
+				}
+			}
+		}
+	}
 }

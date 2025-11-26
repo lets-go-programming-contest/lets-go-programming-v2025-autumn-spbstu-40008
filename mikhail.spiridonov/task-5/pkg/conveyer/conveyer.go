@@ -86,6 +86,7 @@ func (c *DefaultConveyer) Send(input string, data string) error {
 
 	channel, exists := c.channels[input]
 	if !exists {
+
 		return fmt.Errorf("%w: %s", ErrChanNotFound, input)
 	}
 
@@ -103,6 +104,7 @@ func (c *DefaultConveyer) Recv(output string) (string, error) {
 	c.mu.RUnlock()
 
 	if !exists {
+
 		return "", fmt.Errorf("%w: %s", ErrChanNotFound, output)
 	}
 
