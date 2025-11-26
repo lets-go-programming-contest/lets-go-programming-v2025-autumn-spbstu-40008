@@ -7,12 +7,10 @@ import (
 	"strings"
 )
 
-var (
-	ErrCantBeDecorated = errors.New("can't be decorated")
-)
+var ErrCantBeDecorated = errors.New("can't be decorated")
+
 
 func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan string) error {
-
 	const prefix = "decorated: "
 
 	const errorSubstring = "no decorator"
@@ -20,16 +18,14 @@ func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan str
 	for {
 		select {
 		case <-ctx.Done():
-
 			return fmt.Errorf("context done: %w", fmt.Errorf("context done: %w", ctx.Err()))
+
 		case data, ok := <-input:
 			if !ok {
-
 				return nil
 			}
 
 			if strings.Contains(data, errorSubstring) {
-
 				return ErrCantBeDecorated
 			}
 
@@ -76,7 +72,6 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 }
 
 func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan string) error {
-
 	const skipSubstring = "no multiplexer"
 
 	for {
