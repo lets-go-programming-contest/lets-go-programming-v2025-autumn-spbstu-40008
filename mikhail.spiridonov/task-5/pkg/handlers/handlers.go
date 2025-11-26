@@ -3,7 +3,12 @@ package handlers
 import (
     "context"
     "errors"
+	"fmt"
     "strings"
+)
+
+var (
+	ErrCantBeDecorated = errors.New("can't be decorated")
 )
 
 func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan string) error {
@@ -14,7 +19,7 @@ func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan str
         select {
         case <-ctx.Done():
 
-            return ctx.Err()
+            return fmt.Errorf("context done: %w", fmt.Errorf("context done: %w", ctx.Err()))
         case data, ok := <-input:
             if !ok {
 
@@ -23,7 +28,7 @@ func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan str
             
             if strings.Contains(data, errorSubstring) {
 
-                return errors.New("can't be decorated")
+                return ErrCantBeDecorated
             }
             
             if !strings.HasPrefix(data, prefix) {
@@ -34,7 +39,7 @@ func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan str
             case output <- data:
             case <-ctx.Done():
 
-                return ctx.Err()
+                return return fmt.Errorf("context done: %w", fmt.Errorf("context done: %w", ctx.Err()))
             }
         }
     }
@@ -48,7 +53,7 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
         select {
         case <-ctx.Done():
 
-            return ctx.Err()
+            return fmt.Errorf("context done: %w", ctx.Err())
         case data, ok := <-input:
             if !ok {
                 for _, out := range outputs {
@@ -65,7 +70,7 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
             case outputs[idx] <- data:
             case <-ctx.Done():
 
-                return ctx.Err()
+                return fmt.Errorf("context done: %w", ctx.Err())
             }
         }
     }
@@ -78,7 +83,7 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
         select {
         case <-ctx.Done():
 
-            return ctx.Err()
+            return fmt.Errorf("context done: %w", ctx.Err())
         default:
             processed := false
             
@@ -98,9 +103,10 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
                     case output <- data:
                     case <-ctx.Done():
 
-                        return ctx.Err()
+                        return fmt.Errorf("context done: %w", ctx.Err())
                     }
                 default:
+					
                 }
             }
             
@@ -108,7 +114,7 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
                 select {
                 case <-ctx.Done():
 				
-                    return ctx.Err()
+                    return fmt.Errorf("context done: %w", ctx.Err())
                 }
             }
         }
