@@ -13,13 +13,16 @@ func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan str
     for {
         select {
         case <-ctx.Done():
+
             return ctx.Err()
         case data, ok := <-input:
             if !ok {
+
                 return nil
             }
             
             if strings.Contains(data, errorSubstring) {
+
                 return errors.New("can't be decorated")
             }
             
@@ -30,6 +33,7 @@ func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan str
             select {
             case output <- data:
             case <-ctx.Done():
+
                 return ctx.Err()
             }
         }
@@ -43,12 +47,14 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
     for {
         select {
         case <-ctx.Done():
+
             return ctx.Err()
         case data, ok := <-input:
             if !ok {
                 for _, out := range outputs {
                     close(out)
                 }
+
                 return nil
             }
             
@@ -58,6 +64,7 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
             select {
             case outputs[idx] <- data:
             case <-ctx.Done():
+
                 return ctx.Err()
             }
         }
@@ -70,6 +77,7 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
     for {
         select {
         case <-ctx.Done():
+
             return ctx.Err()
         default:
             processed := false
@@ -89,6 +97,7 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
                     select {
                     case output <- data:
                     case <-ctx.Done():
+
                         return ctx.Err()
                     }
                 default:
@@ -98,6 +107,7 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
             if !processed {
                 select {
                 case <-ctx.Done():
+				
                     return ctx.Err()
                 }
             }

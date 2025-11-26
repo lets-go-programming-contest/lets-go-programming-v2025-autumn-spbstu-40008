@@ -48,6 +48,7 @@ type handler interface {
 }
 
 func New(size int) *DefaultConveyer {
+
     return &DefaultConveyer{
         size:     size,
         channels: make(map[string]chan string),
@@ -63,11 +64,13 @@ func (c *DefaultConveyer) Run(ctx context.Context) error {
     for _, h := range c.handlers {
         handler := h
         g.Go(func() error {
+
             return handler.run(gCtx)
         })
     }
 
     if err := g.Wait(); err != nil {
+
         return fmt.Errorf("conveyer stopped: %w", err)
     }
 
@@ -80,13 +83,16 @@ func (c *DefaultConveyer) Send(input string, data string) error {
 
     ch, exists := c.channels[input]
     if !exists {
+
         return fmt.Errorf("%w: %s", ErrChanNotFound, input)
     }
 
     select {
     case ch <- data:
+
         return nil
     default:
+
         return errors.New("channel is full")
     }
 }
@@ -97,16 +103,20 @@ func (c *DefaultConveyer) Recv(output string) (string, error) {
     c.mu.RUnlock()
 
     if !exists {
+
         return "", fmt.Errorf("%w: %s", ErrChanNotFound, output)
     }
 
     select {
     case data, ok := <-ch:
         if !ok {
+
             return undefined, nil
         }
+
         return data, nil
     default:
+
         return "", errors.New("no data available")
     }
 }
@@ -169,11 +179,13 @@ func (c *DefaultConveyer) getOrCreateChannel(name string) chan string {
     defer c.mu.Unlock()
 
     if ch, exists := c.channels[name]; exists {
+
         return ch
     }
 
     ch := make(chan string, c.size)
     c.channels[name] = ch
+	
     return ch
 }
 
