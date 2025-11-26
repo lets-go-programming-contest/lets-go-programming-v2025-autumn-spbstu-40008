@@ -4,6 +4,9 @@ import (
     "context"
     "errors"
     "fmt"
+	"sync"
+
+    "golang.org/x/sync/errgroup"
 )
 
 const (
@@ -71,13 +74,20 @@ func (c *DefaultConveyer) Run(ctx context.Context) error {
 }
 
 func (c *DefaultConveyer) Send(input string, data string) error {
+	c.mu.RLock()
+    defer c.mu.RUnlock()
+
     ch, exists := c.channels[input]
     if !exists {
         return fmt.Errorf("%w: %s", ErrChanNotFound, input)
     }
-
-    ch <- data
-    return nil
+	
+    select {
+    case ch <- data:
+        return nil
+    default:
+        return errors.New("channel is full")
+    }
 }
 
 func (c *DefaultConveyer) Recv(output string) (string, error) {
