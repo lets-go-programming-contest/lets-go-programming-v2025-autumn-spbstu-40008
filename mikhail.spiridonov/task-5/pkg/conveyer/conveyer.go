@@ -14,24 +14,24 @@ const (
 )
 
 var (
-	ErrChanNotFound   = errors.New("chan not found")
-	ErrChanFull       = errors.New("channel is full")
-	ErrNoData         = errors.New("no data available")
+	ErrChanNotFound = errors.New("chan not found")
+	ErrChanFull     = errors.New("channel is full")
+	ErrNoData       = errors.New("no data available")
 )
 
 type Conveyer interface {
 	RegisterDecorator(
-		fn func(ctx context.Context, input chan string, output chan string) error,
+		function func(ctx context.Context, input chan string, output chan string) error,
 		input string,
 		output string,
 	)
 	RegisterMultiplexer(
-		fn func(ctx context.Context, inputs []chan string, output chan string) error,
+		function func(ctx context.Context, inputs []chan string, output chan string) error,
 		inputs []string,
 		output string,
 	)
 	RegisterSeparator(
-		fn func(ctx context.Context, input chan string, outputs []chan string) error,
+		function func(ctx context.Context, input chan string, outputs []chan string) error,
 		input string,
 		outputs []string,
 	)
@@ -86,7 +86,6 @@ func (c *DefaultConveyer) Send(input string, data string) error {
 
 	channel, exists := c.channels[input]
 	if !exists {
-
 		return fmt.Errorf("%w: %s", ErrChanNotFound, input)
 	}
 
@@ -104,7 +103,6 @@ func (c *DefaultConveyer) Recv(output string) (string, error) {
 	c.mu.RUnlock()
 
 	if !exists {
-
 		return "", fmt.Errorf("%w: %s", ErrChanNotFound, output)
 	}
 
@@ -121,7 +119,7 @@ func (c *DefaultConveyer) Recv(output string) (string, error) {
 }
 
 func (c *DefaultConveyer) RegisterDecorator(
-	fn func(ctx context.Context, input chan string, output chan string) error,
+	function func(ctx context.Context, input chan string, output chan string) error,
 	input string,
 	output string,
 ) {
@@ -129,14 +127,14 @@ func (c *DefaultConveyer) RegisterDecorator(
 	outCh := c.getOrCreateChannel(output)
 
 	c.handlers = append(c.handlers, &decorator{
-		fn:     fn,
-		input:  inCh,
-		output: outCh,
+		function: function,
+		input:    inCh,
+		output:   outCh,
 	})
 }
 
 func (c *DefaultConveyer) RegisterMultiplexer(
-	fn func(ctx context.Context, inputs []chan string, output chan string) error,
+	function func(ctx context.Context, inputs []chan string, output chan string) error,
 	inputs []string,
 	output string,
 ) {
@@ -148,14 +146,14 @@ func (c *DefaultConveyer) RegisterMultiplexer(
 	outCh := c.getOrCreateChannel(output)
 
 	c.handlers = append(c.handlers, &multiplexer{
-		fn:     fn,
-		input:  inChs,
-		output: outCh,
+		function: function,
+		input:    inChs,
+		output:   outCh,
 	})
 }
 
 func (c *DefaultConveyer) RegisterSeparator(
-	fn func(ctx context.Context, input chan string, outputs []chan string) error,
+	function func(ctx context.Context, input chan string, outputs []chan string) error,
 	input string,
 	outputs []string,
 ) {
@@ -167,9 +165,9 @@ func (c *DefaultConveyer) RegisterSeparator(
 	}
 
 	c.handlers = append(c.handlers, &separator{
-		fn:     fn,
-		input:  inCh,
-		output: outChs,
+		function: function,
+		input:    inCh,
+		output:   outChs,
 	})
 }
 

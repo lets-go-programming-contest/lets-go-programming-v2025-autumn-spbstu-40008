@@ -12,7 +12,9 @@ var (
 )
 
 func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan string) error {
+
 	const prefix = "decorated: "
+
 	const errorSubstring = "no decorator"
 
 	for {
@@ -38,7 +40,6 @@ func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan str
 			select {
 			case output <- data:
 			case <-ctx.Done():
-
 				return fmt.Errorf("context done: %w", ctx.Err())
 			}
 		}
@@ -75,6 +76,7 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 }
 
 func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan string) error {
+
 	const skipSubstring = "no multiplexer"
 
 	for {
