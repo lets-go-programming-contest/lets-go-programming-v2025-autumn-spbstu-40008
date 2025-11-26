@@ -39,7 +39,7 @@ func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan str
             case output <- data:
             case <-ctx.Done():
 
-                return return fmt.Errorf("context done: %w", fmt.Errorf("context done: %w", ctx.Err()))
+                return fmt.Errorf("context done: %w", ctx.Err())
             }
         }
     }
@@ -106,7 +106,7 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
                         return fmt.Errorf("context done: %w", ctx.Err())
                     }
                 default:
-					
+
                 }
             }
             
