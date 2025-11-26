@@ -4,7 +4,7 @@ import (
     "context"
     "errors"
     "fmt"
-	"sync"
+    "sync"
 
     "golang.org/x/sync/errgroup"
 )
@@ -40,6 +40,7 @@ type DefaultConveyer struct {
     size     int
     channels map[string]chan string
     handlers []handler
+    mu       sync.RWMutex
 }
 
 type handler interface {
@@ -74,14 +75,14 @@ func (c *DefaultConveyer) Run(ctx context.Context) error {
 }
 
 func (c *DefaultConveyer) Send(input string, data string) error {
-	c.mu.RLock()
+    c.mu.RLock()
     defer c.mu.RUnlock()
 
     ch, exists := c.channels[input]
     if !exists {
         return fmt.Errorf("%w: %s", ErrChanNotFound, input)
     }
-	
+
     select {
     case ch <- data:
         return nil
@@ -91,20 +92,82 @@ func (c *DefaultConveyer) Send(input string, data string) error {
 }
 
 func (c *DefaultConveyer) Recv(output string) (string, error) {
+    c.mu.RLock()
     ch, exists := c.channels[output]
+    c.mu.RUnlock()
+
     if !exists {
         return "", fmt.Errorf("%w: %s", ErrChanNotFound, output)
     }
 
-    data, ok := <-ch
-    if !ok {
-        return undefined, nil
+    select {
+    case data, ok := <-ch:
+        if !ok {
+            return undefined, nil
+        }
+        return data, nil
+    default:
+        return "", errors.New("no data available")
+    }
+}
+
+func (c *DefaultConveyer) RegisterDecorator(
+    fn func(ctx context.Context, input chan string, output chan string) error,
+    input string,
+    output string,
+) {
+    inCh := c.getOrCreateChannel(input)
+    outCh := c.getOrCreateChannel(output)
+    
+    c.handlers = append(c.handlers, &decorator{
+        fn:     fn,
+        input:  inCh,
+        output: outCh,
+    })
+}
+
+func (c *DefaultConveyer) RegisterMultiplexer(
+    fn func(ctx context.Context, inputs []chan string, output chan string) error,
+    inputs []string,
+    output string,
+) {
+    inChs := make([]chan string, len(inputs))
+    for i, inputName := range inputs {
+        inChs[i] = c.getOrCreateChannel(inputName)
     }
 
-    return data, nil
+    outCh := c.getOrCreateChannel(output)
+    
+    c.handlers = append(c.handlers, &multiplexer{
+        fn:     fn,
+        input:  inChs,
+        output: outCh,
+    })
+}
+
+func (c *DefaultConveyer) RegisterSeparator(
+    fn func(ctx context.Context, input chan string, outputs []chan string) error,
+    input string,
+    outputs []string,
+) {
+    inCh := c.getOrCreateChannel(input)
+    
+    outChs := make([]chan string, len(outputs))
+    for i, outputName := range outputs {
+        outChs[i] = c.getOrCreateChannel(outputName)
+    }
+    
+    c.handlers = append(c.handlers, &separator{
+        fn:     fn,
+        input:  inCh,
+        output: outChs,
+    })
 }
 
 func (c *DefaultConveyer) getOrCreateChannel(name string) chan string {
+    c.mu.Lock()
+    defer c.mu.Unlock()
+
     if ch, exists := c.channels[name]; exists {
         return ch
     }
@@ -115,7 +178,11 @@ func (c *DefaultConveyer) getOrCreateChannel(name string) chan string {
 }
 
 func (c *DefaultConveyer) close() {
-    for _, ch := range c.channels {
+    c.mu.Lock()
+    defer c.mu.Unlock()
+
+    for name, ch := range c.channels {
         close(ch)
+        delete(c.channels, name)
     }
 }
