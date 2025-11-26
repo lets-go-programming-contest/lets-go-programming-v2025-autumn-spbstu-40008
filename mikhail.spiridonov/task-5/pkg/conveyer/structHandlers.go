@@ -5,33 +5,33 @@ import (
 )
 
 type decorator struct {
-	fn     DecoratorFunc
-	input  chan string
-	output chan string
+	function DecoratorFunc
+	input    chan string
+	output   chan string
 }
 
-func (d *decorator) run(ctx context.Context) error {
-	return d.fn(ctx, d.input, d.output)
+func (dec *decorator) run(ctx context.Context) error {
+	return dec.function(ctx, dec.input, dec.output)
 }
 
 type multiplexer struct {
-	fn     MultiplexerFunc
-	input  []chan string
-	output chan string
+	function MultiplexerFunc
+	input    []chan string
+	output   chan string
 }
 
-func (m *multiplexer) run(ctx context.Context) error {
-	return m.fn(ctx, m.input, m.output)
+func (mux *multiplexer) run(ctx context.Context) error {
+	return mux.function(ctx, mux.input, mux.output)
 }
 
 type separator struct {
-	fn     SeparatorFunc
-	input  chan string
-	output []chan string
+	function SeparatorFunc
+	input    chan string
+	output   []chan string
 }
 
-func (s *separator) run(ctx context.Context) error {
-	return s.fn(ctx, s.input, s.output)
+func (sep *separator) run(ctx context.Context) error {
+	return sep.function(ctx, sep.input, sep.output)
 }
 
 type DecoratorFunc func(
@@ -48,6 +48,6 @@ type MultiplexerFunc func(
 
 type SeparatorFunc func(
 	ctx context.Context,
-	input chan string,
+	input   chan string,
 	outputs []chan string,
 ) error
