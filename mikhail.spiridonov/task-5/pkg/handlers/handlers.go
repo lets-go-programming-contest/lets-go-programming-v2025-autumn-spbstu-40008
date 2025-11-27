@@ -70,8 +70,6 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 
 	var workerGroup sync.WaitGroup
 
-	workerErrors := make(chan error, len(inputs))
-
 	processChannel := func(inputChan chan string) {
 		defer workerGroup.Done()
 
@@ -116,10 +114,6 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 		select {
 		case <-done:
 			return nil
-		case err := <-workerErrors:
-			return err
 		}
-	case err := <-workerErrors:
-		return err
 	}
 }
