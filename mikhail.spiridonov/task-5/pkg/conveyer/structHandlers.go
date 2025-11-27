@@ -21,7 +21,7 @@ type multiplexer struct {
 }
 
 func (mux *multiplexer) run(ctx context.Context) error {
-	return m.function(ctx, m.input, m.output)
+	return mux.function(ctx, mux.input, mux.output)
 }
 
 type separator struct {
@@ -31,7 +31,7 @@ type separator struct {
 }
 
 func (sep *separator) run(ctx context.Context) error {
-	return s.function(ctx, s.input, s.output)
+	return sep.function(ctx, sep.input, sep.output)
 }
 
 type DecoratorFunc func(
