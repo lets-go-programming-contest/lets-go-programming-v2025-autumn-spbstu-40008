@@ -60,6 +60,31 @@ func New(size int) *DefaultConveyer {
 	}
 }
 
+func (c *DefaultConveyer) withReadLock(fn func() error) error {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return fn()
+}
+
+func (c *DefaultConveyer) withWriteLock(fn func() error) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return fn()
+}
+
+func (c *DefaultConveyer) getChannel(name string) (chan string, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	channel, exists := c.channels[name]
+	return channel, exists
+}
+
+func (c *DefaultConveyer) setChannel(name string, channel chan string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.channels[name] = channel
+}
+
 func (c *DefaultConveyer) Run(ctx context.Context) error {
 	defer c.close()
 
@@ -81,10 +106,7 @@ func (c *DefaultConveyer) Run(ctx context.Context) error {
 }
 
 func (c *DefaultConveyer) Send(input string, data string) error {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	channel, exists := c.channels[input]
+	channel, exists := c.getChannel(output)
 	if !exists {
 		return fmt.Errorf("%w: %s", ErrChanNotFound, input)
 	}
@@ -172,25 +194,28 @@ func (c *DefaultConveyer) RegisterSeparator(
 }
 
 func (c *DefaultConveyer) getOrCreateChannel(name string) chan string {
-	c.mu.Lock()
-	defer c.mu.Unlock()
 
-	if channel, exists := c.channels[name]; exists {
+	if channel, exists := c.getChannel(name); exists {
 		return channel
 	}
 
-	channel := make(chan string, c.size)
-	c.channels[name] = channel
+	return c.withWriteLock(func() error {
+		if channel, exists := c.channels[name]; exists {
+			return channel
+		}
 
-	return channel
+		channel := make(chan string, c.size)
+		c.channels[name] = channel
+		return nil
+	}).(chan string)
 }
 
 func (c *DefaultConveyer) close() {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	for name, channel := range c.channels {
-		close(channel)
-		delete(c.channels, name)
-	}
+	c.withWriteLock(func() error {
+		for name, channel := range c.channels {
+			close(channel)
+			delete(c.channels, name)
+		}
+		return nil
+	})
 }

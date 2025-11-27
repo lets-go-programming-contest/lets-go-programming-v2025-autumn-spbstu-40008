@@ -17,7 +17,7 @@ func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan str
 	for {
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("context done: %w", fmt.Errorf("context done: %w", ctx.Err()))
+			return  fmt.Errorf("context cancelled: %w", ctx.Err())
 		case data, ok := <-input:
 			if !ok {
 				return nil
@@ -34,7 +34,7 @@ func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan str
 			select {
 			case output <- data:
 			case <-ctx.Done():
-				return fmt.Errorf("context done: %w", ctx.Err())
+				return fmt.Errorf("context cancelled: %w", ctx.Err())
 			}
 		}
 	}
@@ -46,7 +46,7 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 	for {
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("context done: %w", ctx.Err())
+			return fmt.Errorf("context cancelled: %w", ctx.Err())
 		case data, ok := <-input:
 			if !ok {
 				return nil
@@ -58,7 +58,7 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 			select {
 			case outputs[idx] <- data:
 			case <-ctx.Done():
-				return fmt.Errorf("context done: %w", ctx.Err())
+				return fmt.Errorf("context cancelled: %w", ctx.Err())
 			}
 		}
 	}
@@ -66,58 +66,50 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 
 func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan string) error {
 	const skipSubstring = "no multiplexer"
+	
+	var workerGroup sync.WaitGroup
 
-	for {
-		select {
-		case <-ctx.Done():
-			return fmt.Errorf("context done: %w", ctx.Err())
-
-		default:
-			hasActiveChannels := false
-			dataSent := false
-
-			for index := range inputs {
-				select {
-				case <-ctx.Done():
-					return fmt.Errorf("context done: %w", ctx.Err())
-
-				default:
-					select {
-					case data, ok := <-inputs[index]:
-						if !ok {
-							continue
-						}
-
-						hasActiveChannels = true 
-
-						if strings.Contains(data, skipSubstring) {
-							continue
-						}
-
-						select {
-						case output <- data:
-						case <-ctx.Done():
-							return fmt.Errorf("context done: %w", ctx.Err())
-						}
-
-					default:
-						hasActiveChannels = true
-					}
+	workerErrors := make(chan error, len(inputs))
+	
+	processChannel := func(inputChan chan string) {
+		defer workerGroup.Done()
+		
+		for {
+			select {
+			case <-ctx.Done():
+				workerErrors <- ErrContextCancelled
+				return
+			case data, ok := <-inputChan:
+				if !ok {
+					return
 				}
-			}
-
-			if !hasActiveChannels {
-				return nil
-			}
-
-			if !dataSent {
+				
+				if strings.Contains(data, skipSubstring) {
+					continue
+				}
+				
 				select {
+				case output <- data:
 				case <-ctx.Done():
-					return fmt.Errorf("context done: %w", ctx.Err())
-
-				default:
+					workerErrors <- ErrContextCancelled
+					return
 				}
 			}
 		}
-	}		
+	}
+
+	for _, inputChan := range inputs {
+		workerGroup.Add(1)
+		
+		go processChannel(inputChan)
+	}
+	
+	workerGroup.Wait()
+	
+	select {
+	case err := <-workerErrors:
+		return err
+	default:
+		return nil
+	}
 }
