@@ -78,8 +78,6 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 		for {
 			select {
 			case <-ctx.Done():
-				workerErrors <- fmt.Errorf("context cancelled: %w", ctx.Err())
-
 				return
 			case data, ok := <-inputChan:
 				if !ok {
@@ -93,8 +91,6 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 				select {
 				case output <- data:
 				case <-ctx.Done():
-					workerErrors <- fmt.Errorf("context cancelled: %w", ctx.Err())
-
 					return
 				}
 			}
@@ -107,12 +103,23 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 		go processChannel(inputChan)
 	}
 
-	workerGroup.Wait()
+	done := make(chan struct{})
+	go func() {
+		workerGroup.Wait()
+		close(done)
+	}()
 
 	select {
+	case <-done:
+		return nil
+	case <-ctx.Done():
+		select {
+		case <-done:
+			return nil
+		case err := <-workerErrors:
+			return err
+		}
 	case err := <-workerErrors:
 		return err
-	default:
-		return nil
 	}
 }

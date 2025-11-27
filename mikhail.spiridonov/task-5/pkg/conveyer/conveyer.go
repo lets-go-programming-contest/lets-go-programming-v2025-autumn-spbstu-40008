@@ -190,8 +190,12 @@ func (c *DefaultConveyer) close() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	for name, channel := range c.channels {
+	if c.closed {
+		return
+	}
+
+	c.closed = true
+	for _, channel := range c.channels {
 		close(channel)
-		delete(c.channels, name)
 	}
 }
