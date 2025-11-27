@@ -111,7 +111,7 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 	case <-done:
 		return nil
 	case <-ctx.Done():
-		<-done:
+		<-done
 		return nil
 	}
 }
