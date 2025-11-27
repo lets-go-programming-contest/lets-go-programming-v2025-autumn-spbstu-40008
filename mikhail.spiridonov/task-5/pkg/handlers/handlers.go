@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 )
 
 var ErrCantBeDecorated = errors.New("can't be decorated")
