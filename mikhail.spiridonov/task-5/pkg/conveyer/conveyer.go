@@ -45,6 +45,7 @@ type DefaultConveyer struct {
 	channels map[string]chan string
 	handlers []handler
 	mu       sync.RWMutex
+	closed   bool
 }
 
 type handler interface {
@@ -57,6 +58,7 @@ func New(size int) *DefaultConveyer {
 		channels: make(map[string]chan string),
 		handlers: make([]handler, 0),
 		mu:       sync.RWMutex{},
+		closed:   false,
 	}
 }
 
