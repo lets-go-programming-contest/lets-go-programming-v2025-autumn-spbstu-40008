@@ -77,7 +77,7 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 		for {
 			select {
 			case <-ctx.Done():
-				workerErrors <- ErrContextCancelled
+				workerErrors <- fmt.Errorf("context cancelled: %w", ctx.Err())
 				return
 			case data, ok := <-inputChan:
 				if !ok {
@@ -91,7 +91,7 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 				select {
 				case output <- data:
 				case <-ctx.Done():
-					workerErrors <- ErrContextCancelled
+					workerErrors <- fmt.Errorf("context cancelled: %w", ctx.Err())
 					return
 				}
 			}
@@ -100,7 +100,7 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 
 	for _, inputChan := range inputs {
 		workerGroup.Add(1)
-		
+
 		go processChannel(inputChan)
 	}
 	
