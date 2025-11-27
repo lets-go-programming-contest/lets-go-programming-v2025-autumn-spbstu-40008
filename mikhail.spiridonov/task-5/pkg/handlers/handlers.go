@@ -18,7 +18,7 @@ func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan str
 	for {
 		select {
 		case <-ctx.Done():
-			return  fmt.Errorf("context cancelled: %w", ctx.Err())
+			return fmt.Errorf("context cancelled: %w", ctx.Err())
 		case data, ok := <-input:
 			if !ok {
 				return nil
@@ -67,32 +67,34 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 
 func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan string) error {
 	const skipSubstring = "no multiplexer"
-	
+
 	var workerGroup sync.WaitGroup
 
 	workerErrors := make(chan error, len(inputs))
-	
+
 	processChannel := func(inputChan chan string) {
 		defer workerGroup.Done()
-		
+
 		for {
 			select {
 			case <-ctx.Done():
 				workerErrors <- fmt.Errorf("context cancelled: %w", ctx.Err())
+
 				return
 			case data, ok := <-inputChan:
 				if !ok {
 					return
 				}
-				
+
 				if strings.Contains(data, skipSubstring) {
 					continue
 				}
-				
+
 				select {
 				case output <- data:
 				case <-ctx.Done():
 					workerErrors <- fmt.Errorf("context cancelled: %w", ctx.Err())
+
 					return
 				}
 			}
@@ -104,9 +106,9 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 
 		go processChannel(inputChan)
 	}
-	
+
 	workerGroup.Wait()
-	
+
 	select {
 	case err := <-workerErrors:
 		return err
