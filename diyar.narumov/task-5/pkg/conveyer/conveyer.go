@@ -136,19 +136,17 @@ func (c *conveyerImpl) Run(ctx context.Context) error {
 		}(handler)
 	}
 
+	var err error
 	select {
-	case err := <-errCh:
+	case err = <-errCh:
 		cancel()
-		waitGroup.Wait()
-		c.closeAllChannels()
-
-		return err
 	case <-ctx.Done():
-		waitGroup.Wait()
-		c.closeAllChannels()
-
-		return nil
 	}
+
+	waitGroup.Wait()
+	c.closeAllChannels()
+
+	return err
 }
 
 func (c *conveyerImpl) closeAllChannels() {
