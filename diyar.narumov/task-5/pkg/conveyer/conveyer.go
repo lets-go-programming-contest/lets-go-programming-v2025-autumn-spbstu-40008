@@ -51,6 +51,10 @@ func (c *conveyerImpl) RegisterDecorator(
 ) {
 	inputCh := c.ensureChannel(input)
 	outputCh := c.ensureChannel(output)
+
+	c.chMutex.Lock()
+	defer c.chMutex.Unlock()
+
 	c.handlers = append(c.handlers, func(ctx context.Context) error {
 		return handlerFn(ctx, inputCh, outputCh)
 	})
@@ -67,6 +71,10 @@ func (c *conveyerImpl) RegisterMultiplexer(
 	}
 
 	outputCh := c.ensureChannel(output)
+
+	c.chMutex.Lock()
+	defer c.chMutex.Unlock()
+
 	c.handlers = append(c.handlers, func(ctx context.Context) error {
 		return handlerFn(ctx, inputsChs, outputCh)
 	})
@@ -83,6 +91,9 @@ func (c *conveyerImpl) RegisterSeparator(
 	for i, name := range outputs {
 		outputsChs[i] = c.ensureChannel(name)
 	}
+
+	c.chMutex.Lock()
+	defer c.chMutex.Unlock()
 
 	c.handlers = append(c.handlers, func(ctx context.Context) error {
 		return handlerFn(ctx, inputCh, outputsChs)
