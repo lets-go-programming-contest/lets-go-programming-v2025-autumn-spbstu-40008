@@ -55,9 +55,13 @@ func (c *Conveyer) RegisterDecorator(
 	inChan := c.getOrCreateChan(input)
 	outChan := c.getOrCreateChan(output)
 
-	c.tasks = append(c.tasks, func(ctx context.Context) error {
+	task := func(ctx context.Context) error {
 		return action(ctx, inChan, outChan)
-	})
+	}
+
+	c.mu.Lock()
+	c.tasks = append(c.tasks, task)
+	c.mu.Unlock()
 }
 
 func (c *Conveyer) RegisterMultiplexer(
@@ -72,9 +76,13 @@ func (c *Conveyer) RegisterMultiplexer(
 
 	outChan := c.getOrCreateChan(outputs)
 
-	c.tasks = append(c.tasks, func(ctx context.Context) error {
+	task := func(ctx context.Context) error {
 		return action(ctx, inChans, outChan)
-	})
+	}
+
+	c.mu.Lock()
+	c.tasks = append(c.tasks, task)
+	c.mu.Unlock()
 }
 
 func (c *Conveyer) RegisterSeparator(
@@ -89,9 +97,13 @@ func (c *Conveyer) RegisterSeparator(
 		outChans = append(outChans, c.getOrCreateChan(name))
 	}
 
-	c.tasks = append(c.tasks, func(ctx context.Context) error {
+	task := func(ctx context.Context) error {
 		return action(ctx, inChan, outChans)
-	})
+	}
+
+	c.mu.Lock()
+	c.tasks = append(c.tasks, task)
+	c.mu.Unlock()
 }
 
 func (c *Conveyer) Run(ctx context.Context) error {
