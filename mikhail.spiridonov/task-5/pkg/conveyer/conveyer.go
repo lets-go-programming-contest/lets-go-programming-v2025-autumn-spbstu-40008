@@ -14,9 +14,9 @@ const (
 )
 
 var (
-	ErrChanNotFound    = errors.New("chan not found")
-	ErrChanFull        = errors.New("channel is full")
-	ErrNoData          = errors.New("no data available")
+	ErrChanNotFound = errors.New("chan not found")
+	ErrChanFull     = errors.New("channel is full")
+	ErrNoData       = errors.New("no data available")
 )
 
 type Conveyer interface {
@@ -134,11 +134,11 @@ func (c *DefaultConveyer) RegisterDecorator(
 	output string,
 ) {
 	c.mu.Lock()
-    defer c.mu.Unlock()
+	defer c.mu.Unlock()
 
-    if c.running || c.closed {
-        return
-    }
+	if c.running || c.closed {
+		return
+	}
 
 	inCh := c.getOrCreateChannelUnsafe(input)
 	outCh := c.getOrCreateChannelUnsafe(output)
@@ -157,7 +157,7 @@ func (c *DefaultConveyer) RegisterMultiplexer(
 ) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	if c.running || c.closed {
 		return
 	}
@@ -183,7 +183,7 @@ func (c *DefaultConveyer) RegisterSeparator(
 ) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	if c.running || c.closed {
 		return
 	}
