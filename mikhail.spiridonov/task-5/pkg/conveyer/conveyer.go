@@ -14,9 +14,11 @@ const (
 )
 
 var (
-	ErrChanNotFound = errors.New("chan not found")
-	ErrChanFull     = errors.New("channel is full")
-	ErrNoData       = errors.New("no data available")
+	ErrChanNotFound    = errors.New("chan not found")
+	ErrChanFull        = errors.New("channel is full")
+	ErrNoData          = errors.New("no data available")
+	ErrConveyerRunning = errors.New("conveyer is already running")
+	ErrConveyerClosed  = errors.New("conveyer is closed")
 )
 
 type Conveyer interface {
@@ -46,6 +48,7 @@ type DefaultConveyer struct {
 	handlers []handler
 	mu       sync.RWMutex
 	closed   bool
+	running  bool
 }
 
 type handler interface {
@@ -59,15 +62,21 @@ func New(size int) *DefaultConveyer {
 		handlers: make([]handler, 0),
 		mu:       sync.RWMutex{},
 		closed:   false,
+		running:  false,
 	}
 }
 
 func (c *DefaultConveyer) Run(ctx context.Context) error {
+	c.mu.Lock()
+	c.running = true
+	handlers := c.handlers
+	c.mu.Unlock()
+
 	defer c.close()
 
 	group, groupCtx := errgroup.WithContext(ctx)
 
-	for _, h := range c.handlers {
+	for _, h := range handlers {
 		handler := h
 
 		group.Go(func() error {
@@ -86,6 +95,10 @@ func (c *DefaultConveyer) Send(input string, data string) error {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
+	if c.closed {
+		return ErrConveyerClosed
+	}
+
 	channel, exists := c.channels[input]
 	if !exists {
 		return fmt.Errorf("%w: %s", ErrChanNotFound, input)
@@ -102,6 +115,10 @@ func (c *DefaultConveyer) Send(input string, data string) error {
 func (c *DefaultConveyer) Recv(output string) (string, error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
+
+	if c.closed {
+		return "", ErrConveyerClosed
+	}
 
 	channel, exists := c.channels[output]
 
@@ -126,8 +143,15 @@ func (c *DefaultConveyer) RegisterDecorator(
 	input string,
 	output string,
 ) {
-	inCh := c.getOrCreateChannel(input)
-	outCh := c.getOrCreateChannel(output)
+	c.mu.Lock()
+    defer c.mu.Unlock()
+    
+    if c.running || c.closed {
+        return
+    }
+
+	inCh := c.getOrCreateChannelUnsafe(input)
+	outCh := c.getOrCreateChannelUnsafe(output)
 
 	c.handlers = append(c.handlers, &decorator{
 		function: function,
@@ -141,12 +165,19 @@ func (c *DefaultConveyer) RegisterMultiplexer(
 	inputs []string,
 	output string,
 ) {
-	inChs := make([]chan string, len(inputs))
-	for i, inputName := range inputs {
-		inChs[i] = c.getOrCreateChannel(inputName)
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	
+	if c.running || c.closed {
+		return
 	}
 
-	outCh := c.getOrCreateChannel(output)
+	inChs := make([]chan string, len(inputs))
+	for i, inputName := range inputs {
+		inChs[i] = c.getOrCreateChannelUnsafe(inputName)
+	}
+
+	outCh := c.getOrCreateChannelUnsafe(output)
 
 	c.handlers = append(c.handlers, &multiplexer{
 		function: function,
@@ -160,11 +191,18 @@ func (c *DefaultConveyer) RegisterSeparator(
 	input string,
 	outputs []string,
 ) {
-	inCh := c.getOrCreateChannel(input)
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	
+	if c.running || c.closed {
+		return
+	}
+
+	inCh := c.getOrCreateChannelUnsafe(input)
 
 	outChs := make([]chan string, len(outputs))
 	for i, outputName := range outputs {
-		outChs[i] = c.getOrCreateChannel(outputName)
+		outChs[i] = c.getOrCreateChannelUnsafe(outputName)
 	}
 
 	c.handlers = append(c.handlers, &separator{
@@ -174,10 +212,7 @@ func (c *DefaultConveyer) RegisterSeparator(
 	})
 }
 
-func (c *DefaultConveyer) getOrCreateChannel(name string) chan string {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
+func (c *DefaultConveyer) getOrCreateChannelUnsafe(name string) chan string {
 	if channel, exists := c.channels[name]; exists {
 		return channel
 	}
