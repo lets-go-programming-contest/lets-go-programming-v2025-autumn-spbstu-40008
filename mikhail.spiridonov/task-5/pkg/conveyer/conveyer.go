@@ -17,8 +17,6 @@ var (
 	ErrChanNotFound    = errors.New("chan not found")
 	ErrChanFull        = errors.New("channel is full")
 	ErrNoData          = errors.New("no data available")
-	ErrConveyerRunning = errors.New("conveyer is already running")
-	ErrConveyerClosed  = errors.New("conveyer is closed")
 )
 
 type Conveyer interface {
@@ -95,10 +93,6 @@ func (c *DefaultConveyer) Send(input string, data string) error {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
-	if c.closed {
-		return ErrConveyerClosed
-	}
-
 	channel, exists := c.channels[input]
 	if !exists {
 		return fmt.Errorf("%w: %s", ErrChanNotFound, input)
@@ -115,10 +109,6 @@ func (c *DefaultConveyer) Send(input string, data string) error {
 func (c *DefaultConveyer) Recv(output string) (string, error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-
-	if c.closed {
-		return "", ErrConveyerClosed
-	}
 
 	channel, exists := c.channels[output]
 
@@ -145,7 +135,7 @@ func (c *DefaultConveyer) RegisterDecorator(
 ) {
 	c.mu.Lock()
     defer c.mu.Unlock()
-    
+
     if c.running || c.closed {
         return
     }
