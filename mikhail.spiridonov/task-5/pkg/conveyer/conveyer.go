@@ -19,27 +19,6 @@ var (
 	ErrNoData       = errors.New("no data available")
 )
 
-type Conveyer interface {
-	RegisterDecorator(
-		function func(ctx context.Context, input chan string, output chan string) error,
-		input string,
-		output string,
-	)
-	RegisterMultiplexer(
-		function func(ctx context.Context, inputs []chan string, output chan string) error,
-		inputs []string,
-		output string,
-	)
-	RegisterSeparator(
-		function func(ctx context.Context, input chan string, outputs []chan string) error,
-		input string,
-		outputs []string,
-	)
-	Run(ctx context.Context) error
-	Send(input string, data string) error
-	Recv(output string) (string, error)
-}
-
 type DefaultConveyer struct {
 	size     int
 	channels map[string]chan string
@@ -134,11 +113,11 @@ func (c *DefaultConveyer) RegisterDecorator(
 	output string,
 ) {
 	c.mu.Lock()
-	defer c.mu.Unlock()
+    defer c.mu.Unlock()
 
-	if c.running || c.closed {
-		return
-	}
+    if c.running || c.closed {
+        return
+    }
 
 	inCh := c.getOrCreateChannelUnsafe(input)
 	outCh := c.getOrCreateChannelUnsafe(output)
@@ -157,7 +136,7 @@ func (c *DefaultConveyer) RegisterMultiplexer(
 ) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-
+	
 	if c.running || c.closed {
 		return
 	}
@@ -183,7 +162,7 @@ func (c *DefaultConveyer) RegisterSeparator(
 ) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-
+	
 	if c.running || c.closed {
 		return
 	}

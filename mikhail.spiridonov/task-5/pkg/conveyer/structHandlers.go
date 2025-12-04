@@ -5,7 +5,7 @@ import (
 )
 
 type decorator struct {
-	function DecoratorFunc
+	function func(ctx context.Context, input chan string, output chan string) error
 	input    chan string
 	output   chan string
 }
@@ -15,7 +15,7 @@ func (dec *decorator) run(ctx context.Context) error {
 }
 
 type multiplexer struct {
-	function MultiplexerFunc
+	function func(ctx context.Context, inputs []chan string, output chan string) error
 	input    []chan string
 	output   chan string
 }
@@ -25,7 +25,7 @@ func (mux *multiplexer) run(ctx context.Context) error {
 }
 
 type separator struct {
-	function SeparatorFunc
+	function func(ctx context.Context, input chan string, outputs []chan string) error
 	input    chan string
 	output   []chan string
 }
@@ -33,21 +33,3 @@ type separator struct {
 func (sep *separator) run(ctx context.Context) error {
 	return sep.function(ctx, sep.input, sep.output)
 }
-
-type DecoratorFunc func(
-	ctx context.Context,
-	input chan string,
-	output chan string,
-) error
-
-type MultiplexerFunc func(
-	ctx context.Context,
-	inputs []chan string,
-	output chan string,
-) error
-
-type SeparatorFunc func(
-	ctx context.Context,
-	input chan string,
-	outputs []chan string,
-) error
