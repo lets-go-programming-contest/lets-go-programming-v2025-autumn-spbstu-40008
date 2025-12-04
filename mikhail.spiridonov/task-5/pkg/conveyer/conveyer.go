@@ -136,7 +136,7 @@ func (c *DefaultConveyer) RegisterMultiplexer(
 ) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	if c.running || c.closed {
 		return
 	}
@@ -162,7 +162,7 @@ func (c *DefaultConveyer) RegisterSeparator(
 ) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	if c.running || c.closed {
 		return
 	}
