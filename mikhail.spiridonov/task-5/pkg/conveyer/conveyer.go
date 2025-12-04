@@ -113,11 +113,11 @@ func (c *DefaultConveyer) RegisterDecorator(
 	output string,
 ) {
 	c.mu.Lock()
-    defer c.mu.Unlock()
+	defer c.mu.Unlock()
 
-    if c.running || c.closed {
-        return
-    }
+	if c.running || c.closed {
+		return
+	}
 
 	inCh := c.getOrCreateChannelUnsafe(input)
 	outCh := c.getOrCreateChannelUnsafe(output)
