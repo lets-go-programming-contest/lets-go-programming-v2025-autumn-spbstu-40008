@@ -48,9 +48,7 @@ func PrefixDecoratorFunc(
 		case <-ctx.Done():
 			return nil
 		}
-
 	}
-
 }
 
 func SeparatorFunc(
@@ -84,7 +82,6 @@ func SeparatorFunc(
 			return nil
 		}
 	}
-
 }
 
 func MultiplexerFunc(
@@ -96,13 +93,13 @@ func MultiplexerFunc(
 
 	waitgr.Add(len(inputs))
 
-	for _, ch := range inputs {
+	for _, channel := range inputs {
 		go func() {
 			defer waitgr.Done()
 
 			for {
 				select {
-				case str, ok := <-ch:
+				case str, ok := <-channel:
 					if !ok {
 						return
 					}
