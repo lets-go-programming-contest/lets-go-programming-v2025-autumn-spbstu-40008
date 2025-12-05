@@ -8,8 +8,8 @@ import (
 )
 
 var (
-	ErrorNoDecorator  = errors.New("can't be decorated")
-	ErrorEmptyOutputs = errors.New("empty outputs")
+	ErrNoDecorator  = errors.New("can't be decorated")
+	ErrEmptyOutputs = errors.New("empty outputs")
 )
 
 const (
@@ -31,7 +31,7 @@ func PrefixDecoratorFunc(
 			}
 
 			if strings.Contains(currentString, noDecorator) {
-				return ErrorNoDecorator
+				return ErrNoDecorator
 			}
 
 			if !strings.HasPrefix(currentString, decoratedPrefix) {
@@ -57,7 +57,7 @@ func SeparatorFunc(
 	outputChannels []chan string,
 ) error {
 	if len(outputChannels) == 0 {
-		return ErrorEmptyOutputs
+		return ErrEmptyOutputs
 	}
 
 	currentIndex := 0
