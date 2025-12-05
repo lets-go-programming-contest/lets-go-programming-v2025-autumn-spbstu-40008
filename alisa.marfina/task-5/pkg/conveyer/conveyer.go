@@ -3,10 +3,13 @@ package conveyer
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 
 	"golang.org/x/sync/errgroup"
 )
+
+var ErrChanNotFound = errors.New("chan not found")
 
 type Conveyer struct {
 	mu        sync.RWMutex
@@ -27,106 +30,106 @@ func (c *Conveyer) ensureChan(name string) chan string {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if ch, ok := c.streams[name]; ok {
-		return ch
+	if channel, exists := c.streams[name]; exists {
+		return channel
 	}
-	ch := make(chan string, c.bufSize)
-	c.streams[name] = ch
-	return ch
+	channel := make(chan string, c.bufSize)
+	c.streams[name] = channel
+	return channel
 }
 
 func (c *Conveyer) RegisterDecorator(
-	fn func(context.Context, chan string, chan string) error,
-	in, out string,
+	callback func(context.Context, chan string, chan string) error,
+	inputName, outputName string,
 ) {
-	c.ensureChan(in)
-	c.ensureChan(out)
+	c.ensureChan(inputName)
+	c.ensureChan(outputName)
 
 	c.processes = append(c.processes, func(ctx context.Context) error {
-		input := c.ensureChan(in)
-		output := c.ensureChan(out)
-		return fn(ctx, input, output)
+		input := c.ensureChan(inputName)
+		output := c.ensureChan(outputName)
+		return callback(ctx, input, output)
 	})
 }
 
 func (c *Conveyer) RegisterMultiplexer(
-	fn func(context.Context, []chan string, chan string) error,
-	ins []string,
-	out string,
+	callback func(context.Context, []chan string, chan string) error,
+	inputNames []string,
+	outputName string,
 ) {
-	for _, name := range ins {
+	for _, name := range inputNames {
 		c.ensureChan(name)
 	}
-	c.ensureChan(out)
+	c.ensureChan(outputName)
 
 	c.processes = append(c.processes, func(ctx context.Context) error {
-		inputs := make([]chan string, len(ins))
-		for i, name := range ins {
+		inputs := make([]chan string, len(inputNames))
+		for i, name := range inputNames {
 			inputs[i] = c.ensureChan(name)
 		}
-		return fn(ctx, inputs, c.ensureChan(out))
+		return callback(ctx, inputs, c.ensureChan(outputName))
 	})
 }
 
 func (c *Conveyer) RegisterSeparator(
-	fn func(context.Context, chan string, []chan string) error,
-	in string,
-	outs []string,
+	callback func(context.Context, chan string, []chan string) error,
+	inputName string,
+	outputNames []string,
 ) {
-	c.ensureChan(in)
-	for _, name := range outs {
+	c.ensureChan(inputName)
+	for _, name := range outputNames {
 		c.ensureChan(name)
 	}
 
 	c.processes = append(c.processes, func(ctx context.Context) error {
-		outputs := make([]chan string, len(outs))
-		for i, name := range outs {
-			outputs[i] = c.ensureChan(name)
+		outputs := make([]chan string, len(outputNames))
+		for index, name := range outputNames {
+			outputs[index] = c.ensureChan(name)
 		}
-		return fn(ctx, c.ensureChan(in), outputs)
+		return callback(ctx, c.ensureChan(inputName), outputs)
 	})
 }
 
-func (c *Conveyer) Send(pipe string, data string) error {
+func (c *Conveyer) Send(pipeName string, data string) error {
 	c.mu.RLock()
-	ch, ok := c.streams[pipe]
+	channel, exists := c.streams[pipeName]
 	c.mu.RUnlock()
 
-	if !ok {
-		return errors.New("chan not found")
+	if !exists {
+		return ErrChanNotFound
 	}
-	ch <- data
+	channel <- data
 	return nil
 }
 
-func (c *Conveyer) Recv(pipe string) (string, error) {
+func (c *Conveyer) Recv(pipeName string) (string, error) {
 	c.mu.RLock()
-	ch, ok := c.streams[pipe]
+	channel, exists := c.streams[pipeName]
 	c.mu.RUnlock()
 
-	if !ok {
-		return "", errors.New("chan not found")
+	if !exists {
+		return "", ErrChanNotFound
 	}
 
-	val, ok := <-ch
-	if !ok {
+	value, isOpen := <-channel
+	if !isOpen {
 		return "undefined", nil
 	}
-	return val, nil
+	return value, nil
 }
 
 func (c *Conveyer) Run(ctx context.Context) error {
 	g, ctx := errgroup.WithContext(ctx)
 
-	for _, proc := range c.processes {
-		procCopy := proc
+	for _, processor := range c.processes {
+		processorCopy := processor
 		g.Go(func() error {
-			return procCopy(ctx)
+			return processorCopy(ctx)
 		})
 	}
 
 	if err := g.Wait(); err != nil {
-		return err
+		return fmt.Errorf("conveyer run error: %w", err)
 	}
 
 	return nil
