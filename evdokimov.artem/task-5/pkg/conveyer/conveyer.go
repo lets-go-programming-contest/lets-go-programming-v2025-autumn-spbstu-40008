@@ -3,7 +3,6 @@ package conveyer
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 
 	"golang.org/x/sync/errgroup"
@@ -33,94 +32,92 @@ func (c *Conveyer) ensureChannel(name string) chan string {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	channel, exists := c.channelsByName[name]
-	if exists {
-		return channel
+	if existing, ok := c.channelsByName[name]; ok {
+		return existing
 	}
 
-	channel = make(chan string, c.size)
-	c.channelsByName[name] = channel
+	ch := make(chan string, c.size)
+	c.channelsByName[name] = ch
 
-	return channel
+	return ch
 }
 
 func (c *Conveyer) RegisterDecorator(
-	handler func(context.Context, chan string, chan string) error,
-	input string,
-	output string,
+	handlerFunc func(context.Context, chan string, chan string) error,
+	inputName, outputName string,
 ) {
-	inputChannel := c.ensureChannel(input)
-	outputChannel := c.ensureChannel(output)
+	inputCh := c.ensureChannel(inputName)
+	outputCh := c.ensureChannel(outputName)
 
 	c.handlerList = append(c.handlerList, func(ctx context.Context) error {
-		return handler(ctx, inputChannel, outputChannel)
+		return handlerFunc(ctx, inputCh, outputCh)
 	})
 }
 
 func (c *Conveyer) RegisterMultiplexer(
-	handler func(context.Context, []chan string, chan string) error,
+	handlerFunc func(context.Context, []chan string, chan string) error,
 	inputNames []string,
-	output string,
+	outputName string,
 ) {
-	inputChannels := make([]chan string, len(inputNames))
+	inputChs := make([]chan string, len(inputNames))
 
 	for i, name := range inputNames {
-		inputChannels[i] = c.ensureChannel(name)
+		inputChs[i] = c.ensureChannel(name)
 	}
 
-	outputChannel := c.ensureChannel(output)
+	outputCh := c.ensureChannel(outputName)
 
 	c.handlerList = append(c.handlerList, func(ctx context.Context) error {
-		return handler(ctx, inputChannels, outputChannel)
+		return handlerFunc(ctx, inputChs, outputCh)
 	})
 }
 
 func (c *Conveyer) RegisterSeparator(
-	handler func(context.Context, chan string, []chan string) error,
-	input string,
+	handlerFunc func(context.Context, chan string, []chan string) error,
+	inputName string,
 	outputNames []string,
 ) {
-	inputChannel := c.ensureChannel(input)
-	outputChannels := make([]chan string, len(outputNames))
+	inputCh := c.ensureChannel(inputName)
+	outputChs := make([]chan string, len(outputNames))
 
 	for i, name := range outputNames {
-		outputChannels[i] = c.ensureChannel(name)
+		outputChs[i] = c.ensureChannel(name)
 	}
 
 	c.handlerList = append(c.handlerList, func(ctx context.Context) error {
-		return handler(ctx, inputChannel, outputChannels)
+		return handlerFunc(ctx, inputCh, outputChs)
 	})
 }
 
-func (c *Conveyer) Send(name string, value string) error {
+func (c *Conveyer) Send(pipe string, value string) error {
 	c.mutex.RLock()
-	channel, ok := c.channelsByName[name]
+	ch, ok := c.channelsByName[pipe]
 	c.mutex.RUnlock()
 
 	if !ok {
 		return ErrChannelNotFound
 	}
 
-	channel <- value
+	ch <- value
 
 	return nil
 }
 
-func (c *Conveyer) Recv(name string) (string, error) {
+func (c *Conveyer) Recv(pipe string) (string, error) {
 	c.mutex.RLock()
-	channel, ok := c.channelsByName[name]
+	ch, ok := c.channelsByName[pipe]
 	c.mutex.RUnlock()
 
 	if !ok {
 		return "", ErrChannelNotFound
 	}
 
-	val, open := <-channel
+	value, open := <-ch
 	if !open {
 		return UndefinedValue, nil
 	}
 
-	return val, nil
+	return value, nil
 }
 
 func (c *Conveyer) Run(ctx context.Context) error {
@@ -128,7 +125,6 @@ func (c *Conveyer) Run(ctx context.Context) error {
 
 	for _, handler := range c.handlerList {
 		h := handler
-
 		group.Go(func() error {
 			return h(ctx)
 		})
@@ -137,15 +133,11 @@ func (c *Conveyer) Run(ctx context.Context) error {
 	err := group.Wait()
 
 	c.mutex.Lock()
-	defer c.mutex.Unlock()
-
-	for _, channel := range c.channelsByName {
-		close(channel)
+	for _, ch := range c.channelsByName {
+		close(ch)
 	}
+	c.mutex.Unlock()
 
-	if err != nil {
-		return fmt.Errorf("pipeline failed: %w", err)
-	}
-
-	return nil
+	return err
 }
+

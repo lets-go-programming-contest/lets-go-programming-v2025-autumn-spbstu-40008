@@ -11,8 +11,8 @@ var ErrCantBeDecorated = errors.New("can't be decorated")
 
 const (
 	NoDecoratorKey   = "no decorator"
-	NoMultiplexerKey = "no multiplexer"
 	DecoratedPrefix  = "decorated: "
+	NoMultiplexerKey = "no multiplexer"
 )
 
 func PrefixDecoratorFunc(ctx context.Context, inputChannel chan string, outputChannel chan string) error {
@@ -21,21 +21,21 @@ func PrefixDecoratorFunc(ctx context.Context, inputChannel chan string, outputCh
 		case <-ctx.Done():
 			return nil
 
-		case value, ok := <-inputChannel:
+		case val, ok := <-inputChannel:
 			if !ok {
 				return nil
 			}
 
-			if strings.Contains(value, NoDecoratorKey) {
+			if strings.Contains(val, NoDecoratorKey) {
 				return ErrCantBeDecorated
 			}
 
-			if !strings.HasPrefix(value, DecoratedPrefix) {
-				value = DecoratedPrefix + value
+			if !strings.HasPrefix(val, DecoratedPrefix) {
+				val = DecoratedPrefix + val
 			}
 
 			select {
-			case outputChannel <- value:
+			case outputChannel <- val:
 			case <-ctx.Done():
 				return nil
 			}
@@ -47,12 +47,12 @@ func SeparatorFunc(ctx context.Context, inputChannel chan string, outputChannels
 	if len(outputChannels) == 0 {
 		for {
 			select {
+			case <-ctx.Done():
+				return nil
 			case _, ok := <-inputChannel:
 				if !ok {
 					return nil
 				}
-			case <-ctx.Done():
-				return nil
 			}
 		}
 	}
@@ -64,50 +64,57 @@ func SeparatorFunc(ctx context.Context, inputChannel chan string, outputChannels
 		case <-ctx.Done():
 			return nil
 
-		case value, ok := <-inputChannel:
+		case val, ok := <-inputChannel:
 			if !ok {
 				return nil
 			}
 
-			outputChannels[idx] <- value
+			select {
+			case outputChannels[idx] <- val:
+			case <-ctx.Done():
+				return nil
+			}
+
 			idx = (idx + 1) % len(outputChannels)
 		}
 	}
 }
 
 func MultiplexerFunc(ctx context.Context, inputChannels []chan string, outputChannel chan string) error {
-	var waitGroup sync.WaitGroup
+	var wg sync.WaitGroup
+	wg.Add(len(inputChannels))
 
-	waitGroup.Add(len(inputChannels))
-
-	for _, ch := range inputChannels {
-		localCh := ch
+	for _, inCh := range inputChannels {
+		channel := inCh
 
 		go func() {
-			defer waitGroup.Done()
+			defer wg.Done()
 
 			for {
 				select {
 				case <-ctx.Done():
 					return
 
-				case value, ok := <-localCh:
+				case val, ok := <-channel:
 					if !ok {
 						return
 					}
 
-					if strings.Contains(value, NoMultiplexerKey) {
+					if strings.Contains(val, NoMultiplexerKey) {
 						continue
 					}
 
-					outputChannel <- value
+					select {
+					case outputChannel <- val:
+					case <-ctx.Done():
+						return
+					}
 				}
 			}
 		}()
 	}
 
-	waitGroup.Wait()
+	wg.Wait()
 
 	return nil
 }
-
