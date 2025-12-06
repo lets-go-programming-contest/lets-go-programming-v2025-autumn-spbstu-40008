@@ -79,14 +79,18 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan string) error {
 	var waitGroup sync.WaitGroup
 
-	mergeRoutine := func(channel chan string) {
+	if len(inputs) == 0 {
+		return nil
+	}
+
+	mergeRoutine := func(inputChannel chan string) {
 		defer waitGroup.Done()
 
 		for {
 			select {
 			case <-ctx.Done():
 				return
-			case msg, ok := <-channel:
+			case msg, ok := <-inputChannel:
 				if !ok {
 					return
 				}

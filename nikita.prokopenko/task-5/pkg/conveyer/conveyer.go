@@ -17,9 +17,7 @@ type Conveyer struct {
 
 func New(size int) *Conveyer {
 	return &Conveyer{
-		mutex:      sync.RWMutex{},
 		pipeMap:    make(map[string]chan string),
-		processors: make([]func(context.Context) error, 0),
 		bufferSize: size,
 	}
 }
