@@ -115,8 +115,8 @@ func (c *Conveyer) Recv(channelName string) (string, error) {
 		return "", ErrChanNotFound
 	}
 
-	value, isOpen := <-ch
-	if !isOpen {
+	value, ok := <-ch
+	if !ok {
 		return "undefined", nil
 	}
 
@@ -125,7 +125,7 @@ func (c *Conveyer) Recv(channelName string) (string, error) {
 
 func (c *Conveyer) Run(ctx context.Context) error {
 	var wg sync.WaitGroup
-	errChan := make(chan error, len(c.handlers))
+	errChan := make(chan error, 1)
 
 	for _, handler := range c.handlers {
 		wg.Add(1)
@@ -140,11 +140,18 @@ func (c *Conveyer) Run(ctx context.Context) error {
 		}(handler)
 	}
 
-	wg.Wait()
-	close(errChan)
+	go func() {
+		wg.Wait()
+		close(errChan)
+	}()
 
-	for err := range errChan {
-		return fmt.Errorf("handler execution failed: %w", err)
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case err := <-errChan:
+		if err != nil {
+			return fmt.Errorf("handler execution failed: %w", err)
+		}
 	}
 
 	return nil

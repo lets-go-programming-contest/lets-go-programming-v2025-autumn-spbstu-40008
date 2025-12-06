@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"strings"
-	"sync"
 )
 
 type DecorationError string
@@ -26,8 +25,8 @@ func PrefixDecoratorFunc(ctx context.Context, input, output chan string) error {
 		case <-ctx.Done():
 			return nil
 
-		case value, open := <-input:
-			if !open {
+		case value, ok := <-input:
+			if !ok {
 				return nil
 			}
 
@@ -59,21 +58,21 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 		return nil
 	}
 
-	counter := 0
+	idx := 0
 
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
 
-		case value, open := <-input:
-			if !open {
+		case value, ok := <-input:
+			if !ok {
 				return nil
 			}
 
 			select {
-			case outputs[counter] <- value:
-				counter = (counter + 1) % len(outputs)
+			case outputs[idx] <- value:
+				idx = (idx + 1) % len(outputs)
 			case <-ctx.Done():
 				return nil
 			}
@@ -88,37 +87,49 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 		return nil
 	}
 
-	var wg sync.WaitGroup
+	done := make(chan struct{})
+	errs := make(chan error, len(inputs))
 
 	for _, in := range inputs {
-		wg.Add(1)
-		go func(inputChan chan string) {
-			defer wg.Done()
+		go func(ch chan string) {
+			defer func() {
+				done <- struct{}{}
+			}()
 
 			for {
 				select {
 				case <-ctx.Done():
+					errs <- ctx.Err()
 					return
-
-				case value, open := <-inputChan:
-					if !open {
+				case val, ok := <-ch:
+					if !ok {
 						return
 					}
-
-					if strings.Contains(value, noMultiplexerText) {
+					if strings.Contains(val, noMultiplexerText) {
 						continue
 					}
-
 					select {
 					case <-ctx.Done():
+						errs <- ctx.Err()
 						return
-					case output <- value:
+					case output <- val:
 					}
 				}
 			}
 		}(in)
 	}
 
-	wg.Wait()
+	for i := 0; i < len(inputs); i++ {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case err := <-errs:
+			if err != nil {
+				return err
+			}
+		case <-done:
+		}
+	}
+
 	return nil
 }
