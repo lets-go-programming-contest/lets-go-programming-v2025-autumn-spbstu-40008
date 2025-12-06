@@ -127,9 +127,11 @@ func MultiplexerFunc(
 
 	select {
 	case <-done:
+
 		return nil
 	case <-ctx.Done():
 		waitGroup.Wait()
+
 		return nil
 	}
 }
