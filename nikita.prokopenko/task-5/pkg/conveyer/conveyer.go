@@ -46,12 +46,13 @@ func (c *Conveyer) RegisterDecorator(
 	c.createOrGetChannel(inputName)
 	c.createOrGetChannel(outputName)
 
-	c.handlers = append(c.handlers, func(ctx context.Context) error {
+	handlerFn := func(ctx context.Context) error {
 		input := c.createOrGetChannel(inputName)
 		output := c.createOrGetChannel(outputName)
-
 		return handler(ctx, input, output)
-	})
+	}
+	
+	c.handlers = append(c.handlers, handlerFn)
 }
 
 func (c *Conveyer) RegisterMultiplexer(
@@ -65,16 +66,17 @@ func (c *Conveyer) RegisterMultiplexer(
 
 	c.createOrGetChannel(outputName)
 
-	c.handlers = append(c.handlers, func(ctx context.Context) error {
+	handlerFn := func(ctx context.Context) error {
 		inputs := make([]chan string, len(inputNames))
 		for i, name := range inputNames {
 			inputs[i] = c.createOrGetChannel(name)
 		}
 
 		output := c.createOrGetChannel(outputName)
-
 		return handler(ctx, inputs, output)
-	})
+	}
+	
+	c.handlers = append(c.handlers, handlerFn)
 }
 
 func (c *Conveyer) RegisterSeparator(
@@ -88,7 +90,7 @@ func (c *Conveyer) RegisterSeparator(
 		c.createOrGetChannel(name)
 	}
 
-	c.handlers = append(c.handlers, func(ctx context.Context) error {
+	handlerFn := func(ctx context.Context) error {
 		input := c.createOrGetChannel(inputName)
 		outputs := make([]chan string, len(outputNames))
 		for i, name := range outputNames {
@@ -96,7 +98,9 @@ func (c *Conveyer) RegisterSeparator(
 		}
 
 		return handler(ctx, input, outputs)
-	})
+	}
+	
+	c.handlers = append(c.handlers, handlerFn)
 }
 
 func (c *Conveyer) Send(channelName string, data string) error {
@@ -108,9 +112,13 @@ func (c *Conveyer) Send(channelName string, data string) error {
 		return ErrChanNotFound
 	}
 
-	channel <- data
-
-	return nil
+	select {
+	case channel <- data:
+		return nil
+	default:
+		channel <- data
+		return nil
+	}
 }
 
 func (c *Conveyer) Recv(channelName string) (string, error) {
@@ -132,29 +140,36 @@ func (c *Conveyer) Recv(channelName string) (string, error) {
 
 func (c *Conveyer) Run(ctx context.Context) error {
 	var waitGroup sync.WaitGroup
-
-	errChan := make(chan error, len(c.handlers))
+	errChan := make(chan error, 1)
+	
+	runCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
 	for _, handler := range c.handlers {
 		waitGroup.Add(1)
-		go func(h func(ctx context.Context) error) {
+		
+		h := handler
+		go func() {
 			defer waitGroup.Done()
-			if err := h(ctx); err != nil {
-				errChan <- err
+			if err := h(runCtx); err != nil {
+				select {
+				case errChan <- err:
+				default:
+				}
+				cancel()
 			}
-		}(handler)
+		}()
 	}
 
-	waitGroup.Wait()
+	go func() {
+		waitGroup.Wait()
+		close(errChan)
+	}()
 
-	close(errChan)
-
-	select {
-	case err := <-errChan:
+	for err := range errChan {
 		if err != nil {
 			return err
 		}
-	default:
 	}
 
 	return nil
