@@ -9,15 +9,17 @@ import (
 const undefined = "undefined"
 
 type conveyerType struct {
+	size int
 	channels map[string]chan string
 	mu       sync.RWMutex
 	handlers []func(ctx context.Context) error
 }
 
-func New() *conveyerType {
-	return &conveyerType{
-		channels: make(map[string]chan string),
-	}
+func New(size int) *conveyerType {
+    return &conveyerType{
+        size:     size,
+        channels: make(map[string]chan string),
+    }
 }
 
 func (c *conveyerType) getOrCreateChannel(name string) chan string {
@@ -28,7 +30,7 @@ func (c *conveyerType) getOrCreateChannel(name string) chan string {
 		return ch
 	}
 
-	ch := make(chan string)
+	ch := make(chan string, c.size)
 	c.channels[name] = ch
 	return ch
 }
