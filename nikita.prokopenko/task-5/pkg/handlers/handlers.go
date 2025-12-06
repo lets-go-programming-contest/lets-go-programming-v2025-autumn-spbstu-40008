@@ -10,9 +10,9 @@ import (
 var ErrCannotBeDecorated = errors.New("can't be decorated")
 
 const (
-	noDecoratorMessage   = "no decorator"
-	decoratorPrefix      = "decorated: "
-	noMultiplexerMessage = "no multiplexer"
+	noDecorator = "no decorator"
+	decorated   = "decorated: "
+	noMux       = "no multiplexer"
 )
 
 func PrefixDecoratorFunc(ctx context.Context, input, output chan string) error {
@@ -22,21 +22,21 @@ func PrefixDecoratorFunc(ctx context.Context, input, output chan string) error {
 		select {
 		case <-ctx.Done():
 			return nil
-		case value, ok := <-input:
+		case val, ok := <-input:
 			if !ok {
 				return nil
 			}
 
-			if strings.Contains(value, noDecoratorMessage) {
+			if strings.Contains(val, noDecorator) {
 				return ErrCannotBeDecorated
 			}
 
-			if !strings.HasPrefix(value, decoratorPrefix) {
-				value = decoratorPrefix + value
+			if !strings.HasPrefix(val, decorated) {
+				val = decorated + val
 			}
 
 			select {
-			case output <- value:
+			case output <- val:
 			case <-ctx.Done():
 				return nil
 			}
@@ -46,10 +46,8 @@ func PrefixDecoratorFunc(ctx context.Context, input, output chan string) error {
 
 func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string) error {
 	defer func() {
-		for _, outCh := range outputs {
-			if outCh != nil {
-				close(outCh)
-			}
+		for _, ch := range outputs {
+			close(ch)
 		}
 	}()
 
@@ -58,18 +56,17 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 	}
 
 	idx := 0
-
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
-		case value, ok := <-input:
+		case val, ok := <-input:
 			if !ok {
 				return nil
 			}
 
 			select {
-			case outputs[idx] <- value:
+			case outputs[idx] <- val:
 				idx = (idx + 1) % len(outputs)
 			case <-ctx.Done():
 				return nil
@@ -93,20 +90,20 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 	done := make(chan struct{})
 	defer close(done)
 
-	for _, inputCh := range inputs {
+	for _, ch := range inputs {
 		wg.Add(1)
-		go func(ch chan string) {
+		go func(in chan string) {
 			defer wg.Done()
 			for {
 				select {
 				case <-done:
 					return
-				case val, ok := <-ch:
+				case val, ok := <-in:
 					if !ok {
 						return
 					}
 
-					if strings.Contains(val, noMultiplexerMessage) {
+					if strings.Contains(val, noMux) {
 						continue
 					}
 
@@ -117,21 +114,14 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 					}
 				}
 			}
-		}(inputCh)
+		}(ch)
 	}
 
 	go func() {
 		wg.Wait()
+		close(done)
 	}()
 
-	select {
-	case <-ctx.Done():
-		return nil
-	}
-}
-
-type DecoratorError string
-
-func (e DecoratorError) Error() string {
-	return string(e)
+	<-ctx.Done()
+	return nil
 }
