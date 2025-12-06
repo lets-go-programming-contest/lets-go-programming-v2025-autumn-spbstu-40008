@@ -5,37 +5,35 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-
-	"golang.org/x/sync/errgroup"
 )
 
 var ErrChanNotFound = errors.New("chan not found")
 
 type Conveyer struct {
-	mu        sync.RWMutex
-	pipelines map[string]chan string
-	workers   []func(ctx context.Context) error
-	bufSize   int
+	mu       sync.RWMutex
+	channels map[string]chan string
+	handlers []func(ctx context.Context) error
+	buffer   int
 }
 
 func New(bufferSize int) *Conveyer {
 	return &Conveyer{
-		pipelines: make(map[string]chan string),
-		workers:   make([]func(ctx context.Context) error, 0),
-		bufSize:   bufferSize,
+		channels: make(map[string]chan string),
+		handlers: make([]func(ctx context.Context) error, 0),
+		buffer:   bufferSize,
 	}
 }
 
-func (c *Conveyer) getOrCreateChannel(name string) chan string {
+func (c *Conveyer) createOrGetChannel(name string) chan string {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if ch, ok := c.pipelines[name]; ok {
+	if ch, ok := c.channels[name]; ok {
 		return ch
 	}
 
-	newCh := make(chan string, c.bufSize)
-	c.pipelines[name] = newCh
+	newCh := make(chan string, c.buffer)
+	c.channels[name] = newCh
 	return newCh
 }
 
@@ -44,10 +42,12 @@ func (c *Conveyer) RegisterDecorator(
 	inputName string,
 	outputName string,
 ) {
-	input := c.getOrCreateChannel(inputName)
-	output := c.getOrCreateChannel(outputName)
+	c.createOrGetChannel(inputName)
+	c.createOrGetChannel(outputName)
 
-	c.workers = append(c.workers, func(ctx context.Context) error {
+	c.handlers = append(c.handlers, func(ctx context.Context) error {
+		input := c.createOrGetChannel(inputName)
+		output := c.createOrGetChannel(outputName)
 		return processor(ctx, input, output)
 	})
 }
@@ -57,13 +57,17 @@ func (c *Conveyer) RegisterMultiplexer(
 	inputNames []string,
 	outputName string,
 ) {
-	inputs := make([]chan string, len(inputNames))
-	for i, name := range inputNames {
-		inputs[i] = c.getOrCreateChannel(name)
+	for _, name := range inputNames {
+		c.createOrGetChannel(name)
 	}
-	output := c.getOrCreateChannel(outputName)
+	c.createOrGetChannel(outputName)
 
-	c.workers = append(c.workers, func(ctx context.Context) error {
+	c.handlers = append(c.handlers, func(ctx context.Context) error {
+		inputs := make([]chan string, len(inputNames))
+		for i, name := range inputNames {
+			inputs[i] = c.createOrGetChannel(name)
+		}
+		output := c.createOrGetChannel(outputName)
 		return processor(ctx, inputs, output)
 	})
 }
@@ -73,20 +77,25 @@ func (c *Conveyer) RegisterSeparator(
 	inputName string,
 	outputNames []string,
 ) {
-	input := c.getOrCreateChannel(inputName)
-	outputs := make([]chan string, len(outputNames))
-	for i, name := range outputNames {
-		outputs[i] = c.getOrCreateChannel(name)
+	c.createOrGetChannel(inputName)
+
+	for _, name := range outputNames {
+		c.createOrGetChannel(name)
 	}
 
-	c.workers = append(c.workers, func(ctx context.Context) error {
+	c.handlers = append(c.handlers, func(ctx context.Context) error {
+		input := c.createOrGetChannel(inputName)
+		outputs := make([]chan string, len(outputNames))
+		for i, name := range outputNames {
+			outputs[i] = c.createOrGetChannel(name)
+		}
 		return processor(ctx, input, outputs)
 	})
 }
 
 func (c *Conveyer) Send(pipeName string, data string) error {
 	c.mu.RLock()
-	ch, exists := c.pipelines[pipeName]
+	ch, exists := c.channels[pipeName]
 	c.mu.RUnlock()
 
 	if !exists {
@@ -99,7 +108,7 @@ func (c *Conveyer) Send(pipeName string, data string) error {
 
 func (c *Conveyer) Recv(pipeName string) (string, error) {
 	c.mu.RLock()
-	ch, exists := c.pipelines[pipeName]
+	ch, exists := c.channels[pipeName]
 	c.mu.RUnlock()
 
 	if !exists {
@@ -115,14 +124,38 @@ func (c *Conveyer) Recv(pipeName string) (string, error) {
 }
 
 func (c *Conveyer) Run(ctx context.Context) error {
-	group, ctx := errgroup.WithContext(ctx)
+	var wg sync.WaitGroup
+	errChan := make(chan error, 1)
+	runCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
-	for _, worker := range c.workers {
-		w := worker
-		group.Go(func() error {
-			return w(ctx)
-		})
+	for _, handler := range c.handlers {
+		wg.Add(1)
+		go func(h func(context.Context) error) {
+			defer wg.Done()
+			if err := h(runCtx); err != nil && !errors.Is(err, context.Canceled) {
+				select {
+				case errChan <- err:
+				default:
+				}
+				cancel()
+			}
+		}(handler)
 	}
 
-	return group.Wait()
+	go func() {
+		wg.Wait()
+		close(errChan)
+	}()
+
+	select {
+	case err := <-errChan:
+		if err != nil {
+			return err
+		}
+	case <-ctx.Done():
+		return nil
+	}
+
+	return nil
 }
