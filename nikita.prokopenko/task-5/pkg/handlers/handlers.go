@@ -9,11 +9,10 @@ import (
 
 var ErrDecorateFail = errors.New("can't be decorated")
 
+const stopWord = "no decorator"
+const prefix = "decorated: "
+
 func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan string) error {
-	const prefix = "decorated: "
-
-	const stopWord = "no decorator" 
-
 	for {
 		select {
 		case <-ctx.Done():
@@ -78,11 +77,11 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 }
 
 func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan string) error {
-	var waitGroup sync.WaitGroup
-
 	if len(inputs) == 0 {
 		return nil
 	}
+
+	var waitGroup sync.WaitGroup
 
 	mergeRoutine := func(inputChannel chan string) {
 		defer waitGroup.Done()
@@ -111,7 +110,6 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 
 	for _, channel := range inputs {
 		waitGroup.Add(1)
-
 		go mergeRoutine(channel)
 	}
 

@@ -102,6 +102,7 @@ func (c *Conveyer) Run(ctx context.Context) error {
 	defer cancel()
 
 	var waitGroup sync.WaitGroup
+
 	errChan := make(chan error, 1)
 
 	for _, proc := range c.processors {
@@ -109,17 +110,17 @@ func (c *Conveyer) Run(ctx context.Context) error {
 
 		currentProc := proc
 
-		go func() {
+		go func(p func(context.Context) error) {
 			defer waitGroup.Done()
 
-			if err := currentProc(ctx); err != nil {
+			if err := p(ctx); err != nil {
 				select {
 				case errChan <- err:
 					cancel()
 				default:
 				}
 			}
-		}()
+		}(currentProc)
 	}
 
 	waitGroup.Wait()
@@ -133,7 +134,6 @@ func (c *Conveyer) Run(ctx context.Context) error {
 	select {
 	case err := <-errChan:
 		return err
-
 	default:
 		return nil
 	}
@@ -163,7 +163,6 @@ func (c *Conveyer) Recv(name string) (string, error) {
 	}
 
 	val, isOpen := <-channel
-
 	if !isOpen {
 		return "undefined", nil
 	}
