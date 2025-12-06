@@ -8,30 +8,30 @@ import (
 	"sync"
 )
 
-var ErrDecorationImpossible = errors.New("can't be decorated")
+var ErrCannotBeDecorated = errors.New("can't be decorated")
 
-func ApplyPrefix(ctx context.Context, source, dest chan string) error {
+func PrefixDecoratorFunc(ctx context.Context, input, output chan string) error {
 	prefix := "decorated: "
 
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
-		case item, ok := <-source:
+		case value, ok := <-input:
 			if !ok {
 				return nil
 			}
 
-			if strings.Contains(item, "no decorator") {
-				return ErrDecorationImpossible
+			if strings.Contains(value, "no decorator") {
+				return ErrCannotBeDecorated
 			}
 
-			if !strings.HasPrefix(item, prefix) {
-				item = prefix + item
+			if !strings.HasPrefix(value, prefix) {
+				value = prefix + value
 			}
 
 			select {
-			case dest <- item:
+			case output <- value:
 			case <-ctx.Done():
 				return nil
 			}
@@ -39,36 +39,32 @@ func ApplyPrefix(ctx context.Context, source, dest chan string) error {
 	}
 }
 
-func Distribute(ctx context.Context, source chan string, targets []chan string) error {
-	if len(targets) == 0 {
-		// No targets to distribute to, just drain the source
-		for {
-			select {
-			case <-ctx.Done():
-				return nil
-			case _, ok := <-source:
-				if !ok {
-					return nil
-				}
-			}
+func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string) error {
+	defer func() {
+		for _, ch := range outputs {
+			close(ch)
 		}
+	}()
+
+	if len(outputs) == 0 {
+		return nil
 	}
 
-	current := 0
-	total := len(targets)
+	idx := 0
+	total := len(outputs)
 
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
-		case item, ok := <-source:
+		case value, ok := <-input:
 			if !ok {
 				return nil
 			}
 
 			select {
-			case targets[current] <- item:
-				current = (current + 1) % total
+			case outputs[idx] <- value:
+				idx = (idx + 1) % total
 			case <-ctx.Done():
 				return nil
 			}
@@ -76,30 +72,36 @@ func Distribute(ctx context.Context, source chan string, targets []chan string) 
 	}
 }
 
-func Merge(ctx context.Context, sources []chan string, result chan string) error {
-	if result == nil || len(sources) == 0 {
+func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan string) error {
+	if output == nil {
+		return nil
+	}
+
+	defer close(output)
+
+	if len(inputs) == 0 {
 		return nil
 	}
 
 	var wg sync.WaitGroup
 
-	processSource := func(ch chan string) {
+	processChannel := func(ch chan string) {
 		defer wg.Done()
 		for {
 			select {
 			case <-ctx.Done():
 				return
-			case item, ok := <-ch:
+			case value, ok := <-ch:
 				if !ok {
 					return
 				}
 
-				if strings.Contains(item, "no multiplexer") {
+				if strings.Contains(value, "no multiplexer") {
 					continue
 				}
 
 				select {
-				case result <- item:
+				case output <- value:
 				case <-ctx.Done():
 					return
 				}
@@ -107,9 +109,9 @@ func Merge(ctx context.Context, sources []chan string, result chan string) error
 		}
 	}
 
-	for _, ch := range sources {
+	for _, ch := range inputs {
 		wg.Add(1)
-		go processSource(ch)
+		go processChannel(ch)
 	}
 
 	wg.Wait()
