@@ -17,7 +17,7 @@ type Conveyer struct {
 
 func New(size int) *Conveyer {
 	return &Conveyer{
-		mutex:      sync.RWMutex{}, 
+		mutex:      sync.RWMutex{},
 		pipeMap:    make(map[string]chan string),
 		processors: make([]func(context.Context) error, 0),
 		bufferSize: size,
@@ -150,7 +150,7 @@ func (c *Conveyer) Send(name string, data string) error {
 
 	channel <- data
 
-	return nil 
+	return nil
 }
 
 func (c *Conveyer) Recv(name string) (string, error) {
@@ -168,5 +168,5 @@ func (c *Conveyer) Recv(name string) (string, error) {
 		return "undefined", nil
 	}
 
-	return val, nil 
+	return val, nil
 }
