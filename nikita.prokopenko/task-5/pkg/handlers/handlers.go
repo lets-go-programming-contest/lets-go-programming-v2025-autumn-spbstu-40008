@@ -3,16 +3,14 @@ package handlers
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
-	"sync"
 )
 
 func drainInput(ctx context.Context, input chan string) error {
 	for {
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("context cancelled during drain: %w", ctx.Err())
+			return nil
 		case _, ok := <-input:
 			if !ok {
 				return nil
@@ -27,7 +25,7 @@ func runPrefixDecorator(ctx context.Context, input, output chan string) error {
 	for {
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("context cancelled during decoration: %w", ctx.Err())
+			return nil
 		case value, ok := <-input:
 			if !ok {
 				return nil
@@ -44,7 +42,7 @@ func runPrefixDecorator(ctx context.Context, input, output chan string) error {
 			select {
 			case output <- value:
 			case <-ctx.Done():
-				return fmt.Errorf("context cancelled during sending decorated value: %w", ctx.Err())
+				return nil
 			}
 		}
 	}
@@ -82,7 +80,7 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 	for {
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("context cancelled during separation: %w", ctx.Err())
+			return nil
 		case value, ok := <-input:
 			if !ok {
 				return nil
@@ -92,7 +90,7 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 			case outputs[idx] <- value:
 				idx = (idx + 1) % len(outputs)
 			case <-ctx.Done():
-				return fmt.Errorf("context cancelled during sending separated value: %w", ctx.Err())
+				return nil
 			}
 		}
 	}
@@ -136,27 +134,17 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 		return nil
 	}
 
-	var wg sync.WaitGroup
 	doneCh := make(chan struct{}, len(inputs))
 
 	for _, inputCh := range inputs {
-		wg.Add(1)
-		go func(ch chan string) {
-			defer wg.Done()
-			processInputChannel(ctx, ch, output, doneCh)
-		}(inputCh)
+		go processInputChannel(ctx, inputCh, output, doneCh)
 	}
 
-	go func() {
-		wg.Wait()
-		close(doneCh)
-	}()
-
-	for range inputs {
+	for i := 0; i < len(inputs); i++ {
 		select {
 		case <-doneCh:
 		case <-ctx.Done():
-			return fmt.Errorf("context cancelled during multiplexing: %w", ctx.Err())
+			return nil
 		}
 	}
 

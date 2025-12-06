@@ -110,13 +110,8 @@ func (c *Conveyer) Send(channelName string, data string) error {
 		return fmt.Errorf("%w: channel %s not found", ErrChanNotFound, channelName)
 	}
 
-	select {
-	case channel <- data:
-		return nil
-	default:
-		channel <- data
-		return nil
-	}
+	channel <- data
+	return nil
 }
 
 func (c *Conveyer) Recv(channelName string) (string, error) {
@@ -148,7 +143,7 @@ func (c *Conveyer) Run(ctx context.Context) error {
 
 		go func(h func(context.Context) error) {
 			defer waitGroup.Done()
-			if err := h(runCtx); err != nil {
+			if err := h(runCtx); err != nil && !errors.Is(err, context.Canceled) {
 				select {
 				case errChan <- fmt.Errorf("handler error: %w", err):
 				default:
@@ -164,12 +159,11 @@ func (c *Conveyer) Run(ctx context.Context) error {
 	}()
 
 	select {
-	case <-ctx.Done():
-		return fmt.Errorf("context cancelled: %w", ctx.Err())
 	case err := <-errChan:
 		if err != nil {
 			return err
 		}
+	case <-ctx.Done():
 	}
 
 	return nil
