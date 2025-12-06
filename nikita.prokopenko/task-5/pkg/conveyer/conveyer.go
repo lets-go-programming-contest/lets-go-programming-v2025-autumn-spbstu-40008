@@ -1,3 +1,4 @@
+// pkg/conveyer/conveyer.go
 package conveyer
 
 import (
@@ -5,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 )
 
 var ErrChanNotFound = errors.New("chan not found")
@@ -102,8 +104,13 @@ func (c *Conveyer) Send(pipeName string, data string) error {
 		return fmt.Errorf("%w: %s", ErrChanNotFound, pipeName)
 	}
 
-	ch <- data
-	return nil
+	select {
+	case ch <- data:
+		return nil
+	case <-time.After(100 * time.Millisecond):
+		ch <- data
+		return nil
+	}
 }
 
 func (c *Conveyer) Recv(pipeName string) (string, error) {
@@ -115,25 +122,37 @@ func (c *Conveyer) Recv(pipeName string) (string, error) {
 		return "", fmt.Errorf("%w: %s", ErrChanNotFound, pipeName)
 	}
 
-	val, ok := <-ch
-	if !ok {
-		return "", nil
+	select {
+	case val, ok := <-ch:
+		if !ok {
+			return "", nil
+		}
+		return val, nil
+	case <-time.After(100 * time.Millisecond):
+		val, ok := <-ch
+		if !ok {
+			return "", nil
+		}
+		return val, nil
 	}
-
-	return val, nil
 }
 
 func (c *Conveyer) Run(ctx context.Context) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	var wg sync.WaitGroup
 	errChan := make(chan error, 1)
-	runCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
+
+	// Set a timeout for the entire operation to prevent hanging
+	timeoutCtx, timeoutCancel := context.WithTimeout(ctx, 5*time.Second)
+	defer timeoutCancel()
 
 	for _, handler := range c.handlers {
 		wg.Add(1)
 		go func(h func(context.Context) error) {
 			defer wg.Done()
-			if err := h(runCtx); err != nil && !errors.Is(err, context.Canceled) {
+			if err := h(ctx); err != nil && !errors.Is(err, context.Canceled) {
 				select {
 				case errChan <- err:
 				default:
@@ -153,7 +172,9 @@ func (c *Conveyer) Run(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-	case <-ctx.Done():
+	case <-timeoutCtx.Done():
+		cancel()
+		wg.Wait()
 		return nil
 	}
 

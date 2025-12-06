@@ -1,9 +1,11 @@
+// pkg/handlers/handlers.go
 package handlers
 
 import (
 	"context"
 	"errors"
 	"strings"
+	"sync"
 )
 
 var ErrCannotBeDecorated = errors.New("can't be decorated")
@@ -48,9 +50,9 @@ func PrefixDecoratorFunc(ctx context.Context, input, output chan string) error {
 			}
 
 			select {
+			case output <- val:
 			case <-ctx.Done():
 				return nil
-			case output <- val:
 			}
 		}
 	}
@@ -59,7 +61,11 @@ func PrefixDecoratorFunc(ctx context.Context, input, output chan string) error {
 func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string) error {
 	defer func() {
 		for _, ch := range outputs {
-			close(ch)
+			select {
+			case <-ctx.Done():
+			default:
+				close(ch)
+			}
 		}
 	}()
 
@@ -78,10 +84,10 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 			}
 
 			select {
-			case <-ctx.Done():
-				return nil
 			case outputs[idx] <- val:
 				idx = (idx + 1) % len(outputs)
+			case <-ctx.Done():
+				return nil
 			}
 		}
 	}
@@ -92,22 +98,26 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 		return nil
 	}
 
-	defer close(output)
-
 	if len(inputs) == 0 {
+		close(output)
 		return nil
 	}
 
-	doneCh := make(chan struct{})
-	defer close(doneCh)
+	var wg sync.WaitGroup
+	done := make(chan struct{})
+	defer func() {
+		close(done)
+		wg.Wait()
+		close(output)
+	}()
 
 	for _, ch := range inputs {
+		wg.Add(1)
 		go func(in chan string) {
+			defer wg.Done()
 			for {
 				select {
-				case <-ctx.Done():
-					return
-				case <-doneCh:
+				case <-done:
 					return
 				case val, ok := <-in:
 					if !ok {
@@ -119,17 +129,17 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 					}
 
 					select {
-					case <-ctx.Done():
-						return
-					case <-doneCh:
-						return
 					case output <- val:
+					case <-done:
+						return
 					}
 				}
 			}
 		}(ch)
 	}
 
-	<-ctx.Done()
-	return nil
+	select {
+	case <-ctx.Done():
+		return nil
+	}
 }
