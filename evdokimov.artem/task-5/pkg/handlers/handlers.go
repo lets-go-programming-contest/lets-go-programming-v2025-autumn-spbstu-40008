@@ -15,27 +15,23 @@ const (
 	NoMultiplexerKey = "no multiplexer"
 )
 
-func PrefixDecoratorFunc(ctx context.Context, inputChannel chan string, outputChannel chan string) error {
+func PrefixDecoratorFunc(ctx context.Context, input <-chan string, output chan<- string) error {
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
-
-		case val, ok := <-inputChannel:
+		case val, ok := <-input:
 			if !ok {
 				return nil
 			}
-
 			if strings.Contains(val, NoDecoratorKey) {
 				return ErrCantBeDecorated
 			}
-
 			if !strings.HasPrefix(val, DecoratedPrefix) {
 				val = DecoratedPrefix + val
 			}
-
 			select {
-			case outputChannel <- val:
+			case output <- val:
 			case <-ctx.Done():
 				return nil
 			}
@@ -43,69 +39,58 @@ func PrefixDecoratorFunc(ctx context.Context, inputChannel chan string, outputCh
 	}
 }
 
-func SeparatorFunc(ctx context.Context, inputChannel chan string, outputChannels []chan string) error {
-	if len(outputChannels) == 0 {
+func SeparatorFunc(ctx context.Context, input <-chan string, outputs []chan<- string) error {
+	if len(outputs) == 0 {
 		for {
 			select {
 			case <-ctx.Done():
 				return nil
-			case _, ok := <-inputChannel:
+			case _, ok := <-input:
 				if !ok {
 					return nil
 				}
 			}
 		}
 	}
-
 	idx := 0
-
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
-
-		case val, ok := <-inputChannel:
+		case val, ok := <-input:
 			if !ok {
 				return nil
 			}
-
 			select {
-			case outputChannels[idx] <- val:
+			case outputs[idx] <- val:
 			case <-ctx.Done():
 				return nil
 			}
-
-			idx = (idx + 1) % len(outputChannels)
+			idx = (idx + 1) % len(outputs)
 		}
 	}
 }
 
-func MultiplexerFunc(ctx context.Context, inputChannels []chan string, outputChannel chan string) error {
-	var wg sync.WaitGroup
-	wg.Add(len(inputChannels))
-
-	for _, inCh := range inputChannels {
+func MultiplexerFunc(ctx context.Context, inputs []<-chan string, output chan<- string) error {
+	var waitGroup sync.WaitGroup
+	for _, inCh := range inputs {
 		channel := inCh
-
+		waitGroup.Add(1)
 		go func() {
-			defer wg.Done()
-
+			defer waitGroup.Done()
 			for {
 				select {
 				case <-ctx.Done():
 					return
-
 				case val, ok := <-channel:
 					if !ok {
 						return
 					}
-
 					if strings.Contains(val, NoMultiplexerKey) {
 						continue
 					}
-
 					select {
-					case outputChannel <- val:
+					case output <- val:
 					case <-ctx.Done():
 						return
 					}
@@ -113,8 +98,7 @@ func MultiplexerFunc(ctx context.Context, inputChannels []chan string, outputCha
 			}
 		}()
 	}
-
-	wg.Wait()
-
+	waitGroup.Wait()
 	return nil
 }
+
