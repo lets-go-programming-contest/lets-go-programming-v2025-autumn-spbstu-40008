@@ -147,7 +147,7 @@ func (c *conveyerImpl) Run(ctx context.Context) error {
 		return fmt.Errorf("conveyer run failed: %w", err)
 	}
 
-	return err
+	return nil
 }
 
 func (c *conveyerImpl) closeAllChannels() {
