@@ -52,11 +52,11 @@ func (c *Conveyer) RegisterDecorator(
 	inputName string,
 	outputName string,
 ) {
-	in := c.ensureChannel(inputName)
-	out := c.ensureChannel(outputName)
+	inputChannel := c.ensureChannel(inputName)
+	outputChannel := c.ensureChannel(outputName)
 
 	task := func(ctx context.Context) error {
-		return handler(ctx, in, out)
+		return handler(ctx, inputChannel, outputChannel)
 	}
 
 	c.mu.Lock()
@@ -69,15 +69,15 @@ func (c *Conveyer) RegisterMultiplexer(
 	inputNames []string,
 	outputName string,
 ) {
-	inChans := make([]chan string, 0, len(inputNames))
+	inputChannels := make([]chan string, 0, len(inputNames))
 	for _, name := range inputNames {
-		inChans = append(inChans, c.ensureChannel(name))
+		inputChannels = append(inputChannels, c.ensureChannel(name))
 	}
 
-	out := c.ensureChannel(outputName)
+	outputChannel := c.ensureChannel(outputName)
 
 	task := func(ctx context.Context) error {
-		return handler(ctx, inChans, out)
+		return handler(ctx, inputChannels, outputChannel)
 	}
 
 	c.mu.Lock()
@@ -90,15 +90,15 @@ func (c *Conveyer) RegisterSeparator(
 	inputName string,
 	outputNames []string,
 ) {
-	in := c.ensureChannel(inputName)
+	inputChannel := c.ensureChannel(inputName)
 
-	outChans := make([]chan string, 0, len(outputNames))
+	outputChannels := make([]chan string, 0, len(outputNames))
 	for _, name := range outputNames {
-		outChans = append(outChans, c.ensureChannel(name))
+		outputChannels = append(outputChannels, c.ensureChannel(name))
 	}
 
 	task := func(ctx context.Context) error {
-		return handler(ctx, in, outChans)
+		return handler(ctx, inputChannel, outputChannels)
 	}
 
 	c.mu.Lock()
@@ -123,12 +123,12 @@ func (c *Conveyer) Recv(channelName string) (string, error) {
 		return "", ErrChanNotFound
 	}
 
-	val, open := <-channelRef
+	value, open := <-channelRef
 	if !open {
-		return "undefined", nil
+		return "", nil
 	}
 
-	return val, nil
+	return value, nil
 }
 
 func (c *Conveyer) Run(ctx context.Context) error {
@@ -136,24 +136,25 @@ func (c *Conveyer) Run(ctx context.Context) error {
 	defer cancel()
 
 	var waitGroup sync.WaitGroup
-	var firstErr error
-	var once sync.Once
 
-	for _, h := range c.handlers {
+	var (
+		firstErr error
+		once     sync.Once
+	)
+
+	for _, handlerFunc := range c.handlers {
 		waitGroup.Add(1)
 
-		handlerFunc := h
-
-		go func() {
+		go func(h func(ctx context.Context) error) {
 			defer waitGroup.Done()
 
-			if err := handlerFunc(ctx); err != nil {
+			if err := h(ctx); err != nil {
 				once.Do(func() {
 					firstErr = err
 					cancel()
 				})
 			}
-		}()
+		}(handlerFunc)
 	}
 
 	waitGroup.Wait()
