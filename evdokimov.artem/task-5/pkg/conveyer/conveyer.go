@@ -3,9 +3,8 @@ package conveyer
 import (
 	"context"
 	"errors"
-	"sync"
-
 	"golang.org/x/sync/errgroup"
+	"sync"
 )
 
 var ErrChannelNotFound = errors.New("chan not found")
