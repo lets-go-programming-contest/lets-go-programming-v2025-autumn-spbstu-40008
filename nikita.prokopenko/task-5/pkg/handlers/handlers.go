@@ -87,19 +87,14 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 		return nil
 	}
 
-	done := make(chan struct{})
-	errs := make(chan error, len(inputs))
+	done := make(chan bool, len(inputs))
 
 	for _, in := range inputs {
 		go func(ch chan string) {
-			defer func() {
-				done <- struct{}{}
-			}()
-
+			defer func() { done <- true }()
 			for {
 				select {
 				case <-ctx.Done():
-					errs <- ctx.Err()
 					return
 				case val, ok := <-ch:
 					if !ok {
@@ -110,7 +105,6 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 					}
 					select {
 					case <-ctx.Done():
-						errs <- ctx.Err()
 						return
 					case output <- val:
 					}
@@ -120,15 +114,7 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 	}
 
 	for i := 0; i < len(inputs); i++ {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case err := <-errs:
-			if err != nil {
-				return err
-			}
-		case <-done:
-		}
+		<-done
 	}
 
 	return nil

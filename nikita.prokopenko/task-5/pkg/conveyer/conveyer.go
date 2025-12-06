@@ -3,7 +3,6 @@ package conveyer
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 )
 
@@ -125,33 +124,23 @@ func (c *Conveyer) Recv(channelName string) (string, error) {
 
 func (c *Conveyer) Run(ctx context.Context) error {
 	var wg sync.WaitGroup
-	errChan := make(chan error, 1)
+	errChan := make(chan error, len(c.handlers))
 
 	for _, handler := range c.handlers {
 		wg.Add(1)
 		go func(h func(ctx context.Context) error) {
 			defer wg.Done()
 			if err := h(ctx); err != nil {
-				select {
-				case errChan <- err:
-				default:
-				}
+				errChan <- err
 			}
 		}(handler)
 	}
 
-	go func() {
-		wg.Wait()
-		close(errChan)
-	}()
+	wg.Wait()
+	close(errChan)
 
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case err := <-errChan:
-		if err != nil {
-			return fmt.Errorf("handler execution failed: %w", err)
-		}
+	for err := range errChan {
+		return err
 	}
 
 	return nil
