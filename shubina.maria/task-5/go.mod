@@ -1,4 +1,4 @@
-module github.com/Maria-Mariaa/task-5
+module github.com/Maria-Mariia/task-5
 
 go 1.22
 
