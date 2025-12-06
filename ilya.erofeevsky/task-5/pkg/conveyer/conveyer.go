@@ -56,7 +56,7 @@ func (c *Conveyer) RegisterDecorator(
 ) {
 	inputCh := c.ensureChannel(input)
 	outputCh := c.ensureChannel(output)
-
+	
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
@@ -94,12 +94,12 @@ func (c *Conveyer) RegisterMultiplexer(
 	for i, name := range inputs {
 		inputsChs[i] = c.ensureChannel(name)
 	}
-
+	
 	outputCh := c.ensureChannel(output)
-
+	
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-
+	
 	c.handlerList = append(c.handlerList, func(ctx context.Context) error {
 		return handlerFn(ctx, inputsChs, outputCh)
 	})
@@ -111,7 +111,7 @@ func (c *Conveyer) Send(input, data string) error {
 		return ErrChannelNotFound
 	}
 	inputCh <- data
-
+	
 	return nil
 }
 
@@ -125,7 +125,7 @@ func (c *Conveyer) Recv(output string) (string, error) {
 	if !ok {
 		return undefinedValue, nil
 	}
-
+	
 	return val, nil
 }
 
@@ -135,8 +135,9 @@ func (c *Conveyer) Run(executionContext context.Context) error {
 	c.mutex.RLock()
 	
 	for _, handler := range c.handlerList {
+		h := handler
 		errorGroup.Go(func() error {
-			return handler(operationContext)
+			return h(operationContext)
 		})
 	}
 	c.mutex.RUnlock()
