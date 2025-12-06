@@ -7,156 +7,147 @@ import (
 	"sync"
 )
 
-var ErrChanNotFound = errors.New("chan not found")
+var ErrChannelMissing = errors.New("chan not found")
 
-type Conveyer struct {
-	mu       sync.RWMutex
-	channels map[string]chan string
-	handlers []func(ctx context.Context) error
-	buffer   int
+type Flow struct {
+	lock     sync.RWMutex
+	streams  map[string]chan string
+	routines []func(ctx context.Context) error
+	capacity int
 }
 
-func New(size int) *Conveyer {
-	return &Conveyer{
-		channels: make(map[string]chan string),
-		handlers: make([]func(context.Context) error, 0),
-		buffer:   size,
+func CreateFlow(buffer int) *Flow {
+	return &Flow{
+		streams:  make(map[string]chan string),
+		routines: make([]func(ctx context.Context) error, 0),
+		capacity: buffer,
 	}
 }
 
-func (c *Conveyer) createOrGetChannel(name string) chan string {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+func (f *Flow) accessChannel(name string) chan string {
+	f.lock.Lock()
+	defer f.lock.Unlock()
 
-	if chnl, ok := c.channels[name]; ok {
-		return chnl
+	if stream, found := f.streams[name]; found {
+		return stream
 	}
 
-	chnl := make(chan string, c.buffer)
-	c.channels[name] = chnl
-	return chnl
+	stream := make(chan string, f.capacity)
+	f.streams[name] = stream
+	return stream
 }
 
-func (c *Conveyer) RegisterDecorator(
-	handler func(context.Context, chan string, chan string) error,
-	inputName string,
-	outputName string,
+func (f *Flow) findChannel(name string) (chan string, bool) {
+	f.lock.RLock()
+	defer f.lock.RUnlock()
+
+	stream, found := f.streams[name]
+	return stream, found
+}
+
+func (f *Flow) RegisterDecorator(
+	transform func(ctx context.Context, source, target chan string) error,
+	sourceName string,
+	targetName string,
 ) {
-	c.createOrGetChannel(inputName)
-	c.createOrGetChannel(outputName)
+	sourceCh := f.accessChannel(sourceName)
+	targetCh := f.accessChannel(targetName)
 
-	c.handlers = append(c.handlers, func(ctx context.Context) error {
-		input := c.createOrGetChannel(inputName)
-		output := c.createOrGetChannel(outputName)
-		return handler(ctx, input, output)
+	f.lock.Lock()
+	f.routines = append(f.routines, func(ctx context.Context) error {
+		return transform(ctx, sourceCh, targetCh)
 	})
+	f.lock.Unlock()
 }
 
-func (c *Conveyer) RegisterMultiplexer(
-	handler func(context.Context, []chan string, chan string) error,
-	inputNames []string,
-	outputName string,
+func (f *Flow) RegisterMultiplexer(
+	combine func(ctx context.Context, sources []chan string, target chan string) error,
+	sourceNames []string,
+	targetName string,
 ) {
-	for _, name := range inputNames {
-		c.createOrGetChannel(name)
+	sources := make([]chan string, len(sourceNames))
+	for i, name := range sourceNames {
+		sources[i] = f.accessChannel(name)
 	}
 
-	c.createOrGetChannel(outputName)
+	targetCh := f.accessChannel(targetName)
 
-	c.handlers = append(c.handlers, func(ctx context.Context) error {
-		inputs := make([]chan string, len(inputNames))
-		for i, name := range inputNames {
-			inputs[i] = c.createOrGetChannel(name)
-		}
-
-		output := c.createOrGetChannel(outputName)
-		return handler(ctx, inputs, output)
+	f.lock.Lock()
+	f.routines = append(f.routines, func(ctx context.Context) error {
+		return combine(ctx, sources, targetCh)
 	})
+	f.lock.Unlock()
 }
 
-func (c *Conveyer) RegisterSeparator(
-	handler func(context.Context, chan string, []chan string) error,
-	inputName string,
-	outputNames []string,
+func (f *Flow) RegisterSeparator(
+	split func(ctx context.Context, source chan string, targets []chan string) error,
+	sourceName string,
+	targetNames []string,
 ) {
-	c.createOrGetChannel(inputName)
-
-	for _, name := range outputNames {
-		c.createOrGetChannel(name)
+	sourceCh := f.accessChannel(sourceName)
+	targets := make([]chan string, len(targetNames))
+	for i, name := range targetNames {
+		targets[i] = f.accessChannel(name)
 	}
 
-	c.handlers = append(c.handlers, func(ctx context.Context) error {
-		input := c.createOrGetChannel(inputName)
-		outputs := make([]chan string, len(outputNames))
-		for i, name := range outputNames {
-			outputs[i] = c.createOrGetChannel(name)
-		}
-
-		return handler(ctx, input, outputs)
+	f.lock.Lock()
+	f.routines = append(f.routines, func(ctx context.Context) error {
+		return split(ctx, sourceCh, targets)
 	})
+	f.lock.Unlock()
 }
 
-func (c *Conveyer) Send(channelName string, data string) error {
-	c.mu.RLock()
-	channel, exists := c.channels[channelName]
-	c.mu.RUnlock()
-
-	if !exists {
-		return ErrChanNotFound
+func (f *Flow) Send(name string, data string) error {
+	stream, found := f.findChannel(name)
+	if !found {
+		return ErrChannelMissing
 	}
 
-	channel <- data
+	stream <- data
 	return nil
 }
 
-func (c *Conveyer) Recv(channelName string) (string, error) {
-	c.mu.RLock()
-	channel, exists := c.channels[channelName]
-	c.mu.RUnlock()
-
-	if !exists {
-		return "", ErrChanNotFound
+func (f *Flow) Receive(name string) (string, error) {
+	stream, found := f.findChannel(name)
+	if !found {
+		return "", ErrChannelMissing
 	}
 
-	value, ok := <-channel
-	if !ok {
+	message, isAlive := <-stream
+	if !isAlive {
 		return "undefined", nil
 	}
 
-	return value, nil
+	return message, nil
 }
 
-func (c *Conveyer) Run(ctx context.Context) error {
+func (f *Flow) Execute(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	var wg sync.WaitGroup
-	var once sync.Once
+	var group sync.WaitGroup
 	var firstErr error
+	var once sync.Once
 
-	for _, handler := range c.handlers {
-		wg.Add(1)
-		go func(h func(context.Context) error) {
-			defer wg.Done()
-			if err := h(ctx); err != nil {
+	for _, routine := range f.routines {
+		group.Add(1)
+		go func(task func(ctx context.Context) error) {
+			defer group.Done()
+			if err := task(ctx); err != nil {
 				once.Do(func() {
 					firstErr = err
 					cancel()
 				})
 			}
-		}(handler)
+		}(routine)
 	}
 
-	wg.Wait()
+	group.Wait()
 
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	for _, ch := range c.channels {
-		select {
-		case <-ch:
-		default:
-			close(ch)
-		}
+	f.lock.Lock()
+	defer f.lock.Unlock()
+	for _, stream := range f.streams {
+		close(stream)
 	}
 
 	return firstErr

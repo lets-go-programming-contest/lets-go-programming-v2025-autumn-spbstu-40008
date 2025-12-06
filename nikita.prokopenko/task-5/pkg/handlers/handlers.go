@@ -8,30 +8,36 @@ import (
 	"sync"
 )
 
-var ErrCannotBeDecorated = errors.New("can't be decorated")
+var ErrDecoratingImpossible = errors.New("can't be decorated")
+
+const (
+	skipDecoration     = "no decorator"
+	decorationPrefix   = "decorated: "
+	skipMultiplexing   = "no multiplexer"
+)
 
 func PrefixDecoratorFunc(ctx context.Context, input, output chan string) error {
-	prefix := "decorated: "
+	defer close(output)
 
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
-		case value, ok := <-input:
+		case item, ok := <-input:
 			if !ok {
 				return nil
 			}
 
-			if strings.Contains(value, "no decorator") {
-				return ErrCannotBeDecorated
+			if strings.Contains(item, skipDecoration) {
+				return ErrDecoratingImpossible
 			}
 
-			if !strings.HasPrefix(value, prefix) {
-				value = prefix + value
+			if !strings.HasPrefix(item, decorationPrefix) {
+				item = decorationPrefix + item
 			}
 
 			select {
-			case output <- value:
+			case output <- item:
 			case <-ctx.Done():
 				return nil
 			}
@@ -50,21 +56,21 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 		return nil
 	}
 
-	idx := 0
+	current := 0
 	total := len(outputs)
 
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
-		case value, ok := <-input:
+		case item, ok := <-input:
 			if !ok {
 				return nil
 			}
 
 			select {
-			case outputs[idx] <- value:
-				idx = (idx + 1) % total
+			case outputs[current] <- item:
+				current = (current + 1) % total
 			case <-ctx.Done():
 				return nil
 			}
@@ -73,10 +79,6 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 }
 
 func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan string) error {
-	if output == nil {
-		return nil
-	}
-
 	defer close(output)
 
 	if len(inputs) == 0 {
@@ -85,23 +87,23 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 
 	var wg sync.WaitGroup
 
-	processChannel := func(ch chan string) {
+	processStream := func(stream chan string) {
 		defer wg.Done()
 		for {
 			select {
 			case <-ctx.Done():
 				return
-			case value, ok := <-ch:
+			case item, ok := <-stream:
 				if !ok {
 					return
 				}
 
-				if strings.Contains(value, "no multiplexer") {
+				if strings.Contains(item, skipMultiplexing) {
 					continue
 				}
 
 				select {
-				case output <- value:
+				case output <- item:
 				case <-ctx.Done():
 					return
 				}
@@ -109,9 +111,9 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 		}
 	}
 
-	for _, ch := range inputs {
+	for _, stream := range inputs {
 		wg.Add(1)
-		go processChannel(ch)
+		go processStream(stream)
 	}
 
 	wg.Wait()
