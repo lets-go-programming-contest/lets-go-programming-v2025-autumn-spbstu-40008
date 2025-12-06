@@ -34,7 +34,6 @@ func (c *Conveyer) getOrInitChannel(name string) chan string {
 
 	newChannel := make(chan string, c.bufferSize)
 	c.pipeMap[name] = newChannel
-
 	return newChannel
 }
 
@@ -61,7 +60,6 @@ func (c *Conveyer) RegisterMultiplexer(
 	outputName string,
 ) {
 	inputChannels := make([]chan string, 0, len(inputNames))
-
 	for _, name := range inputNames {
 		inputChannels = append(inputChannels, c.getOrInitChannel(name))
 	}
@@ -85,7 +83,6 @@ func (c *Conveyer) RegisterSeparator(
 	inputChannel := c.getOrInitChannel(inputName)
 
 	outputChannels := make([]chan string, 0, len(outputNames))
-
 	for _, name := range outputNames {
 		outputChannels = append(outputChannels, c.getOrInitChannel(name))
 	}
@@ -104,7 +101,6 @@ func (c *Conveyer) Run(ctx context.Context) error {
 	defer cancel()
 
 	var waitGroup sync.WaitGroup
-
 	errChan := make(chan error, 1)
 
 	for _, proc := range c.processors {
@@ -128,7 +124,6 @@ func (c *Conveyer) Run(ctx context.Context) error {
 	waitGroup.Wait()
 
 	c.mutex.Lock()
-
 	for _, channel := range c.pipeMap {
 		close(channel)
 	}
@@ -152,7 +147,6 @@ func (c *Conveyer) Send(name string, data string) error {
 	}
 
 	channel <- data
-
 	return nil
 }
 
@@ -170,6 +164,5 @@ func (c *Conveyer) Recv(name string) (string, error) {
 	if !isOpen {
 		return "undefined", nil
 	}
-
 	return val, nil
 }

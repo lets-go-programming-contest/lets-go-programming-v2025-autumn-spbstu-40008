@@ -106,11 +106,9 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 
 	for _, channel := range inputs {
 		waitGroup.Add(1)
-
 		go mergeRoutine(channel)
 	}
 
 	waitGroup.Wait()
-
 	return nil
 }
