@@ -102,6 +102,7 @@ func (c *Conveyer) Send(name string, value string) error {
 	}
 
 	channel <- value
+
 	return nil
 }
 
@@ -127,6 +128,7 @@ func (c *Conveyer) Run(ctx context.Context) error {
 
 	for _, handler := range c.handlerList {
 		h := handler
+
 		group.Go(func() error {
 			return h(ctx)
 		})
@@ -135,10 +137,11 @@ func (c *Conveyer) Run(ctx context.Context) error {
 	err := group.Wait()
 
 	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
 	for _, channel := range c.channelsByName {
 		close(channel)
 	}
-	c.mutex.Unlock()
 
 	if err != nil {
 		return fmt.Errorf("pipeline failed: %w", err)

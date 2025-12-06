@@ -20,16 +20,20 @@ func PrefixDecoratorFunc(ctx context.Context, inputChannel chan string, outputCh
 		select {
 		case <-ctx.Done():
 			return nil
+
 		case value, ok := <-inputChannel:
 			if !ok {
 				return nil
 			}
+
 			if strings.Contains(value, NoDecoratorKey) {
 				return ErrCantBeDecorated
 			}
+
 			if !strings.HasPrefix(value, DecoratedPrefix) {
 				value = DecoratedPrefix + value
 			}
+
 			select {
 			case outputChannel <- value:
 			case <-ctx.Done():
@@ -54,19 +58,18 @@ func SeparatorFunc(ctx context.Context, inputChannel chan string, outputChannels
 	}
 
 	idx := 0
+
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
+
 		case value, ok := <-inputChannel:
 			if !ok {
 				return nil
 			}
-			select {
-			case outputChannels[idx] <- value:
-			case <-ctx.Done():
-				return nil
-			}
+
+			outputChannels[idx] <- value
 			idx = (idx + 1) % len(outputChannels)
 		}
 	}
@@ -74,33 +77,37 @@ func SeparatorFunc(ctx context.Context, inputChannel chan string, outputChannels
 
 func MultiplexerFunc(ctx context.Context, inputChannels []chan string, outputChannel chan string) error {
 	var waitGroup sync.WaitGroup
+
 	waitGroup.Add(len(inputChannels))
 
 	for _, ch := range inputChannels {
-		channel := ch
+		localCh := ch
+
 		go func() {
 			defer waitGroup.Done()
+
 			for {
 				select {
 				case <-ctx.Done():
 					return
-				case value, ok := <-channel:
+
+				case value, ok := <-localCh:
 					if !ok {
 						return
 					}
+
 					if strings.Contains(value, NoMultiplexerKey) {
 						continue
 					}
-					select {
-					case outputChannel <- value:
-					case <-ctx.Done():
-						return
-					}
+
+					outputChannel <- value
 				}
 			}
 		}()
 	}
 
 	waitGroup.Wait()
+
 	return nil
 }
+
