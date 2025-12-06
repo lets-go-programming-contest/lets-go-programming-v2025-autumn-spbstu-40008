@@ -1,4 +1,4 @@
-module task-5
+module github.com/Maria-Mariia/task-5
 
 go 1.24.7
 
