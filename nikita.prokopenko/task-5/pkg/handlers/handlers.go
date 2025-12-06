@@ -1,121 +1,124 @@
 package handlers
 
 import (
-    "context"
-    "strings"
+	"context"
+	"strings"
+	"sync"
 )
 
-func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan string) error {
-    defer close(output)
-    
-    for {
-        select {
-        case <-ctx.Done():
-            return ctx.Err()
-        case value, ok := <-input:
-            if !ok {
-                return nil
-            }
-            
-            if strings.Contains(value, "no decorator") {
-                return DecorateFail("can't be decorated")
-            }
-            
-            if !strings.HasPrefix(value, "decorated: ") {
-                value = "decorated: " + value
-            }
-            
-            select {
-            case <-ctx.Done():
-                return ctx.Err()
-            case output <- value:
-            }
-        }
-    }
+type DecorationError string
+
+func (e DecorationError) Error() string {
+	return string(e)
+}
+
+const (
+	decoratorPrefix   = "decorated: "
+	noDecoratorText   = "no decorator"
+	noMultiplexerText = "no multiplexer"
+)
+
+func PrefixDecoratorFunc(ctx context.Context, input, output chan string) error {
+	defer close(output)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+
+		case value, open := <-input:
+			if !open {
+				return nil
+			}
+
+			if strings.Contains(value, noDecoratorText) {
+				return DecorationError("can't be decorated")
+			}
+
+			if !strings.HasPrefix(value, decoratorPrefix) {
+				value = decoratorPrefix + value
+			}
+
+			select {
+			case output <- value:
+			case <-ctx.Done():
+				return nil
+			}
+		}
+	}
 }
 
 func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string) error {
-    defer func() {
-        for _, out := range outputs {
-            close(out)
-        }
-    }()
-    
-    if len(outputs) == 0 {
-        return nil
-    }
-    
-    index := 0
-    for {
-        select {
-        case <-ctx.Done():
-            return ctx.Err()
-        case value, ok := <-input:
-            if !ok {
-                return nil
-            }
-            
-            for {
-                select {
-                case <-ctx.Done():
-                    return ctx.Err()
-                case outputs[index] <- value:
-                    index = (index + 1) % len(outputs)
-                    break
-                }
-            }
-        }
-    }
+	defer func() {
+		for _, out := range outputs {
+			close(out)
+		}
+	}()
+
+	if len(outputs) == 0 {
+		return nil
+	}
+
+	counter := 0
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+
+		case value, open := <-input:
+			if !open {
+				return nil
+			}
+
+			select {
+			case outputs[counter] <- value:
+				counter = (counter + 1) % len(outputs)
+			case <-ctx.Done():
+				return nil
+			}
+		}
+	}
 }
 
 func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan string) error {
-    defer close(output)
-    
-    if len(inputs) == 0 {
-        return nil
-    }
-    
-    errChan := make(chan error, len(inputs))
-    
-    for _, in := range inputs {
-        go func(inputChan chan string) {
-            for {
-                select {
-                case <-ctx.Done():
-                    errChan <- ctx.Err()
-                    return
-                case value, ok := <-inputChan:
-                    if !ok {
-                        errChan <- nil
-                        return
-                    }
-                    
-                    if strings.Contains(value, "no multiplexer") {
-                        continue
-                    }
-                    
-                    select {
-                    case <-ctx.Done():
-                        errChan <- ctx.Err()
-                        return
-                    case output <- value:
-                    }
-                }
-            }
-        }(in)
-    }
-    
-    for i := 0; i < len(inputs); i++ {
-        if err := <-errChan; err != nil {
-            return err
-        }
-    }
-    
-    return nil
-}
+	defer close(output)
 
-type DecorateFail string
+	if len(inputs) == 0 {
+		return nil
+	}
 
-func (e DecorateFail) Error() string {
-    return string(e)
+	var wg sync.WaitGroup
+
+	for _, in := range inputs {
+		wg.Add(1)
+		go func(inputChan chan string) {
+			defer wg.Done()
+
+			for {
+				select {
+				case <-ctx.Done():
+					return
+
+				case value, open := <-inputChan:
+					if !open {
+						return
+					}
+
+					if strings.Contains(value, noMultiplexerText) {
+						continue
+					}
+
+					select {
+					case <-ctx.Done():
+						return
+					case output <- value:
+					}
+				}
+			}
+		}(in)
+	}
+
+	wg.Wait()
+	return nil
 }
