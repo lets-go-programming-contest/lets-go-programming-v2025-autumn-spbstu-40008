@@ -130,7 +130,19 @@ func (c *Conveyer) Recv(output string) (string, error) {
 }
 
 func (c *Conveyer) Run(executionContext context.Context) error {
-	defer func() {
+	errorGroup, operationContext := errgroup.WithContext(executionContext)
+
+	c.mutex.RLock()
+	for _, handler := range c.handlerList {
+		errorGroup.Go(func() error {
+			return handler(operationContext)
+		})
+	}
+	c.mutex.RUnlock()
+
+	runError := errorGroup.Wait()
+	
+	func() {
 		c.mutex.RLock()
 		defer c.mutex.RUnlock()
 
@@ -143,18 +155,7 @@ func (c *Conveyer) Run(executionContext context.Context) error {
 		}
 	}()
 
-	errorGroup, operationContext := errgroup.WithContext(executionContext)
-
-	c.mutex.RLock()
-
-	for _, handler := range c.handlerList {
-		errorGroup.Go(func() error {
-			return handler(operationContext)
-		})
-	}
-	c.mutex.RUnlock()
-
-	if runError := errorGroup.Wait(); runError != nil {
+	if runError != nil {
 		return fmt.Errorf("run pipeline: %w", runError)
 	}
 
