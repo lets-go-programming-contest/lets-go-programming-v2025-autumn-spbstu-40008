@@ -1,171 +1,117 @@
+// pkg/handlers/handlers.go
 package handlers
 
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
+	"sync"
 )
 
-var ErrCannotBeDecorated = errors.New("can't be decorated")
+var ErrDecorationImpossible = errors.New("can't be decorated")
 
-const (
-	noDecoratorMessage   = "no decorator"
-	decoratorPrefix      = "decorated: "
-	noMultiplexerMessage = "no multiplexer"
-)
-
-func drainInput(ctx context.Context, input chan string) error {
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		case _, ok := <-input:
-			if !ok {
-				return nil
-			}
-		}
-	}
-}
-
-func runPrefixDecorator(ctx context.Context, input, output chan string) error {
-	defer func() {
-		if output != nil {
-			close(output)
-		}
-	}()
+func ApplyPrefix(ctx context.Context, source, dest chan string) error {
+	prefix := "decorated: "
 
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
-		case value, ok := <-input:
+		case item, ok := <-source:
 			if !ok {
 				return nil
 			}
 
-			if strings.Contains(value, noDecoratorMessage) {
-				return ErrCannotBeDecorated
+			if strings.Contains(item, "no decorator") {
+				return ErrDecorationImpossible
 			}
 
-			if !strings.HasPrefix(value, decoratorPrefix) {
-				value = decoratorPrefix + value
+			if !strings.HasPrefix(item, prefix) {
+				item = prefix + item
 			}
 
-			if output != nil {
-				select {
-				case output <- value:
-				case <-ctx.Done():
-					return nil
-				}
-			}
-		}
-	}
-}
-
-func PrefixDecoratorFunc(ctx context.Context, input, output chan string) error {
-	if output == nil {
-		return drainInput(ctx, input)
-	}
-	return runPrefixDecorator(ctx, input, output)
-}
-
-func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string) error {
-	defer func() {
-		for _, outCh := range outputs {
-			if outCh != nil {
-				select {
-				case <-outCh:
-				default:
-					close(outCh)
-				}
-			}
-		}
-	}()
-
-	if len(outputs) == 0 {
-		return nil
-	}
-
-	idx := 0
-
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		case value, ok := <-input:
-			if !ok {
-				return nil
-			}
-
-			outCh := outputs[idx]
-			if outCh != nil {
-				select {
-				case outCh <- value:
-					idx = (idx + 1) % len(outputs)
-				case <-ctx.Done():
-					return nil
-				}
-			} else {
-				idx = (idx + 1) % len(outputs)
-			}
-		}
-	}
-}
-
-func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan string) error {
-	if output == nil {
-		return nil
-	}
-
-	defer func() {
-		if output != nil {
 			select {
-			case <-output:
-			default:
-				close(output)
+			case dest <- item:
+			case <-ctx.Done():
+				return nil
 			}
 		}
-	}()
+	}
+}
 
-	if len(inputs) == 0 {
+func Distribute(ctx context.Context, source chan string, targets []chan string) error {
+	if len(targets) == 0 {
+		// No targets to distribute to, just drain the source
+		for {
+			select {
+			case <-ctx.Done():
+				return nil
+			case _, ok := <-source:
+				if !ok {
+					return nil
+				}
+			}
+		}
+	}
+
+	current := 0
+	total := len(targets)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case item, ok := <-source:
+			if !ok {
+				return nil
+			}
+
+			select {
+			case targets[current] <- item:
+				current = (current + 1) % total
+			case <-ctx.Done():
+				return nil
+			}
+		}
+	}
+}
+
+func Merge(ctx context.Context, sources []chan string, result chan string) error {
+	if result == nil || len(sources) == 0 {
 		return nil
 	}
 
-	done := make(chan struct{})
-	defer close(done)
+	var wg sync.WaitGroup
 
-	for _, inputCh := range inputs {
-		go func(ch chan string) {
-			for {
-				select {
-				case <-done:
+	processSource := func(ch chan string) {
+		defer wg.Done()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case item, ok := <-ch:
+				if !ok {
 					return
+				}
+
+				if strings.Contains(item, "no multiplexer") {
+					continue
+				}
+
+				select {
+				case result <- item:
 				case <-ctx.Done():
 					return
-				case val, ok := <-ch:
-					if !ok {
-						return
-					}
-
-					if strings.Contains(val, noMultiplexerMessage) {
-						continue
-					}
-
-					if output != nil {
-						select {
-						case output <- val:
-						case <-ctx.Done():
-							return
-						case <-done:
-							return
-						}
-					}
 				}
 			}
-		}(inputCh)
+		}
 	}
 
-	<-ctx.Done()
+	for _, ch := range sources {
+		wg.Add(1)
+		go processSource(ch)
+	}
+
+	wg.Wait()
 	return nil
 }

@@ -4,178 +4,148 @@ package conveyer
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 )
 
-var ErrChanNotFound = errors.New("chan not found")
+var ErrMissingChannel = errors.New("chan not found")
 
-type Conveyer struct {
+type Pipeline struct {
 	mu       sync.RWMutex
-	channels map[string]chan string
-	handlers []func(ctx context.Context) error
-	buffer   int
+	pipes    map[string]chan string
+	workers  []func(ctx context.Context) error
+	bufSize  int
 }
 
-func New(size int) *Conveyer {
-	return &Conveyer{
-		channels: make(map[string]chan string),
-		handlers: make([]func(ctx context.Context) error, 0),
-		buffer:   size,
+func CreatePipeline(capacity int) *Pipeline {
+	return &Pipeline{
+		pipes:   make(map[string]chan string),
+		workers: []func(ctx context.Context) error{},
+		bufSize: capacity,
 	}
 }
 
-func (c *Conveyer) createOrGetChannel(name string) chan string {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+func (p *Pipeline) obtainPipe(name string) chan string {
+	p.mu.Lock()
+	defer p.mu.Unlock()
 
-	if chnl, ok := c.channels[name]; ok {
-		return chnl
+	if pipe, found := p.pipes[name]; found {
+		return pipe
 	}
 
-	chnl := make(chan string, c.buffer)
-	c.channels[name] = chnl
-	return chnl
+	pipe := make(chan string, p.bufSize)
+	p.pipes[name] = pipe
+	return pipe
 }
 
-func (c *Conveyer) RegisterDecorator(
-	handler func(context.Context, chan string, chan string) error,
-	inputName string,
-	outputName string,
+func (p *Pipeline) RegisterDecorator(
+	decorator func(ctx context.Context, input, output chan string) error,
+	inputName, outputName string,
 ) {
-	c.createOrGetChannel(inputName)
-	c.createOrGetChannel(outputName)
+	inputPipe := p.obtainPipe(inputName)
+	outputPipe := p.obtainPipe(outputName)
 
-	c.handlers = append(c.handlers, func(ctx context.Context) error {
-		input := c.createOrGetChannel(inputName)
-		output := c.createOrGetChannel(outputName)
-		return handler(ctx, input, output)
+	p.mu.Lock()
+	p.workers = append(p.workers, func(ctx context.Context) error {
+		return decorator(ctx, inputPipe, outputPipe)
 	})
+	p.mu.Unlock()
 }
 
-func (c *Conveyer) RegisterMultiplexer(
-	handler func(context.Context, []chan string, chan string) error,
+func (p *Pipeline) RegisterMultiplexer(
+	merger func(ctx context.Context, inputs []chan string, output chan string) error,
 	inputNames []string,
 	outputName string,
 ) {
-	for _, name := range inputNames {
-		c.createOrGetChannel(name)
+	inputPipes := make([]chan string, len(inputNames))
+	for i, name := range inputNames {
+		inputPipes[i] = p.obtainPipe(name)
 	}
 
-	c.createOrGetChannel(outputName)
+	outputPipe := p.obtainPipe(outputName)
 
-	c.handlers = append(c.handlers, func(ctx context.Context) error {
-		inputs := make([]chan string, len(inputNames))
-		for i, name := range inputNames {
-			inputs[i] = c.createOrGetChannel(name)
-		}
-
-		output := c.createOrGetChannel(outputName)
-		return handler(ctx, inputs, output)
+	p.mu.Lock()
+	p.workers = append(p.workers, func(ctx context.Context) error {
+		return merger(ctx, inputPipes, outputPipe)
 	})
+	p.mu.Unlock()
 }
 
-func (c *Conveyer) RegisterSeparator(
-	handler func(context.Context, chan string, []chan string) error,
+func (p *Pipeline) RegisterSeparator(
+	distributor func(ctx context.Context, input chan string, outputs []chan string) error,
 	inputName string,
 	outputNames []string,
 ) {
-	c.createOrGetChannel(inputName)
-
-	for _, name := range outputNames {
-		c.createOrGetChannel(name)
+	inputPipe := p.obtainPipe(inputName)
+	outputPipes := make([]chan string, len(outputNames))
+	for i, name := range outputNames {
+		outputPipes[i] = p.obtainPipe(name)
 	}
 
-	c.handlers = append(c.handlers, func(ctx context.Context) error {
-		input := c.createOrGetChannel(inputName)
-		outputs := make([]chan string, len(outputNames))
-		for i, name := range outputNames {
-			outputs[i] = c.createOrGetChannel(name)
-		}
-
-		return handler(ctx, input, outputs)
+	p.mu.Lock()
+	p.workers = append(p.workers, func(ctx context.Context) error {
+		return distributor(ctx, inputPipe, outputPipes)
 	})
+	p.mu.Unlock()
 }
 
-func (c *Conveyer) Send(channelName string, data string) error {
-	c.mu.RLock()
-	channel, exists := c.channels[channelName]
-	c.mu.RUnlock()
+func (p *Pipeline) Send(pipeName string, content string) error {
+	p.mu.RLock()
+	pipe, exists := p.pipes[pipeName]
+	p.mu.RUnlock()
 
 	if !exists {
-		return fmt.Errorf("%w: channel %s not found", ErrChanNotFound, channelName)
+		return ErrMissingChannel
 	}
 
-	select {
-	case channel <- 
-		return nil
-	default:
-		channel <- data
-		return nil
-	}
+	pipe <- content
+	return nil
 }
 
-func (c *Conveyer) Recv(channelName string) (string, error) {
-	c.mu.RLock()
-	channel, exists := c.channels[channelName]
-	c.mu.RUnlock()
+func (p *Pipeline) Receive(pipeName string) (string, error) {
+	p.mu.RLock()
+	pipe, exists := p.pipes[pipeName]
+	p.mu.RUnlock()
 
 	if !exists {
-		return "", fmt.Errorf("%w: channel %s not found", ErrChanNotFound, channelName)
+		return "", ErrMissingChannel
 	}
 
-	value, ok := <-channel
-	if !ok {
-		return "", nil
+	data, isOpen := <-pipe
+	if !isOpen {
+		return "undefined", nil
 	}
 
-	return value, nil
+	return data, nil
 }
 
-func (c *Conveyer) Run(ctx context.Context) error {
-	var waitGroup sync.WaitGroup
-	errChan := make(chan error, 1)
-
+func (p *Pipeline) Execute(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	for _, handler := range c.handlers {
-		waitGroup.Add(1)
-		go func(h func(ctx context.Context) error) {
-			defer waitGroup.Done()
-			if err := h(ctx); err != nil && !errors.Is(err, context.Canceled) {
-				select {
-				case errChan <- fmt.Errorf("handler error: %w", err):
-				default:
-				}
-				cancel()
+	var wg sync.WaitGroup
+	var once sync.Once
+	var firstErr error
+
+	for _, worker := range p.workers {
+		wg.Add(1)
+		go func(task func(ctx context.Context) error) {
+			defer wg.Done()
+			if err := task(ctx); err != nil {
+				once.Do(func() {
+					firstErr = err
+					cancel()
+				})
 			}
-		}(handler)
+		}(worker)
 	}
 
-	go func() {
-		waitGroup.Wait()
-		close(errChan)
-	}()
+	wg.Wait()
 
-	select {
-	case err := <-errChan:
-		if err != nil {
-			return err
-		}
-	case <-ctx.Done():
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	for _, pipe := range p.pipes {
+		close(pipe)
 	}
 
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	for name, ch := range c.channels {
-		select {
-		case <-ch:
-		default:
-			close(ch)
-		}
-		delete(c.channels, name)
-	}
-
-	return nil
+	return firstErr
 }
