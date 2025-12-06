@@ -31,14 +31,6 @@ type Conveyer interface {
 	Recv(output string) (string, error)
 }
 
-type conveyerImpl struct {
-	size     int
-	channels map[string]chan string
-	chMutex  sync.RWMutex
-	handlers []func(ctx context.Context) error
-}
-
-// New creates a new instance of Conveyer.
 func New(size int) Conveyer {
 	return &conveyerImpl{
 		size:     size,
@@ -47,6 +39,14 @@ func New(size int) Conveyer {
 		chMutex:  sync.RWMutex{},
 	}
 }
+
+type conveyerImpl struct {
+	size     int
+	channels map[string]chan string
+	chMutex  sync.RWMutex
+	handlers []func(ctx context.Context) error
+}
+
 
 func (c *conveyerImpl) ensureChannel(name string) chan string {
 	c.chMutex.Lock()
