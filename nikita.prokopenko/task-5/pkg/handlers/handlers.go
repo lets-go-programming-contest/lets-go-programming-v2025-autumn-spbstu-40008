@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"strings"
-	"sync"
 )
 
 var ErrCannotBeDecorated = errors.New("can't be decorated")
@@ -83,12 +82,8 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 		return nil
 	}
 
-	var wg sync.WaitGroup
-
 	for _, inputChannel := range inputs {
-		wg.Add(1)
 		go func(ch chan string) {
-			defer wg.Done()
 			for {
 				select {
 				case <-ctx.Done():
@@ -112,6 +107,6 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 		}(inputChannel)
 	}
 
-	wg.Wait()
+	// We don't wait for goroutines to finish as they will exit when context is done
 	return nil
 }

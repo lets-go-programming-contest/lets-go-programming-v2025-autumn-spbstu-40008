@@ -36,7 +36,6 @@ func (c *Conveyer) ensureChan(name string) chan string {
 
 	channel := make(chan string, c.bufSize)
 	c.streams[name] = channel
-
 	return channel
 }
 
@@ -51,7 +50,6 @@ func (c *Conveyer) RegisterDecorator(
 	c.processes = append(c.processes, func(ctx context.Context) error {
 		input := c.ensureChan(inputName)
 		output := c.ensureChan(outputName)
-
 		return callback(ctx, input, output)
 	})
 }
@@ -64,16 +62,13 @@ func (c *Conveyer) RegisterMultiplexer(
 	for _, name := range inputNames {
 		c.ensureChan(name)
 	}
-
 	c.ensureChan(outputName)
 
 	c.processes = append(c.processes, func(ctx context.Context) error {
 		inputs := make([]chan string, len(inputNames))
-
 		for index, name := range inputNames {
 			inputs[index] = c.ensureChan(name)
 		}
-
 		return callback(ctx, inputs, c.ensureChan(outputName))
 	})
 }
@@ -84,18 +79,15 @@ func (c *Conveyer) RegisterSeparator(
 	outputNames []string,
 ) {
 	c.ensureChan(inputName)
-
 	for _, name := range outputNames {
 		c.ensureChan(name)
 	}
 
 	c.processes = append(c.processes, func(ctx context.Context) error {
 		outputs := make([]chan string, len(outputNames))
-
 		for index, name := range outputNames {
 			outputs[index] = c.ensureChan(name)
 		}
-
 		return callback(ctx, c.ensureChan(inputName), outputs)
 	})
 }
@@ -110,7 +102,6 @@ func (c *Conveyer) Send(pipeName string, data string) error {
 	}
 
 	channel <- data
-
 	return nil
 }
 
