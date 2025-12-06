@@ -87,10 +87,11 @@ func MultiplexerFunc(
 	output chan string,
 ) error {
 	var waitGroup sync.WaitGroup
+
 	waitGroup.Add(len(inputs))
 
 	for _, input := range inputs {
-		input := input
+
 		go func() {
 			defer waitGroup.Done()
 
@@ -119,5 +120,6 @@ func MultiplexerFunc(
 	}
 
 	waitGroup.Wait()
+
 	return nil
 }
