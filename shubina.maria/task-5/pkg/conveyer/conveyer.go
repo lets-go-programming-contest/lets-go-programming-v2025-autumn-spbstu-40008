@@ -51,13 +51,14 @@ func (c *conveyerImpl) ensureChannel(name string) chan string {
 	c.chMutex.Lock()
 	defer c.chMutex.Unlock()
 
-	if ch, exists := c.channels[name]; exists {
-		return ch
+	if existingChan, exists := c.channels[name]; exists {
+		return existingChan
 	}
 
-	ch := make(chan string, c.size)
-	c.channels[name] = ch
-	return ch
+	newChan := make(chan string, c.size)
+	c.channels[name] = newChan
+
+	return newChan
 }
 
 func (c *conveyerImpl) getChannel(name string) chan string {
@@ -112,37 +113,34 @@ func (c *conveyerImpl) RegisterSeparator(
 }
 
 func (c *conveyerImpl) Send(input, data string) error {
-	ch := c.getChannel(input)
-	if ch == nil {
+	channel := c.getChannel(input)
+	if channel == nil {
 		return ErrChannelNotFound
 	}
 
-	select {
-	case ch <- data:
-		return nil
-	}
+	channel <- data
+
+	return nil
 }
 
 func (c *conveyerImpl) Recv(output string) (string, error) {
-	ch := c.getChannel(output)
-	if ch == nil { // getChannel returns nil if not found
+	channel := c.getChannel(output)
+	if channel == nil {
 		return "", ErrChannelNotFound
 	}
 
-	select {
-	case data, ok := <-ch:
-		if !ok {
-			return "undefined", nil
-		}
-		return data, nil
+	data, ok := <-channel
+	if !ok {
+		return "undefined", nil
 	}
+
+	return data, nil
 }
 
 func (c *conveyerImpl) Run(ctx context.Context) error {
 	group, innerCtx := errgroup.WithContext(ctx)
 
 	for _, handlerFunc := range c.handlers {
-		handlerFunc := handlerFunc // Capture loop variable
 		group.Go(func() error {
 			return handlerFunc(innerCtx)
 		})

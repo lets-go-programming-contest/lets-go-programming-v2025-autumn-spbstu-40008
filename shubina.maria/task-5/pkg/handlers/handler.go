@@ -45,7 +45,6 @@ func SeparatorFunc(
 	outputChans []chan string,
 ) error {
 	if len(outputChans) == 0 {
-
 		for {
 			select {
 			case <-ctx.Done():
@@ -89,10 +88,13 @@ func MultiplexerFunc(
 	}
 
 	var waitGroup sync.WaitGroup
+
 	for _, inputChannel := range inputChans {
 		waitGroup.Add(1)
+
 		go func(chanToRead chan string) {
 			defer waitGroup.Done()
+
 			for {
 				select {
 				case <-ctx.Done():
@@ -107,9 +109,9 @@ func MultiplexerFunc(
 					}
 
 					select {
-						case outputChan <- data:
-						case <-ctx.Done():
-    					return
+					case outputChan <- data:
+					case <-ctx.Done():
+						return
 					}
 				}
 			}
@@ -117,6 +119,7 @@ func MultiplexerFunc(
 	}
 
 	done := make(chan struct{})
+
 	go func() {
 		waitGroup.Wait()
 		close(done)
