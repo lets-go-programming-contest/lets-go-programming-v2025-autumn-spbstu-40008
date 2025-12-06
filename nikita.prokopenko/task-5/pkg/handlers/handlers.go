@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"sync"
 )
 
 var ErrCannotBeDecorated = errors.New("can't be decorated")
@@ -21,8 +22,8 @@ func PrefixDecoratorFunc(ctx context.Context, input, output chan string) error {
 		select {
 		case <-ctx.Done():
 			return nil
-		case value, isOpen := <-input:
-			if !isOpen {
+		case value, ok := <-input:
+			if !ok {
 				return nil
 			}
 
@@ -45,8 +46,10 @@ func PrefixDecoratorFunc(ctx context.Context, input, output chan string) error {
 
 func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string) error {
 	defer func() {
-		for _, outputChannel := range outputs {
-			close(outputChannel)
+		for _, outCh := range outputs {
+			if outCh != nil {
+				close(outCh)
+			}
 		}
 	}()
 
@@ -54,20 +57,20 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 		return nil
 	}
 
-	currentIndex := 0
+	idx := 0
 
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
-		case value, isOpen := <-input:
-			if !isOpen {
+		case value, ok := <-input:
+			if !ok {
 				return nil
 			}
 
 			select {
-			case outputs[currentIndex] <- value:
-				currentIndex = (currentIndex + 1) % len(outputs)
+			case outputs[idx] <- value:
+				idx = (idx + 1) % len(outputs)
 			case <-ctx.Done():
 				return nil
 			}
@@ -76,37 +79,59 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 }
 
 func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan string) error {
+	if output == nil {
+		return nil
+	}
+
 	defer close(output)
 
 	if len(inputs) == 0 {
 		return nil
 	}
 
-	for _, inputChannel := range inputs {
+	var wg sync.WaitGroup
+	done := make(chan struct{})
+	defer close(done)
+
+	for _, inputCh := range inputs {
+		wg.Add(1)
 		go func(ch chan string) {
+			defer wg.Done()
 			for {
 				select {
-				case <-ctx.Done():
+				case <-done:
 					return
-				case value, isOpen := <-ch:
-					if !isOpen {
+				case val, ok := <-ch:
+					if !ok {
 						return
 					}
 
-					if strings.Contains(value, noMultiplexerMessage) {
+					if strings.Contains(val, noMultiplexerMessage) {
 						continue
 					}
 
 					select {
-					case <-ctx.Done():
+					case <-done:
 						return
-					case output <- value:
+					case output <- val:
 					}
 				}
 			}
-		}(inputChannel)
+		}(inputCh)
 	}
 
-	// We don't wait for goroutines to finish as they will exit when context is done
-	return nil
+	go func() {
+		wg.Wait()
+	}()
+
+	select {
+	case <-ctx.Done():
+		return nil
+	}
+}
+
+type DecoratorError string
+
+func (e DecoratorError) Error() string {
+	return string(e)
 }
