@@ -106,9 +106,9 @@ func MultiplexerFunc(
 					}
 
 					select {
-					case outputChan <- data:
-					case <-ctx.Done():
-						return
+						case outputChan <- data:
+						case <-ctx.Done():
+    					return
 					}
 				}
 			}
