@@ -32,14 +32,14 @@ func New(size int) *Conveyer {
 func (c *Conveyer) ensureChannel(name string) chan string {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-
+	
 	if channel, ok := c.channelsByName[name]; ok {
 		return channel
 	}
-
+	
 	channel := make(chan string, c.size)
 	c.channelsByName[name] = channel
-
+	
 	return channel
 }
 
@@ -59,7 +59,7 @@ func (c *Conveyer) RegisterDecorator(
 	
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-
+	
 	c.handlerList = append(c.handlerList, func(ctx context.Context) error {
 		return handlerFn(ctx, inputCh, outputCh)
 	})
@@ -72,14 +72,14 @@ func (c *Conveyer) RegisterSeparator(
 ) {
 	inputCh := c.ensureChannel(input)
 	outputsChs := make([]chan string, len(outputs))
-
+	
 	for i, name := range outputs {
 		outputsChs[i] = c.ensureChannel(name)
 	}
-
+	
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-
+	
 	c.handlerList = append(c.handlerList, func(ctx context.Context) error {
 		return handlerFn(ctx, inputCh, outputsChs)
 	})
@@ -136,6 +136,7 @@ func (c *Conveyer) Run(executionContext context.Context) error {
 	
 	for _, handler := range c.handlerList {
 		h := handler
+		
 		errorGroup.Go(func() error {
 			return h(operationContext)
 		})
