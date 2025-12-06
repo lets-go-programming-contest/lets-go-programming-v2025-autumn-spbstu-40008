@@ -159,11 +159,5 @@ func (c *Conveyer) Run(ctx context.Context) error {
 
 	waitGroup.Wait()
 
-	c.mu.Lock()
-	for _, ch := range c.channels {
-		close(ch)
-	}
-	c.mu.Unlock()
-
 	return firstErr
 }

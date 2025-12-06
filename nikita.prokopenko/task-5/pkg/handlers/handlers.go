@@ -34,26 +34,24 @@ func doPrefixDecorator(ctx context.Context, inputChan, outputChan chan string) e
 		select {
 		case <-ctx.Done():
 			return nil
-		default:
-		}
+		case value, ok := <-inputChan:
+			if !ok {
+				return nil
+			}
 
-		value, ok := <-inputChan
-		if !ok {
-			return nil
-		}
+			if strings.Contains(value, "no decorator") {
+				return DecoratorError("can't be decorated")
+			}
 
-		if strings.Contains(value, "no decorator") {
-			return DecoratorError("can't be decorated")
-		}
+			if !strings.HasPrefix(value, prefix) {
+				value = prefix + value
+			}
 
-		if !strings.HasPrefix(value, prefix) {
-			value = prefix + value
-		}
-
-		select {
-		case outputChan <- value:
-		case <-ctx.Done():
-			return nil
+			select {
+			case outputChan <- value:
+			case <-ctx.Done():
+				return nil
+			}
 		}
 	}
 }
@@ -62,25 +60,26 @@ func PrefixDecoratorFunc(ctx context.Context, inputChan, outputChan chan string)
 	if outputChan == nil {
 		return drainInput(ctx, inputChan)
 	}
-
 	return doPrefixDecorator(ctx, inputChan, outputChan)
 }
 
 func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string) error {
 	if len(outputs) == 0 {
-		for {
-			select {
-			case <-ctx.Done():
-				return nil
-			case _, ok := <-input:
-				if !ok {
-					return nil
-				}
-			}
-		}
+		return drainInput(ctx, input)
 	}
 
 	index := 0
+
+	defer func() {
+		for _, out := range outputs {
+			select {
+			case _, ok := <-out:
+				if ok {
+				}
+			default:
+			}
+		}
+	}()
 
 	for {
 		select {
@@ -107,14 +106,14 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 	}
 
 	if len(inputs) == 0 {
+		defer close(output)
 		return nil
 	}
 
 	var waitGroup sync.WaitGroup
 
-	for _, inputChannel := range inputs {
-		source := inputChannel
-
+	for _, inputCh := range inputs {
+		source := inputCh
 		waitGroup.Add(1)
 
 		go func(src chan string) {
@@ -144,6 +143,7 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 	}
 
 	waitGroup.Wait()
+	defer close(output)
 
 	return nil
 }
