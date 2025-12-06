@@ -91,8 +91,8 @@ func MultiplexerFunc(
 	waitGroup.Add(len(inputs))
 
 	for _, input := range inputs {
-
-		go func() {
+		
+		go func() { 
 			defer waitGroup.Done()
 
 			for {
@@ -120,6 +120,6 @@ func MultiplexerFunc(
 	}
 
 	waitGroup.Wait()
-
+	
 	return nil
 }

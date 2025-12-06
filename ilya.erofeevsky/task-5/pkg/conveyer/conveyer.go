@@ -111,7 +111,7 @@ func (c *Conveyer) Send(input, data string) error {
 		return ErrChannelNotFound
 	}
 	inputCh <- data
-
+	
 	return nil
 }
 
@@ -133,8 +133,8 @@ func (c *Conveyer) Run(executionContext context.Context) error {
 	defer func() {
 		c.mutex.RLock()
 		defer c.mutex.RUnlock()
-
-		for _, channel := range c.channelsByName {
+		
+		for _, channel := range c.channelsByName { 
 			select {
 			case <-executionContext.Done():
 			default:
@@ -148,7 +148,7 @@ func (c *Conveyer) Run(executionContext context.Context) error {
 	c.mutex.RLock()
 
 	for _, handler := range c.handlerList {
-
+		
 		errorGroup.Go(func() error {
 			return handler(operationContext)
 		})
@@ -158,6 +158,6 @@ func (c *Conveyer) Run(executionContext context.Context) error {
 	if runError := errorGroup.Wait(); runError != nil {
 		return fmt.Errorf("run pipeline: %w", runError)
 	}
-
+	
 	return nil
 }
