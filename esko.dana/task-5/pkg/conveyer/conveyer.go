@@ -34,10 +34,10 @@ func (c *conveyerImpl) ensureChannel(name string) chan string {
 		return ch
 	}
 
-	ch := make(chan string, c.size)
-	c.channels[name] = ch
+	channel := make(chan string, c.size)
+	c.channels[name] = channel
 
-	return ch
+	return channel
 }
 
 func (c *conveyerImpl) getChannel(name string) chan string {
@@ -103,23 +103,23 @@ func (c *conveyerImpl) RegisterSeparator(
 }
 
 func (c *conveyerImpl) Send(input, data string) error {
-	ch := c.getChannel(input)
-	if ch == nil {
+	channel := c.getChannel(input)
+	if channel == nil {
 		return ErrChannelNotFound
 	}
 
-	ch <- data
+	channel <- data
 
 	return nil
 }
 
 func (c *conveyerImpl) Recv(output string) (string, error) {
-	ch := c.getChannel(output)
-	if ch == nil {
+	channel := c.getChannel(output)
+	if channel == nil {
 		return "", ErrChannelNotFound
 	}
 
-	data, ok := <-ch
+	data, ok := <-channel
 	if !ok {
 		return "undefined", nil
 	}
@@ -149,7 +149,7 @@ func (c *conveyerImpl) closeAllChannels() {
 	c.chMutex.Lock()
 	defer c.chMutex.Unlock()
 
-	for _, ch := range c.channels {
-		close(ch)
+	for _, channel := range c.channels {
+		close(channel)
 	}
 }

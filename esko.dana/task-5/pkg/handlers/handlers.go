@@ -14,6 +14,7 @@ func PrefixDecoratorFunc(
 	ctx context.Context,
 	input, output chan string,
 ) error {
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -46,6 +47,7 @@ func SeparatorFunc(
 	outputs []chan string,
 ) error {
 	if len(outputs) == 0 {
+
 		for {
 			select {
 			case <-ctx.Done():
@@ -88,19 +90,19 @@ func MultiplexerFunc(
 		return nil
 	}
 
-	var wg sync.WaitGroup
+	var WaitGroup sync.WaitGroup
 
 	for _, inCh := range inputs {
-		wg.Add(1)
+		WaitGroup.Add(1)
 		go func(ch chan string) {
-			defer wg.Done()
+			defer WaitGroup.Done()
 			for {
 				select {
 				case <-ctx.Done():
 					return
 				case data, ok := <-ch:
 					if !ok {
-						return // канал закрыт
+						return
 					}
 
 					if strings.Contains(data, "no multiplexer") {
@@ -119,7 +121,7 @@ func MultiplexerFunc(
 
 	done := make(chan struct{})
 	go func() {
-		wg.Wait()
+		WaitGroup.Wait()
 		close(done)
 	}()
 
@@ -127,7 +129,7 @@ func MultiplexerFunc(
 	case <-done:
 		return nil
 	case <-ctx.Done():
-		wg.Wait()
+		WaitGroup.Wait()
 		return nil
 	}
 }
