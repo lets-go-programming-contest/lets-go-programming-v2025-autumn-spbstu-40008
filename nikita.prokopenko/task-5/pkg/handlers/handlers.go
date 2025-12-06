@@ -9,8 +9,10 @@ import (
 
 var ErrDecorateFail = errors.New("can't be decorated")
 
-const stopWord = "no decorator"
-const prefix = "decorated: "
+const (
+	stopWord = "no decorator"
+	prefix   = "decorated: "
+)
 
 func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan string) error {
 	for {
@@ -110,7 +112,10 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 
 	for _, channel := range inputs {
 		waitGroup.Add(1)
-		go mergeRoutine(channel)
+		ch := channel
+		go func(c chan string) {
+			mergeRoutine(c)
+		}(ch)
 	}
 
 	waitGroup.Wait()
