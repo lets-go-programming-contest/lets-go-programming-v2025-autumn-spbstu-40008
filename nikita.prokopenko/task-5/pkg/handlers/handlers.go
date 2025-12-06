@@ -5,18 +5,6 @@ import (
 	"strings"
 )
 
-type DecorationError string
-
-func (e DecorationError) Error() string {
-	return string(e)
-}
-
-const (
-	decoratorPrefix   = "decorated: "
-	noDecoratorText   = "no decorator"
-	noMultiplexerText = "no multiplexer"
-)
-
 func PrefixDecoratorFunc(ctx context.Context, input, output chan string) error {
 	defer close(output)
 
@@ -30,12 +18,12 @@ func PrefixDecoratorFunc(ctx context.Context, input, output chan string) error {
 				return nil
 			}
 
-			if strings.Contains(value, noDecoratorText) {
-				return DecorationError("can't be decorated")
+			if strings.Contains(value, "no decorator") {
+				return DecoratorError("can't be decorated")
 			}
 
-			if !strings.HasPrefix(value, decoratorPrefix) {
-				value = decoratorPrefix + value
+			if !strings.HasPrefix(value, "decorated: ") {
+				value = "decorated: " + value
 			}
 
 			select {
@@ -91,20 +79,22 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 
 	for _, in := range inputs {
 		go func(ch chan string) {
-			defer func() { done <- true }()
 			for {
 				select {
 				case <-ctx.Done():
+					done <- true
 					return
 				case val, ok := <-ch:
 					if !ok {
+						done <- true
 						return
 					}
-					if strings.Contains(val, noMultiplexerText) {
+					if strings.Contains(val, "no multiplexer") {
 						continue
 					}
 					select {
 					case <-ctx.Done():
+						done <- true
 						return
 					case output <- val:
 					}
@@ -118,4 +108,10 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 	}
 
 	return nil
+}
+
+type DecoratorError string
+
+func (e DecoratorError) Error() string {
+	return string(e)
 }

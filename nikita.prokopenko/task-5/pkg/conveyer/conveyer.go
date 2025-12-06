@@ -139,8 +139,12 @@ func (c *Conveyer) Run(ctx context.Context) error {
 	wg.Wait()
 	close(errChan)
 
-	for err := range errChan {
-		return err
+	select {
+	case err := <-errChan:
+		if err != nil {
+			return err
+		}
+	default:
 	}
 
 	return nil
