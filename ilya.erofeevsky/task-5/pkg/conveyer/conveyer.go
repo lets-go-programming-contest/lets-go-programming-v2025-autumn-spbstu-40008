@@ -144,8 +144,6 @@ func (c *Conveyer) Run(executionContext context.Context) error {
 	c.mutex.RLock()
 
 	for _, handler := range c.handlerList {
-		handler := handler
-
 		errorGroup.Go(func() error {
 			return handler(operationContext)
 		})
