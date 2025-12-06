@@ -11,7 +11,6 @@ import (
 
 var ErrChannelNotFound = errors.New("chan not found")
 
-// Conveyer — интерфейс, описанный в задании.
 type Conveyer interface {
 	RegisterDecorator(fn func(ctx context.Context, input, output chan string) error, input, output string)
 	RegisterMultiplexer(fn func(ctx context.Context, inputs []chan string, output chan string) error, inputs []string, output string)
@@ -28,7 +27,6 @@ type conveyerImpl struct {
 	handlers []func(ctx context.Context) error
 }
 
-// New создаёт новый конвейер с указанным размером буферов каналов.
 func New(size int) Conveyer {
 	return &conveyerImpl{
 		size:     size,
@@ -37,7 +35,6 @@ func New(size int) Conveyer {
 	}
 }
 
-// ensureChannel создаёт канал, если его ещё нет.
 func (c *conveyerImpl) ensureChannel(name string) chan string {
 	c.chMutex.Lock()
 	defer c.chMutex.Unlock()
@@ -49,14 +46,12 @@ func (c *conveyerImpl) ensureChannel(name string) chan string {
 	return ch
 }
 
-// getChannel возвращает существующий канал или nil.
 func (c *conveyerImpl) getChannel(name string) chan string {
 	c.chMutex.RLock()
 	defer c.chMutex.RUnlock()
 	return c.channels[name]
 }
 
-// RegisterDecorator регистрирует обработчик-модификатор.
 func (c *conveyerImpl) RegisterDecorator(
 	fn func(ctx context.Context, input, output chan string) error,
 	input, output string,
@@ -68,7 +63,6 @@ func (c *conveyerImpl) RegisterDecorator(
 	})
 }
 
-// RegisterMultiplexer регистрирует мультиплексор.
 func (c *conveyerImpl) RegisterMultiplexer(
 	fn func(ctx context.Context, inputs []chan string, output chan string) error,
 	inputs []string,
@@ -84,7 +78,6 @@ func (c *conveyerImpl) RegisterMultiplexer(
 	})
 }
 
-// RegisterSeparator регистрирует сепаратор.
 func (c *conveyerImpl) RegisterSeparator(
 	fn func(ctx context.Context, input chan string, outputs []chan string) error,
 	input string,
@@ -100,7 +93,6 @@ func (c *conveyerImpl) RegisterSeparator(
 	})
 }
 
-// Send отправляет данные в указанный канал.
 func (c *conveyerImpl) Send(input, data string) error {
 	ch := c.getChannel(input)
 	if ch == nil {
@@ -110,7 +102,6 @@ func (c *conveyerImpl) Send(input, data string) error {
 	return nil
 }
 
-// Recv получает данные из указанного канала.
 func (c *conveyerImpl) Recv(output string) (string, error) {
 	ch := c.getChannel(output)
 	if ch == nil {
@@ -123,7 +114,6 @@ func (c *conveyerImpl) Recv(output string) (string, error) {
 	return data, nil
 }
 
-// Run запускает все зарегистрированные обработчики в отдельных горутинах.
 func (c *conveyerImpl) Run(ctx context.Context) error {
 	g, ctx := errgroup.WithContext(ctx)
 	for _, h := range c.handlers {
@@ -138,7 +128,6 @@ func (c *conveyerImpl) Run(ctx context.Context) error {
 	return nil
 }
 
-// closeAllChannels закрывает все внутренние каналы.
 func (c *conveyerImpl) closeAllChannels() {
 	c.chMutex.Lock()
 	defer c.chMutex.Unlock()

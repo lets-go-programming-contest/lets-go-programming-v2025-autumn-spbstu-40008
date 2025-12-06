@@ -9,7 +9,6 @@ import (
 
 var ErrCantBeDecorated = errors.New("can't be decorated")
 
-// PrefixDecoratorFunc — модификатор, добавляющий префикс.
 func PrefixDecoratorFunc(
 	ctx context.Context,
 	input, output chan string,
@@ -37,14 +36,12 @@ func PrefixDecoratorFunc(
 	}
 }
 
-// SeparatorFunc — распределяет входящие данные по выходным каналам по кругу.
 func SeparatorFunc(
 	ctx context.Context,
 	input chan string,
 	outputs []chan string,
 ) error {
 	if len(outputs) == 0 {
-		// Просто сливаем вход, если нет выходов
 		for {
 			select {
 			case <-ctx.Done():
@@ -76,7 +73,6 @@ func SeparatorFunc(
 	}
 }
 
-// MultiplexerFunc — объединяет несколько входов в один выход, фильтруя "no multiplexer".
 func MultiplexerFunc(
 	ctx context.Context,
 	inputs []chan string,
