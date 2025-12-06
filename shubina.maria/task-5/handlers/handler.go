@@ -114,7 +114,6 @@ func MultiplexerFunc(
 			}
 		}(inputChannel)
 	}
-
 	done := make(chan struct{})
 	go func() {
 		waitGroup.Wait()
