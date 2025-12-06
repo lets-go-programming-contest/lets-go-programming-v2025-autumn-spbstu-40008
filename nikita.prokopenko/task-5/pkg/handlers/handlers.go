@@ -4,64 +4,83 @@ package handlers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
-	"sync"
 )
 
-var ErrCannotDecorate = errors.New("can't be decorated")
+var ErrCannotBeDecorated = errors.New("can't be decorated")
 
 const (
+	noDecoratorMessage   = "no decorator"
 	decoratorPrefix      = "decorated: "
-	decoratorSkipMessage = "no decorator"
-	multiplexerSkip      = "no multiplexer"
+	noMultiplexerMessage = "no multiplexer"
 )
 
-func PrefixDecoratorFunc(ctx context.Context, input, output chan string) error {
-	if output == nil {
-		for {
-			select {
-			case <-ctx.Done():
-				return nil
-			case _, isOpen := <-input:
-				if !isOpen {
-					return nil
-				}
-			}
-		}
-	}
-
-	defer close(output)
-
+func drainInput(ctx context.Context, input chan string) error {
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
-		case value, isOpen := <-input:
-			if !isOpen {
-				return nil
-			}
-
-			if strings.Contains(value, decoratorSkipMessage) {
-				return ErrCannotDecorate
-			}
-
-			if !strings.HasPrefix(value, decoratorPrefix) {
-				value = decoratorPrefix + value
-			}
-
-			select {
-			case output <- value:
-			case <-ctx.Done():
+		case _, ok := <-input:
+			if !ok {
 				return nil
 			}
 		}
 	}
 }
 
+func runPrefixDecorator(ctx context.Context, input, output chan string) error {
+	defer func() {
+		if output != nil {
+			close(output)
+		}
+	}()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case value, ok := <-input:
+			if !ok {
+				return nil
+			}
+
+			if strings.Contains(value, noDecoratorMessage) {
+				return ErrCannotBeDecorated
+			}
+
+			if !strings.HasPrefix(value, decoratorPrefix) {
+				value = decoratorPrefix + value
+			}
+
+			if output != nil {
+				select {
+				case output <- value:
+				case <-ctx.Done():
+					return nil
+				}
+			}
+		}
+	}
+}
+
+func PrefixDecoratorFunc(ctx context.Context, input, output chan string) error {
+	if output == nil {
+		return drainInput(ctx, input)
+	}
+	return runPrefixDecorator(ctx, input, output)
+}
+
 func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string) error {
 	defer func() {
-		for _, ch := range outputs {
-			close(ch)
+		for _, outCh := range outputs {
+			if outCh != nil {
+				select {
+				case <-outCh:
+				default:
+					close(outCh)
+				}
+			}
 		}
 	}()
 
@@ -69,23 +88,27 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 		return nil
 	}
 
-	current := 0
-	total := len(outputs)
+	idx := 0
 
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
-		case value, isOpen := <-input:
-			if !isOpen {
+		case value, ok := <-input:
+			if !ok {
 				return nil
 			}
 
-			select {
-			case outputs[current] <- value:
-				current = (current + 1) % total
-			case <-ctx.Done():
-				return nil
+			outCh := outputs[idx]
+			if outCh != nil {
+				select {
+				case outCh <- value:
+					idx = (idx + 1) % len(outputs)
+				case <-ctx.Done():
+					return nil
+				}
+			} else {
+				idx = (idx + 1) % len(outputs)
 			}
 		}
 	}
@@ -96,43 +119,54 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 		return nil
 	}
 
-	defer close(output)
+	defer func() {
+		if output != nil {
+			select {
+			case <-output:
+			default:
+				close(output)
+			}
+		}
+	}()
 
 	if len(inputs) == 0 {
 		return nil
 	}
 
-	var wg sync.WaitGroup
+	done := make(chan struct{})
+	defer close(done)
 
-	processInput := func(ch chan string) {
-		defer wg.Done()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case value, isOpen := <-ch:
-				if !isOpen {
-					return
-				}
-
-				if strings.Contains(value, multiplexerSkip) {
-					continue
-				}
-
+	for _, inputCh := range inputs {
+		go func(ch chan string) {
+			for {
 				select {
-				case output <- value:
+				case <-done:
+					return
 				case <-ctx.Done():
 					return
+				case val, ok := <-ch:
+					if !ok {
+						return
+					}
+
+					if strings.Contains(val, noMultiplexerMessage) {
+						continue
+					}
+
+					if output != nil {
+						select {
+						case output <- val:
+						case <-ctx.Done():
+							return
+						case <-done:
+							return
+						}
+					}
 				}
 			}
-		}
+		}(inputCh)
 	}
 
-	for _, ch := range inputs {
-		wg.Add(1)
-		go processInput(ch)
-	}
-
-	wg.Wait()
+	<-ctx.Done()
 	return nil
 }
