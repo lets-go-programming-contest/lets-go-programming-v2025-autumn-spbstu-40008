@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"strings"
-	"sync"
 )
 
 var ErrCannotBeDecorated = errors.New("can't be decorated")
@@ -49,9 +48,9 @@ func PrefixDecoratorFunc(ctx context.Context, input, output chan string) error {
 			}
 
 			select {
-			case output <- val:
 			case <-ctx.Done():
 				return nil
+			case output <- val:
 			}
 		}
 	}
@@ -59,15 +58,8 @@ func PrefixDecoratorFunc(ctx context.Context, input, output chan string) error {
 
 func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string) error {
 	defer func() {
-		closed := make(map[chan string]bool)
-		for _, outCh := range outputs {
-			if outCh == nil {
-				continue
-			}
-			if !closed[outCh] {
-				close(outCh)
-				closed[outCh] = true
-			}
+		for _, ch := range outputs {
+			close(ch)
 		}
 	}()
 
@@ -86,10 +78,10 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 			}
 
 			select {
-			case outputs[idx] <- val:
-				idx = (idx + 1) % len(outputs)
 			case <-ctx.Done():
 				return nil
+			case outputs[idx] <- val:
+				idx = (idx + 1) % len(outputs)
 			}
 		}
 	}
@@ -100,25 +92,22 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 		return nil
 	}
 
+	defer close(output)
+
 	if len(inputs) == 0 {
-		close(output)
 		return nil
 	}
 
-	var wg sync.WaitGroup
-	var once sync.Once
-	defer func() {
-		wg.Wait()
-		once.Do(func() { close(output) })
-	}()
+	doneCh := make(chan struct{})
+	defer close(doneCh)
 
 	for _, ch := range inputs {
-		wg.Add(1)
 		go func(in chan string) {
-			defer wg.Done()
 			for {
 				select {
 				case <-ctx.Done():
+					return
+				case <-doneCh:
 					return
 				case val, ok := <-in:
 					if !ok {
@@ -132,6 +121,8 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 					select {
 					case <-ctx.Done():
 						return
+					case <-doneCh:
+						return
 					case output <- val:
 					}
 				}
@@ -139,5 +130,6 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 		}(ch)
 	}
 
+	<-ctx.Done()
 	return nil
 }
