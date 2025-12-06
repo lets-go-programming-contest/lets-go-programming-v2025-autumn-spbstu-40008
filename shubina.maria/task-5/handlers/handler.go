@@ -92,8 +92,9 @@ func MultiplexerFunc(
 	for _, inputChannel := range inputChans {
 		waitGroup.Add(1)
 
-		go func(inputChan chan string) { // Изменили имя параметра с 'ch' на 'inputChan'
+		go func(inputChan chan string) {
 			defer waitGroup.Done()
+
 			for {
 				select {
 				case <-ctx.Done():
@@ -116,7 +117,9 @@ func MultiplexerFunc(
 			}
 		}(inputChannel)
 	}
+
 	done := make(chan struct{})
+
 	go func() {
 		waitGroup.Wait()
 		close(done)

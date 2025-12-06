@@ -31,7 +31,8 @@ type Conveyer interface {
 	Recv(output string) (string, error)
 }
 
-func New(size int) Conveyer {
+// New создает новый конвейер
+func New(size int) *conveyerImpl {
 	return &conveyerImpl{
 		size:     size,
 		channels: make(map[string]chan string),
@@ -46,7 +47,6 @@ type conveyerImpl struct {
 	chMutex  sync.RWMutex
 	handlers []func(ctx context.Context) error
 }
-
 
 func (c *conveyerImpl) ensureChannel(name string) chan string {
 	c.chMutex.Lock()
@@ -90,6 +90,7 @@ func (c *conveyerImpl) RegisterMultiplexer(
 	for i, name := range inputs {
 		inputChans[i] = c.ensureChannel(name)
 	}
+
 	outputChan := c.ensureChannel(output)
 
 	c.handlers = append(c.handlers, func(ctx context.Context) error {
