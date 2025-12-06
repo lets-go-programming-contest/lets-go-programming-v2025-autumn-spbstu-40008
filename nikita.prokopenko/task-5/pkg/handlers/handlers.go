@@ -1,115 +1,141 @@
-// pkg/handlers/handlers.go
 package handlers
 
 import (
 	"context"
-	"errors"
 	"strings"
-	"sync"
 )
 
-var ErrCannotBeDecorated = errors.New("can't be decorated")
+type DecoratorError string
 
-func PrefixDecoratorFunc(ctx context.Context, in, out chan string) error {
-	defer close(out)
-
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		case val, ok := <-in:
-			if !ok {
-				return nil
-			}
-
-			if strings.Contains(val, "no decorator") {
-				return ErrCannotBeDecorated
-			}
-
-			if !strings.HasPrefix(val, "decorated: ") {
-				val = "decorated: " + val
-			}
-
-			select {
-			case out <- val:
-			case <-ctx.Done():
-				return nil
-			}
-		}
-	}
+func (e DecoratorError) Error() string {
+	return string(e)
 }
 
-func SeparatorFunc(ctx context.Context, in chan string, outs []chan string) error {
-	defer func() {
-		for _, ch := range outs {
-			close(ch)
-		}
-	}()
-
-	if len(outs) == 0 {
-		return nil
-	}
-
-	idx := 0
-	total := len(outs)
-
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		case val, ok := <-in:
-			if !ok {
-				return nil
-			}
-
-			select {
-			case outs[idx] <- val:
-				idx = (idx + 1) % total
-			case <-ctx.Done():
-				return nil
-			}
-		}
-	}
-}
-
-func MultiplexerFunc(ctx context.Context, ins []chan string, out chan string) error {
-	defer close(out)
-
-	if len(ins) == 0 {
-		return nil
-	}
-
-	var wg sync.WaitGroup
-
-	process := func(ch chan string) {
-		defer wg.Done()
+func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan string) error {
+	const prefix = "decorated: "
+	if output == nil {
 		for {
 			select {
 			case <-ctx.Done():
-				return
-			case val, ok := <-ch:
+				return nil
+			case _, ok := <-input:
 				if !ok {
-					return
-				}
-
-				if strings.Contains(val, "no multiplexer") {
-					continue
-				}
-
-				select {
-				case out <- val:
-				case <-ctx.Done():
-					return
+					return nil
 				}
 			}
 		}
 	}
 
-	for _, ch := range ins {
-		wg.Add(1)
-		go process(ch)
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case data, ok := <-input:
+			if !ok {
+				return nil
+			}
+
+			if strings.Contains(data, "no decorator") {
+				return DecoratorError("can't be decorated")
+			}
+
+			if !strings.HasPrefix(data, prefix) {
+				data = prefix + data
+			}
+
+			select {
+			case output <- data:
+			case <-ctx.Done():
+				return nil
+			}
+		}
+	}
+}
+
+func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string) error {
+	if len(outputs) == 0 {
+		for {
+			select {
+			case <-ctx.Done():
+				return nil
+			case _, ok := <-input:
+				if !ok {
+					return nil
+				}
+			}
+		}
 	}
 
-	wg.Wait()
-	return nil
+	index := 0
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case data, ok := <-input:
+			if !ok {
+				return nil
+			}
+
+			select {
+			case outputs[index] <- data:
+				index = (index + 1) % len(outputs)
+			case <-ctx.Done():
+				return nil
+			}
+		}
+	}
+}
+
+func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan string) error {
+	if output == nil {
+		return nil
+	}
+
+	if len(inputs) == 0 {
+		return nil
+	}
+
+	doneChan := make(chan struct{})
+	defer close(doneChan)
+
+	type workerResult struct{}
+	workerCount := len(inputs)
+
+	for _, inChan := range inputs {
+		ch := inChan
+
+		go func() {
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case data, ok := <-ch:
+					if !ok {
+						workerCount--
+						return
+					}
+					if strings.Contains(data, "no multiplexer") {
+						continue
+					}
+					select {
+					case output <- data:
+					case <-ctx.Done():
+						return
+					}
+				}
+			}
+		}()
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		default:
+			if workerCount <= 0 {
+				return nil
+			}
+		}
+	}
 }

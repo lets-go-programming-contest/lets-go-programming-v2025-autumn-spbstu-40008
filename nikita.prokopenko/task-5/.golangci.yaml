@@ -1,7 +1,0 @@
-# .golangci.yaml
-run:
-  timeout: 5m
-linters:
-  disable:
-    - execinquery  # deprecated
-    - gomnd        # deprecated
