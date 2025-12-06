@@ -164,4 +164,3 @@ func (c *Conveyer) Recv(name string) (string, error) {
 	}
 	return val, nil
 }
-

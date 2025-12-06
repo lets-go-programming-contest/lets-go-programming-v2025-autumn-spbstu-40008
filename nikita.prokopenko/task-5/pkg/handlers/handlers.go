@@ -116,4 +116,3 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 	waitGroup.Wait()
 	return nil
 }
-
