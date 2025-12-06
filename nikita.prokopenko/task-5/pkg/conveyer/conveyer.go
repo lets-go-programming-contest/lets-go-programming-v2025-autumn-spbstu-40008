@@ -124,28 +124,25 @@ func (c *Conveyer) Recv(channelName string) (string, error) {
 
 func (c *Conveyer) Run(ctx context.Context) error {
 	var wg sync.WaitGroup
-	errChan := make(chan error, len(c.handlers))
+	errs := make([]error, 0, len(c.handlers))
+	var mu sync.Mutex
 
 	for _, handler := range c.handlers {
 		wg.Add(1)
 		go func(h func(ctx context.Context) error) {
 			defer wg.Done()
 			if err := h(ctx); err != nil {
-				errChan <- err
+				mu.Lock()
+				errs = append(errs, err)
+				mu.Unlock()
 			}
 		}(handler)
 	}
 
 	wg.Wait()
-	close(errChan)
 
-	select {
-	case err := <-errChan:
-		if err != nil {
-			return err
-		}
-	default:
+	if len(errs) > 0 {
+		return errs[0]
 	}
-
 	return nil
 }

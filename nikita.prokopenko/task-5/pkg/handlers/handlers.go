@@ -5,14 +5,17 @@ import (
 	"strings"
 )
 
+type DecoratorError string
+
+func (e DecoratorError) Error() string {
+	return string(e)
+}
+
 func PrefixDecoratorFunc(ctx context.Context, input, output chan string) error {
 	defer close(output)
 
 	for {
 		select {
-		case <-ctx.Done():
-			return nil
-
 		case value, ok := <-input:
 			if !ok {
 				return nil
@@ -31,16 +34,16 @@ func PrefixDecoratorFunc(ctx context.Context, input, output chan string) error {
 			case <-ctx.Done():
 				return nil
 			}
+		case <-ctx.Done():
+			return nil
 		}
 	}
 }
 
 func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string) error {
-	defer func() {
-		for _, out := range outputs {
-			close(out)
-		}
-	}()
+	for _, out := range outputs {
+		defer close(out)
+	}
 
 	if len(outputs) == 0 {
 		return nil
@@ -50,9 +53,6 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 
 	for {
 		select {
-		case <-ctx.Done():
-			return nil
-
 		case value, ok := <-input:
 			if !ok {
 				return nil
@@ -64,6 +64,8 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 			case <-ctx.Done():
 				return nil
 			}
+		case <-ctx.Done():
+			return nil
 		}
 	}
 }
@@ -75,43 +77,45 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 		return nil
 	}
 
-	done := make(chan bool, len(inputs))
+	type result struct {
+		value string
+		err   error
+	}
+
+	results := make(chan result, len(inputs))
 
 	for _, in := range inputs {
 		go func(ch chan string) {
 			for {
 				select {
-				case <-ctx.Done():
-					done <- true
-					return
 				case val, ok := <-ch:
 					if !ok {
-						done <- true
+						results <- result{err: nil}
 						return
 					}
 					if strings.Contains(val, "no multiplexer") {
 						continue
 					}
 					select {
-					case <-ctx.Done():
-						done <- true
-						return
 					case output <- val:
+					case <-ctx.Done():
+						results <- result{err: ctx.Err()}
+						return
 					}
+				case <-ctx.Done():
+					results <- result{err: ctx.Err()}
+					return
 				}
 			}
 		}(in)
 	}
 
 	for i := 0; i < len(inputs); i++ {
-		<-done
+		res := <-results
+		if res.err != nil {
+			return res.err
+		}
 	}
 
 	return nil
-}
-
-type DecoratorError string
-
-func (e DecoratorError) Error() string {
-	return string(e)
 }
