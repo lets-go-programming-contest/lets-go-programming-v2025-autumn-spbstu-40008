@@ -11,7 +11,8 @@ var ErrDecorateFail = errors.New("can't be decorated")
 
 func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan string) error {
 	const prefix = "decorated: "
-	const stopWord = "no decorator"
+
+	const stopWord = "no decorator" 
 
 	for {
 		select {
@@ -110,6 +111,7 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 
 	for _, channel := range inputs {
 		waitGroup.Add(1)
+
 		go mergeRoutine(channel)
 	}
 
