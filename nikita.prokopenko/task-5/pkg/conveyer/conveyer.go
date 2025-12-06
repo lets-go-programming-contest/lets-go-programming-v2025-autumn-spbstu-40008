@@ -116,7 +116,7 @@ func (c *Conveyer) Recv(channelName string) (string, error) {
 
 	value, ok := <-ch
 	if !ok {
-		return "undefined", nil
+		return "", nil
 	}
 
 	return value, nil
@@ -124,25 +124,28 @@ func (c *Conveyer) Recv(channelName string) (string, error) {
 
 func (c *Conveyer) Run(ctx context.Context) error {
 	var wg sync.WaitGroup
-	errs := make([]error, 0, len(c.handlers))
-	var mu sync.Mutex
+	errChan := make(chan error, len(c.handlers))
 
 	for _, handler := range c.handlers {
 		wg.Add(1)
 		go func(h func(ctx context.Context) error) {
 			defer wg.Done()
 			if err := h(ctx); err != nil {
-				mu.Lock()
-				errs = append(errs, err)
-				mu.Unlock()
+				errChan <- err
 			}
 		}(handler)
 	}
 
 	wg.Wait()
+	close(errChan)
 
-	if len(errs) > 0 {
-		return errs[0]
+	select {
+	case err := <-errChan:
+		if err != nil {
+			return err
+		}
+	default:
 	}
+
 	return nil
 }
