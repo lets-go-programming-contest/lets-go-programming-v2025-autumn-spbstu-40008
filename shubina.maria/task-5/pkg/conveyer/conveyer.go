@@ -57,7 +57,6 @@ func (c *conveyerImpl) ensureChannel(name string) chan string {
 
 	ch := make(chan string, c.size)
 	c.channels[name] = ch
-
 	return ch
 }
 
@@ -69,7 +68,7 @@ func (c *conveyerImpl) getChannel(name string) chan string {
 }
 
 func (c *conveyerImpl) RegisterDecorator(
-	handler func(ctx context.Context, input, output chan string) error,
+	handler func(ctx context.Context, inputChan, outputChan chan string) error,
 	input, output string,
 ) {
 	inputChan := c.ensureChannel(input)
@@ -81,7 +80,7 @@ func (c *conveyerImpl) RegisterDecorator(
 }
 
 func (c *conveyerImpl) RegisterMultiplexer(
-	handler func(ctx context.Context, inputs []chan string, output chan string) error,
+	handler func(ctx context.Context, inputChans []chan string, outputChan chan string) error,
 	inputs []string,
 	output string,
 ) {
@@ -97,7 +96,7 @@ func (c *conveyerImpl) RegisterMultiplexer(
 }
 
 func (c *conveyerImpl) RegisterSeparator(
-	handler func(ctx context.Context, input chan string, outputs []chan string) error,
+	handler func(ctx context.Context, inputChan chan string, outputChans []chan string) error,
 	input string,
 	outputs []string,
 ) {
@@ -118,30 +117,35 @@ func (c *conveyerImpl) Send(input, data string) error {
 		return ErrChannelNotFound
 	}
 
-	ch <- data
-
-	return nil
+	select {
+	case ch <- data:
+		return nil
+	}
 }
 
 func (c *conveyerImpl) Recv(output string) (string, error) {
 	ch := c.getChannel(output)
-	if ch == nil {
+	if ch == nil { // getChannel returns nil if not found
 		return "", ErrChannelNotFound
 	}
 
-	data, ok := <-ch
-	if !ok {
-		return "undefined", nil
+	select {
+	case data, ok := <-ch:
+		if !ok {
+			return "undefined", nil
+		}
+		return data, nil
 	}
-
-	return data, nil
 }
 
 func (c *conveyerImpl) Run(ctx context.Context) error {
-	group, ctx := errgroup.WithContext(ctx)
+	group, innerCtx := errgroup.WithContext(ctx)
 
 	for _, handlerFunc := range c.handlers {
-		group.Go(func() error { return handlerFunc(ctx) })
+		handlerFunc := handlerFunc // Capture loop variable
+		group.Go(func() error {
+			return handlerFunc(innerCtx)
+		})
 	}
 
 	err := group.Wait()
