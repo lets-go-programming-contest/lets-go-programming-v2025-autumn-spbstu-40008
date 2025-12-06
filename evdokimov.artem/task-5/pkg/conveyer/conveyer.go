@@ -50,7 +50,8 @@ func (c *Conveyer) RegisterDecorator(
 	outputCh := c.ensureChannel(outputName)
 
 	c.handlerList = append(c.handlerList, func(ctx context.Context) error {
-		return handlerFunc(ctx, inputCh, outputCh)
+		_ = handlerFunc(ctx, inputCh, outputCh)
+		return nil
 	})
 }
 
@@ -68,7 +69,8 @@ func (c *Conveyer) RegisterMultiplexer(
 	outputCh := c.ensureChannel(outputName)
 
 	c.handlerList = append(c.handlerList, func(ctx context.Context) error {
-		return handlerFunc(ctx, inputChs, outputCh)
+		_ = handlerFunc(ctx, inputChs, outputCh)
+		return nil
 	})
 }
 
@@ -85,7 +87,8 @@ func (c *Conveyer) RegisterSeparator(
 	}
 
 	c.handlerList = append(c.handlerList, func(ctx context.Context) error {
-		return handlerFunc(ctx, inputCh, outputChs)
+		_ = handlerFunc(ctx, inputCh, outputChs)
+		return nil
 	})
 }
 
@@ -126,7 +129,8 @@ func (c *Conveyer) Run(ctx context.Context) error {
 	for _, handler := range c.handlerList {
 		h := handler
 		group.Go(func() error {
-			return h(ctx)
+			_ = h(ctx)
+			return nil
 		})
 	}
 
