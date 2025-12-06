@@ -5,20 +5,20 @@ import (
 	"strings"
 )
 
-func PrefixDecoratorFunc(ctx context.Context, input, output chan string) error {
-	if output == nil {
-		for {
-			select {
-			case <-ctx.Done():
+func drainInput(ctx context.Context, input chan string) error {
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case _, ok := <-input:
+			if !ok {
 				return nil
-			case _, ok := <-input:
-				if !ok {
-					return nil
-				}
 			}
 		}
 	}
+}
 
+func runPrefixDecorator(ctx context.Context, input, output chan string) error {
 	defer close(output)
 
 	for {
@@ -44,16 +44,23 @@ func PrefixDecoratorFunc(ctx context.Context, input, output chan string) error {
 	}
 }
 
+func PrefixDecoratorFunc(ctx context.Context, input, output chan string) error {
+	if output == nil {
+		return drainInput(ctx, input)
+	}
+	return runPrefixDecorator(ctx, input, output)
+}
+
 func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string) error {
 	defer func() {
 		closed := make(map[chan string]bool)
-		for _, out := range outputs {
-			if out == nil {
+		for _, outCh := range outputs {
+			if outCh == nil {
 				continue
 			}
-			if !closed[out] {
-				close(out)
-				closed[out] = true
+			if !closed[outCh] {
+				close(outCh)
+				closed[outCh] = true
 			}
 		}
 	}()
@@ -72,6 +79,7 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 			if !ok {
 				return nil
 			}
+
 			select {
 			case outputs[idx] <- value:
 				idx = (idx + 1) % len(outputs)
@@ -93,18 +101,18 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 		return nil
 	}
 
-	done := make(chan bool, len(inputs))
+	doneCh := make(chan bool, len(inputs))
 
-	for _, in := range inputs {
-		go func(ch chan string) {
+	for _, inputCh := range inputs {
+		go func(inputCh chan string) {
 			for {
 				select {
 				case <-ctx.Done():
-					done <- true
+					doneCh <- true
 					return
-				case val, ok := <-ch:
+				case val, ok := <-inputCh:
 					if !ok {
-						done <- true
+						doneCh <- true
 						return
 					}
 					if strings.Contains(val, "no multiplexer") {
@@ -112,17 +120,17 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 					}
 					select {
 					case <-ctx.Done():
-						done <- true
+						doneCh <- true
 						return
 					case output <- val:
 					}
 				}
 			}
-		}(in)
+		}(inputCh)
 	}
 
-	for i := 0; i < len(inputs); i++ {
-		<-done
+	for range inputs {
+		<-doneCh
 	}
 
 	return nil
