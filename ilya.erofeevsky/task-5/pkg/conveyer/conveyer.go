@@ -32,14 +32,14 @@ func New(size int) *Conveyer {
 func (c *Conveyer) ensureChannel(name string) chan string {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	
+
 	if channel, ok := c.channelsByName[name]; ok {
 		return channel
 	}
-	
+
 	channel := make(chan string, c.size)
 	c.channelsByName[name] = channel
-	
+
 	return channel
 }
 
@@ -56,10 +56,10 @@ func (c *Conveyer) RegisterDecorator(
 ) {
 	inputCh := c.ensureChannel(input)
 	outputCh := c.ensureChannel(output)
-	
+
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	
+
 	c.handlerList = append(c.handlerList, func(ctx context.Context) error {
 		return handlerFn(ctx, inputCh, outputCh)
 	})
@@ -72,14 +72,14 @@ func (c *Conveyer) RegisterSeparator(
 ) {
 	inputCh := c.ensureChannel(input)
 	outputsChs := make([]chan string, len(outputs))
-	
+
 	for i, name := range outputs {
 		outputsChs[i] = c.ensureChannel(name)
 	}
-	
+
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	
+
 	c.handlerList = append(c.handlerList, func(ctx context.Context) error {
 		return handlerFn(ctx, inputCh, outputsChs)
 	})
@@ -94,12 +94,12 @@ func (c *Conveyer) RegisterMultiplexer(
 	for i, name := range inputs {
 		inputsChs[i] = c.ensureChannel(name)
 	}
-	
+
 	outputCh := c.ensureChannel(output)
-	
+
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	
+
 	c.handlerList = append(c.handlerList, func(ctx context.Context) error {
 		return handlerFn(ctx, inputsChs, outputCh)
 	})
@@ -111,7 +111,7 @@ func (c *Conveyer) Send(input, data string) error {
 		return ErrChannelNotFound
 	}
 	inputCh <- data
-	
+
 	return nil
 }
 
@@ -125,42 +125,36 @@ func (c *Conveyer) Recv(output string) (string, error) {
 	if !ok {
 		return undefinedValue, nil
 	}
-	
+
 	return val, nil
 }
 
 func (c *Conveyer) Run(executionContext context.Context) error {
+	defer func() {
+		c.mutex.RLock()
+		defer c.mutex.RUnlock()
+
+		for _, channel := range c.channelsByName {
+			close(channel)
+		}
+	}()
+
 	errorGroup, operationContext := errgroup.WithContext(executionContext)
 
 	c.mutex.RLock()
-	
+
 	for _, handler := range c.handlerList {
-		h := handler
-		
+		handler := handler
+
 		errorGroup.Go(func() error {
-			return h(operationContext)
+			return handler(operationContext)
 		})
 	}
 	c.mutex.RUnlock()
-	
-	runError := errorGroup.Wait()
-	
-	func() {
-		c.mutex.RLock()
-		defer c.mutex.RUnlock()
-		
-		for _, channel := range c.channelsByName {
-			select {
-			case <-executionContext.Done():
-			default:
-				close(channel)
-			}
-		}
-	}()
-	
-	if runError != nil {
+
+	if runError := errorGroup.Wait(); runError != nil {
 		return fmt.Errorf("run pipeline: %w", runError)
 	}
-	
+
 	return nil
 }
