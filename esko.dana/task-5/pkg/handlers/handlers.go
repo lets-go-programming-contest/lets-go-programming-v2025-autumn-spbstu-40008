@@ -8,13 +8,11 @@ import (
 )
 
 var ErrCantBeDecorated = errors.New("can't be decorated")
-var ErrEmptyOutputs = errors.New("empty outputs")
 
 func PrefixDecoratorFunc(
 	ctx context.Context,
 	input, output chan string,
 ) error {
-
 	for {
 		select {
 		case <-ctx.Done():
@@ -47,7 +45,6 @@ func SeparatorFunc(
 	outputs []chan string,
 ) error {
 	if len(outputs) == 0 {
-
 		for {
 			select {
 			case <-ctx.Done():
