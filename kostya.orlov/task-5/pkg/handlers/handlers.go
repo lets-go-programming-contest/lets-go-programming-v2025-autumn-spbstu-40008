@@ -14,10 +14,14 @@ var (
 	ErrCantBeDecorated           = errors.New("can't be decorated")
 )
 
-func PrefixDecoratorFunc(ctx context.Context, input chan string, outputs []chan string) error {
+func PrefixDecoratorFunc(ctx context.Context, inputs []chan string, outputs []chan string) error {
 	if len(outputs) == 0 {
 		return ErrDecoratorRequiresOutput
 	}
+	if len(inputs) == 0 {
+		return errors.New("decorator requires an input channel")
+	}
+	input := inputs[0]
 	output := outputs[0]
 
 	for {
@@ -47,11 +51,14 @@ func PrefixDecoratorFunc(ctx context.Context, input chan string, outputs []chan 
 	}
 }
 
-func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string) error {
+func SeparatorFunc(ctx context.Context, inputs []chan string, outputs []chan string) error {
 	if len(outputs) == 0 {
 		return ErrSeparatorRequiresOutput
 	}
-
+	if len(inputs) == 0 {
+		return errors.New("separator requires an input channel")
+	}
+	input := inputs[0]
 	index := 0
 	numOutputs := len(outputs)
 

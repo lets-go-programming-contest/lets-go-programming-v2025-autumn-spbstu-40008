@@ -12,7 +12,7 @@ var (
 	ErrChannelExists = errors.New("channel already exists")
 )
 
-type ConveyerFunc func(ctx context.Context, input chan string, outputs []chan string) error
+type ConveyerFunc func(ctx context.Context, inputs []chan string, outputs []chan string) error
 type MultiplexerFuncAdaptor func(ctx context.Context, inputs []chan string, outputs []chan string) error
 
 type HandlerRegistration struct {
@@ -147,12 +147,7 @@ func (c *Conveyer) Run(ctx context.Context) error {
 		go func(handlerReg HandlerRegistration) {
 			defer c.waitGroup.Done()
 
-			var inputChannel chan string
-			if len(handlerReg.InputChans) > 0 {
-				inputChannel = handlerReg.InputChans[0]
-			}
-
-			err := handlerReg.Fn(c.ctx, inputChannel, handlerReg.OutputChans)
+			err := handlerReg.Fn(c.ctx, handlerReg.InputChans, handlerReg.OutputChans)
 
 			if err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
 				select {
