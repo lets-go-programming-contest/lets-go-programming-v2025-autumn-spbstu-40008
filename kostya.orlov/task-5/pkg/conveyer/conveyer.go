@@ -14,6 +14,7 @@ var (
 
 type ConveyerFunc func(ctx context.Context, input chan string, outputs []chan string) error
 
+
 type MultiplexerFunc func(ctx context.Context, inputs []chan string, outputs []chan string) error
 
 type HandlerRegistration struct {
@@ -41,8 +42,6 @@ type Conveyer struct {
 }
 
 func New(size int) *Conveyer {
-    ctx, cancel := context.WithCancel(context.Background())
-    cancel()
 	return &Conveyer{
 		channels:  make(map[string]chan string),
 		handlers:  make([]HandlerRegistration, 0),
@@ -50,9 +49,6 @@ func New(size int) *Conveyer {
 		size:      size,
 		waitGroup: sync.WaitGroup{},
 		mu:        sync.RWMutex{},
-        
-        ctx: ctx, 
-        cancel: cancel,
 	}
 }
 
@@ -163,7 +159,7 @@ func (c *Conveyer) resolveChannels() error {
 }
 
 func (c *Conveyer) Run(ctx context.Context) error {
-	c.ctx, c.cancel = context.WithCancel(ctx) 
+	c.ctx, c.cancel = context.WithCancel(ctx)
 	defer c.cancel()
 
 	if err := c.resolveChannels(); err != nil {
@@ -241,15 +237,21 @@ func (c *Conveyer) Run(ctx context.Context) error {
 func (c *Conveyer) Send(inputID string, data string) error {
 	c.mu.RLock()
 	channel, ok := c.channels[inputID]
+	ctx := c.ctx
 	c.mu.RUnlock()
 
 	if !ok {
 		return ErrChanNotFound
 	}
 
+	if ctx == nil {
+		channel <- data
+		return nil
+	}
+
 	select {
-	case <-c.ctx.Done():
-		return c.ctx.Err()
+	case <-ctx.Done():
+		return ctx.Err()
 	case channel <- data:
 		return nil
 	}
@@ -258,15 +260,24 @@ func (c *Conveyer) Send(inputID string, data string) error {
 func (c *Conveyer) Recv(outputID string) (string, error) {
 	c.mu.RLock()
 	channel, ok := c.channels[outputID]
+	ctx := c.ctx
 	c.mu.RUnlock()
 
 	if !ok {
 		return "", ErrChanNotFound
 	}
 
+	if ctx == nil {
+		data, open := <-channel
+		if !open {
+			return "undefined", nil
+		}
+		return data, nil
+	}
+
 	select {
-	case <-c.ctx.Done():
-		return "", c.ctx.Err()
+	case <-ctx.Done():
+		return "", ctx.Err()
 
 	case data, open := <-channel:
 		if !open {
