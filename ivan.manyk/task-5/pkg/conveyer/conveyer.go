@@ -49,7 +49,7 @@ func (c *conveyerType) getChannel(name string) (chan string, bool) {
 }
 
 func (c *conveyerType) RegisterDecorator(
-	fn func(ctx context.Context, input chan string, output chan string) error,
+	handlerFunc func(ctx context.Context, input chan string, output chan string) error,
 	input string,
 	output string,
 ) {
@@ -57,12 +57,12 @@ func (c *conveyerType) RegisterDecorator(
 	outputCh := c.getOrCreateChannel(output)
 
 	c.handlers = append(c.handlers, func(ctx context.Context) error {
-		return fn(ctx, inputCh, outputCh)
+		return handlerFunc(ctx, inputCh, outputCh)
 	})
 }
 
 func (c *conveyerType) RegisterMultiplexer(
-	fn func(ctx context.Context, inputs []chan string, output chan string) error,
+	handlerFunc func(ctx context.Context, inputs []chan string, output chan string) error,
 	inputs []string,
 	output string,
 ) {
@@ -70,10 +70,11 @@ func (c *conveyerType) RegisterMultiplexer(
 	for i, input := range inputs {
 		inputChs[i] = c.getOrCreateChannel(input)
 	}
+
 	outputCh := c.getOrCreateChannel(output)
 
 	c.handlers = append(c.handlers, func(ctx context.Context) error {
-		return fn(ctx, inputChs, outputCh)
+		return handlerFunc(ctx, inputChs, outputCh)
 	})
 }
 
@@ -84,6 +85,7 @@ func (c *conveyerType) RegisterSeparator(
 ) {
 	inputCh := c.getOrCreateChannel(input)
 	outputChs := make([]chan string, len(outputs))
+
 	for i, output := range outputs {
 		outputChs[i] = c.getOrCreateChannel(output)
 	}
@@ -101,8 +103,10 @@ func (c *conveyerType) Run(ctx context.Context) error {
 
 	for _, handler := range c.handlers {
 		waitGroup .Add(1)
+
 		go func(h func(ctx context.Context) error) {
 			defer waitGroup.Done()
+
 			if err := h(ctx); err != nil {
 				select {
 				case errChan <- err:
