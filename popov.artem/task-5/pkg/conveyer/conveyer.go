@@ -2,26 +2,23 @@ package conveyer
 
 import (
 	"context"
-	"errors"
 	"sync"
 )
-
-var ErrChanNotFound = errors.New("chan not found")
 
 type DecoratorFunc func(ctx context.Context, input chan string, output chan string) error
 type MultiplexerFunc func(ctx context.Context, inputs []chan string, output chan string) error
 type SeparatorFunc func(ctx context.Context, input chan string, outputs []chan string) error
 
 type conveyerImpl struct {
-	size          int
-	channels      map[string]chan string
-	decorators    []struct{ fn DecoratorFunc; input, output string }
-	multiplexers  []struct{ fn MultiplexerFunc; inputs []string; output string }
-	separators    []struct{ fn SeparatorFunc; input string; outputs []string }
-	mu            sync.Mutex
+	size         int
+	channels     map[string]chan string
+	decorators   []struct{ fn DecoratorFunc; input, output string }
+	multiplexers []struct{ fn MultiplexerFunc; inputs []string; output string }
+	separators   []struct{ fn SeparatorFunc; input string; outputs []string }
+	mu           sync.Mutex
 }
 
-type conveyer interface {
+type Conveyer interface {
 	RegisterDecorator(fn DecoratorFunc, input, output string)
 	RegisterMultiplexer(fn MultiplexerFunc, inputs []string, output string)
 	RegisterSeparator(fn SeparatorFunc, input string, outputs []string)
@@ -30,22 +27,22 @@ type conveyer interface {
 	Recv(output string) (string, error)
 }
 
-func New(size int) conveyer {
+func New(size int) Conveyer {
 	return &conveyerImpl{
 		size:     size,
 		channels: make(map[string]chan string),
 	}
 }
 
-func (c *conveyerImpl) getChannel(name string) (chan string, bool) {
+func (c *conveyerImpl) getChannel(name string) chan string {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	ch, exists := c.channels[name]
-	if !exists {
-		ch = make(chan string, c.size)
-		c.channels[name] = ch
+	if ch, exists := c.channels[name]; exists {
+		return ch
 	}
-	return ch, exists
+	ch := make(chan string, c.size)
+	c.channels[name] = ch
+	return ch
 }
 
 func (c *conveyerImpl) RegisterDecorator(fn DecoratorFunc, input, output string) {
@@ -87,8 +84,8 @@ func (c *conveyerImpl) Run(ctx context.Context) error {
 			output string
 		}) {
 			defer runWg.Done()
-			inCh, _ := c.getChannel(d.input)
-			outCh, _ := c.getChannel(d.output)
+			inCh := c.getChannel(d.input)
+			outCh := c.getChannel(d.output)
 			if err := d.fn(ctx, inCh, outCh); err != nil {
 				select {
 				case errCh <- err:
@@ -108,10 +105,10 @@ func (c *conveyerImpl) Run(ctx context.Context) error {
 			defer runWg.Done()
 			var inChs []chan string
 			for _, inName := range m.inputs {
-				ch, _ := c.getChannel(inName)
+				ch := c.getChannel(inName)
 				inChs = append(inChs, ch)
 			}
-			outCh, _ := c.getChannel(m.output)
+			outCh := c.getChannel(m.output)
 			if err := m.fn(ctx, inChs, outCh); err != nil {
 				select {
 				case errCh <- err:
@@ -129,10 +126,10 @@ func (c *conveyerImpl) Run(ctx context.Context) error {
 			outputs []string
 		}) {
 			defer runWg.Done()
-			inCh, _ := c.getChannel(s.input)
+			inCh := c.getChannel(s.input)
 			var outChs []chan string
 			for _, outName := range s.outputs {
-				ch, _ := c.getChannel(outName)
+				ch := c.getChannel(outName)
 				outChs = append(outChs, ch)
 			}
 			if err := s.fn(ctx, inCh, outChs); err != nil {
@@ -176,19 +173,13 @@ func (c *conveyerImpl) Run(ctx context.Context) error {
 }
 
 func (c *conveyerImpl) Send(input string, data string) error {
-	ch, exists := c.getChannel(input)
-	if !exists {
-		return ErrChanNotFound
-	}
+	ch := c.getChannel(input)
 	ch <- data
 	return nil
 }
 
 func (c *conveyerImpl) Recv(output string) (string, error) {
-	ch, exists := c.getChannel(output)
-	if !exists {
-		return "", ErrChanNotFound
-	}
+	ch := c.getChannel(output)
 	data, ok := <-ch
 	if !ok {
 		return "undefined", nil
