@@ -86,6 +86,7 @@ func MultiplexerFunc(
 	outputChannel chan string,
 ) error {
 	var waitGroup sync.WaitGroup
+
 	waitGroup.Add(len(inputChannels))
 
 	for _, inputChannel := range inputChannels {

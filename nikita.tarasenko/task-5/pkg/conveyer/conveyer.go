@@ -7,9 +7,7 @@ import (
 	"sync"
 )
 
-var (
-	ErrChanNotFound = errors.New("chan not found")
-)
+var ErrChanNotFound = errors.New("chan not found")
 
 type conveyer interface {
 	RegisterDecorator(
@@ -42,7 +40,7 @@ type pipeline struct {
 	closer   sync.Once
 }
 
-func New(size int) conveyer {
+func New(size int) *pipeline { // Изменено: возвращаем конкретный тип вместо интерфейса
 	return &pipeline{
 		size:     size,
 		channels: make(map[string]chan string),
@@ -55,10 +53,11 @@ func New(size int) conveyer {
 func (p *pipeline) getOrCreateChannel(name string) chan string {
 	p.mu.RLock()
 
-	channel, ok := p.channels[name]
-	if ok {
+	existingChannel, channelExists := p.channels[name]
+	if channelExists {
 		p.mu.RUnlock()
-		return channel
+
+		return existingChannel
 	}
 
 	p.mu.RUnlock()
@@ -66,24 +65,24 @@ func (p *pipeline) getOrCreateChannel(name string) chan string {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	channel, ok = p.channels[name]
-	if ok {
-		return channel
+	existingChannel, channelExists = p.channels[name]
+	if channelExists {
+		return existingChannel
 	}
 
-	channel = make(chan string, p.size)
-	p.channels[name] = channel
+	newChannel := make(chan string, p.size)
+	p.channels[name] = newChannel
 
-	return channel
+	return newChannel
 }
 
 func (p *pipeline) getChannel(name string) (chan string, bool) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
-	channel, ok := p.channels[name]
+	channel, channelExists := p.channels[name]
 
-	return channel, ok
+	return channel, channelExists
 }
 
 func (p *pipeline) closeAll() {
@@ -160,11 +159,15 @@ func (p *pipeline) Run(parentCtx context.Context) error {
 	defer cancel()
 
 	var waitGroup sync.WaitGroup
-	errorChannel := make(chan error, 1)
 
 	p.mu.RLock()
+	handlers := make([]func(context.Context) error, len(p.handlers))
+	copy(handlers, p.handlers)
+	p.mu.RUnlock()
 
-	for _, handlerFunc := range p.handlers {
+	errorChannel := make(chan error, 1)
+
+	for _, handlerFunc := range handlers {
 		waitGroup.Add(1)
 
 		go func(handler func(context.Context) error) {
@@ -180,8 +183,6 @@ func (p *pipeline) Run(parentCtx context.Context) error {
 			}
 		}(handlerFunc)
 	}
-
-	p.mu.RUnlock()
 
 	done := make(chan struct{})
 
@@ -208,8 +209,8 @@ func (p *pipeline) Run(parentCtx context.Context) error {
 }
 
 func (p *pipeline) Send(channelName string, data string) error {
-	channel, ok := p.getChannel(channelName)
-	if !ok {
+	channel, channelExists := p.getChannel(channelName)
+	if !channelExists {
 		return ErrChanNotFound
 	}
 
@@ -219,8 +220,8 @@ func (p *pipeline) Send(channelName string, data string) error {
 }
 
 func (p *pipeline) Recv(channelName string) (string, error) {
-	channel, ok := p.getChannel(channelName)
-	if !ok {
+	channel, channelExists := p.getChannel(channelName)
+	if !channelExists {
 		return "", ErrChanNotFound
 	}
 
