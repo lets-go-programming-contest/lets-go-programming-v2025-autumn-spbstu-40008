@@ -23,8 +23,8 @@ func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan str
 				return ErrCantBeDecorated
 			}
 
-			if !strings.HasPrefix(val, "decorated:") {
-				val = "decorated:" + val
+			if !strings.HasPrefix(val, "decorated: ") {
+				val = "decorated: " + val
 			}
 			select {
 			case <-ctx.Done():
@@ -112,6 +112,7 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 	doneChan := make(chan struct{})
 	go func() {
 		waitGroup.Wait()
+		
 		close(doneChan)
 	}()
 
