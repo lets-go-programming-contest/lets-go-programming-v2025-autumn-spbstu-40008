@@ -12,13 +12,6 @@ var (
 )
 
 func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan string) error {
-	defer func() {
-		if output != nil {
-			defer func() { _ = recover() }()
-			close(output)
-		}
-	}()
-
 	for {
 		select {
 		case <-ctx.Done():
@@ -47,17 +40,6 @@ func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan str
 }
 
 func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string) error {
-	defer func() {
-		for _, out := range outputs {
-			if out != nil {
-				func() {
-					defer func() { _ = recover() }()
-					close(out)
-				}()
-			}
-		}
-	}()
-
 	if len(outputs) == 0 {
 		for {
 			select {
@@ -98,7 +80,7 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 }
 
 func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan string) error {
-	fanIn := make(chan string)
+	fanIn := make(chan string, 100)
 	var wg sync.WaitGroup
 
 	for _, inputCh := range inputs {
@@ -125,15 +107,9 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 
 	go func() {
 		wg.Wait()
-		close(fanIn)
+		close(fanIn) 
 	}()
 
-	defer func() {
-		if output != nil {
-			defer func() { _ = recover() }()
-			close(output)
-		}
-	}()
 
 	for {
 		select {
