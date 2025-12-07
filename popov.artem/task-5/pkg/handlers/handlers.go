@@ -2,12 +2,12 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"sync"
 )
 
 func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan string) error {
-	defer close(output)
 	for {
 		select {
 		case <-ctx.Done():
@@ -17,7 +17,7 @@ func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan str
 				return nil
 			}
 			if strings.Contains(item, "no decorator") {
-				return nil
+				return fmt.Errorf("can’t be decorated")
 			}
 			if !strings.HasPrefix(item, "decorated:") {
 				item = "decorated:" + item
@@ -32,12 +32,6 @@ func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan str
 }
 
 func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string) error {
-	defer func() {
-		for _, ch := range outputs {
-			close(ch)
-		}
-	}()
-
 	counter := 0
 	for {
 		select {
@@ -59,8 +53,6 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 }
 
 func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan string) error {
-	defer close(output)
-
 	multiplexedChan := make(chan string)
 
 	var multiplexerWg sync.WaitGroup

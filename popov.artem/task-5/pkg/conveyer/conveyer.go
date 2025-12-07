@@ -6,12 +6,23 @@ import (
 	"sync"
 )
 
-type ModifierFunc func(ctx context.Context, input chan string, output chan string) error
+var ErrChanNotFound = errors.New("chan not found")
+
+type DecoratorFunc func(ctx context.Context, input chan string, output chan string) error
 type MultiplexerFunc func(ctx context.Context, inputs []chan string, output chan string) error
 type SeparatorFunc func(ctx context.Context, input chan string, outputs []chan string) error
 
-type Conveyer interface {
-	RegisterDecorator(fn ModifierFunc, input string, output string)
+type conveyerImpl struct {
+	size          int
+	channels      map[string]chan string
+	decorators    []struct{ fn DecoratorFunc; input, output string }
+	multiplexers  []struct{ fn MultiplexerFunc; inputs []string; output string }
+	separators    []struct{ fn SeparatorFunc; input string; outputs []string }
+	mu            sync.Mutex
+}
+
+type conveyer interface {
+	RegisterDecorator(fn DecoratorFunc, input, output string)
 	RegisterMultiplexer(fn MultiplexerFunc, inputs []string, output string)
 	RegisterSeparator(fn SeparatorFunc, input string, outputs []string)
 	Run(ctx context.Context) error
@@ -19,70 +30,27 @@ type Conveyer interface {
 	Recv(output string) (string, error)
 }
 
-type conveyerImpl struct {
-	channels   map[string]chan string
-	mu         sync.Mutex
-	decorators []struct {
-		fn     ModifierFunc
-		input  string
-		output string
-	}
-	multiplexers []struct {
-		fn     MultiplexerFunc
-		inputs []string
-		output string
-	}
-	separators []struct {
-		fn      SeparatorFunc
-		input   string
-		outputs []string
-	}
-}
-
-var ErrChanNotFound = errors.New("chan not found")
-
-func New(size int) *conveyerImpl {
+func New(size int) conveyer {
 	return &conveyerImpl{
+		size:     size,
 		channels: make(map[string]chan string),
-		mu:       sync.Mutex{},
-		decorators: []struct {
-			fn            ModifierFunc
-			input, output string
-		}{},
-		multiplexers: []struct {
-			fn     MultiplexerFunc
-			inputs []string
-			output string
-		}{},
-		separators: []struct {
-			fn      SeparatorFunc
-			input   string
-			outputs []string
-		}{},
 	}
-}
-
-func (c *conveyerImpl) getOrCreateChannel(name string, size int) chan string {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if ch, exists := c.channels[name]; exists {
-		return ch
-	}
-	ch := make(chan string, size)
-	c.channels[name] = ch
-	return ch
 }
 
 func (c *conveyerImpl) getChannel(name string) (chan string, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	ch, exists := c.channels[name]
+	if !exists {
+		ch = make(chan string, c.size)
+		c.channels[name] = ch
+	}
 	return ch, exists
 }
 
-func (c *conveyerImpl) RegisterDecorator(fn ModifierFunc, input string, output string) {
+func (c *conveyerImpl) RegisterDecorator(fn DecoratorFunc, input, output string) {
 	c.decorators = append(c.decorators, struct {
-		fn     ModifierFunc
+		fn     DecoratorFunc
 		input  string
 		output string
 	}{fn: fn, input: input, output: output})
@@ -105,22 +73,8 @@ func (c *conveyerImpl) RegisterSeparator(fn SeparatorFunc, input string, outputs
 }
 
 func (c *conveyerImpl) Run(ctx context.Context) error {
-	for _, dec := range c.decorators {
-		c.getOrCreateChannel(dec.input, cap(c.getOrCreateChannel(dec.input, 0)))
-		c.getOrCreateChannel(dec.output, cap(c.getOrCreateChannel(dec.output, 0)))
-	}
-	for _, mux := range c.multiplexers {
-		for _, in := range mux.inputs {
-			c.getOrCreateChannel(in, cap(c.getOrCreateChannel(in, 0)))
-		}
-		c.getOrCreateChannel(mux.output, cap(c.getOrCreateChannel(mux.output, 0)))
-	}
-	for _, sep := range c.separators {
-		c.getOrCreateChannel(sep.input, cap(c.getOrCreateChannel(sep.input, 0)))
-		for _, out := range sep.outputs {
-			c.getOrCreateChannel(out, cap(c.getOrCreateChannel(out, 0)))
-		}
-	}
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
 	var runWg sync.WaitGroup
 	errCh := make(chan error, 1)
@@ -128,7 +82,7 @@ func (c *conveyerImpl) Run(ctx context.Context) error {
 	for _, dec := range c.decorators {
 		runWg.Add(1)
 		go func(d struct {
-			fn     ModifierFunc
+			fn     DecoratorFunc
 			input  string
 			output string
 		}) {
