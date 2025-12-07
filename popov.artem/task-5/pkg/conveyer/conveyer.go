@@ -151,7 +151,7 @@ func (c *conveyerImpl) Send(input string, data string) error {
 		return errors.New("chan not found")
 	}
 	select {
-	case ch <- 
+	case ch <- data:
 		return nil
 	case <-context.Background().Done():
 		return context.Canceled
