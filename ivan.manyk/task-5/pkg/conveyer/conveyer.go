@@ -135,7 +135,6 @@ func (c *conveyerType) closeAllChannels() {
 	for _, ch := range c.channels {
 		close(ch)
 	}
-	c.channels = make(map[string]chan string)
 }
 
 func (c *conveyerType) Send(input string, data string) error {
