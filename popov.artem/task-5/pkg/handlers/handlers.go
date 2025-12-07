@@ -2,25 +2,22 @@ package handlers
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"sync"
 )
-
-var ErrCannotDecorate = fmt.Errorf("can't be decorated")
 
 func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan string) error {
 	defer close(output)
 	for {
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("context canceled in PrefixDecoratorFunc: %w", ctx.Err())
+			return nil
 		case item, ok := <-input:
 			if !ok {
 				return nil
 			}
 			if strings.Contains(item, "no decorator") {
-				return fmt.Errorf("%w: %s", ErrCannotDecorate, item)
+				return nil
 			}
 			if !strings.HasPrefix(item, "decorated:") {
 				item = "decorated:" + item
@@ -28,7 +25,7 @@ func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan str
 			select {
 			case output <- item:
 			case <-ctx.Done():
-				return fmt.Errorf("context canceled while sending in PrefixDecoratorFunc: %w", ctx.Err())
+				return nil
 			}
 		}
 	}
@@ -36,16 +33,16 @@ func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan str
 
 func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string) error {
 	defer func() {
-		for _, outputChannel := range outputs {
-			close(outputChannel)
+		for _, ch := range outputs {
+			close(ch)
 		}
 	}()
 
-	var counter int
+	counter := 0
 	for {
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("context canceled in SeparatorFunc: %w", ctx.Err())
+			return nil
 		case item, ok := <-input:
 			if !ok {
 				return nil
@@ -54,7 +51,7 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 			select {
 			case outputs[outputIndex] <- item:
 			case <-ctx.Done():
-				return fmt.Errorf("context canceled while sending in SeparatorFunc: %w", ctx.Err())
+				return nil
 			}
 			counter++
 		}
@@ -69,7 +66,7 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 	var multiplexerWg sync.WaitGroup
 	multiplexerWg.Add(len(inputs))
 
-	for _, inputChannel := range inputs {
+	for _, inCh := range inputs {
 		go func(ch chan string) {
 			defer multiplexerWg.Done()
 			for {
@@ -89,7 +86,7 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 					}
 				}
 			}
-		}(inputChannel)
+		}(inCh)
 	}
 
 	go func() {
@@ -101,7 +98,7 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 		select {
 		case output <- item:
 		case <-ctx.Done():
-			return fmt.Errorf("context canceled while sending in MultiplexerFunc: %w", ctx.Err())
+			return nil
 		}
 	}
 

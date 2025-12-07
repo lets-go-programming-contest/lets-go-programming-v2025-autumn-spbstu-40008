@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"sync"
-
-	"golang.org/x/sync/errgroup"
 )
 
 type ModifierFunc func(ctx context.Context, input chan string, output chan string) error
@@ -42,7 +40,6 @@ type conveyerImpl struct {
 }
 
 var ErrChanNotFound = errors.New("chan not found")
-var ErrCannotDecorate = errors.New("can't be decorated")
 
 func New(size int) *conveyerImpl {
 	return &conveyerImpl{
@@ -125,85 +122,122 @@ func (c *conveyerImpl) Run(ctx context.Context) error {
 		}
 	}
 
-	eg, egCtx := errgroup.WithContext(ctx)
+	var runWg sync.WaitGroup
+	errCh := make(chan error, 1)
 
 	for _, dec := range c.decorators {
-		eg.Go(func() error {
-			inCh, _ := c.getChannel(dec.input)
-			outCh, _ := c.getChannel(dec.output)
-			return dec.fn(egCtx, inCh, outCh)
-		})
+		runWg.Add(1)
+		go func(d struct {
+			fn     ModifierFunc
+			input  string
+			output string
+		}) {
+			defer runWg.Done()
+			inCh, _ := c.getChannel(d.input)
+			outCh, _ := c.getChannel(d.output)
+			if err := d.fn(ctx, inCh, outCh); err != nil {
+				select {
+				case errCh <- err:
+				default:
+				}
+			}
+		}(dec)
 	}
 
 	for _, mux := range c.multiplexers {
-		eg.Go(func() error {
+		runWg.Add(1)
+		go func(m struct {
+			fn     MultiplexerFunc
+			inputs []string
+			output string
+		}) {
+			defer runWg.Done()
 			var inChs []chan string
-			for _, inName := range mux.inputs {
+			for _, inName := range m.inputs {
 				ch, _ := c.getChannel(inName)
 				inChs = append(inChs, ch)
 			}
-			outCh, _ := c.getChannel(mux.output)
-			return mux.fn(egCtx, inChs, outCh)
-		})
+			outCh, _ := c.getChannel(m.output)
+			if err := m.fn(ctx, inChs, outCh); err != nil {
+				select {
+				case errCh <- err:
+				default:
+				}
+			}
+		}(mux)
 	}
 
 	for _, sep := range c.separators {
-		eg.Go(func() error {
-			inCh, _ := c.getChannel(sep.input)
+		runWg.Add(1)
+		go func(s struct {
+			fn      SeparatorFunc
+			input   string
+			outputs []string
+		}) {
+			defer runWg.Done()
+			inCh, _ := c.getChannel(s.input)
 			var outChs []chan string
-			for _, outName := range sep.outputs {
+			for _, outName := range s.outputs {
 				ch, _ := c.getChannel(outName)
 				outChs = append(outChs, ch)
 			}
-			return sep.fn(egCtx, inCh, outChs)
-		})
+			if err := s.fn(ctx, inCh, outChs); err != nil {
+				select {
+				case errCh <- err:
+				default:
+				}
+			}
+		}(sep)
 	}
 
-	if err := eg.Wait(); err != nil {
+	done := make(chan struct{})
+	go func() {
+		runWg.Wait()
+		close(done)
+	}()
+
+	select {
+	case err := <-errCh:
 		c.mu.Lock()
 		for _, ch := range c.channels {
 			close(ch)
 		}
 		c.mu.Unlock()
 		return err
+	case <-done:
+		c.mu.Lock()
+		for _, ch := range c.channels {
+			close(ch)
+		}
+		c.mu.Unlock()
+		return nil
+	case <-ctx.Done():
+		c.mu.Lock()
+		for _, ch := range c.channels {
+			close(ch)
+		}
+		c.mu.Unlock()
+		return ctx.Err()
 	}
-
-	c.mu.Lock()
-	for _, ch := range c.channels {
-		close(ch)
-	}
-	c.mu.Unlock()
-
-	return nil
 }
 
 func (c *conveyerImpl) Send(input string, data string) error {
-	channel, exists := c.getChannel(input)
+	ch, exists := c.getChannel(input)
 	if !exists {
 		return ErrChanNotFound
 	}
-
-	select {
-	case channel <- data:
-		return nil
-	case <-context.Background().Done():
-		return context.Canceled
-	}
+	ch <- data
+	return nil
 }
 
 func (c *conveyerImpl) Recv(output string) (string, error) {
-	channel, exists := c.getChannel(output)
+	ch, exists := c.getChannel(output)
 	if !exists {
 		return "", ErrChanNotFound
 	}
-
-	select {
-	case data, ok := <-channel:
-		if !ok {
-			return "undefined", nil
-		}
-		return data, nil
-	case <-context.Background().Done():
-		return "", context.Canceled
+	data, ok := <-ch
+	if !ok {
+		return "undefined", nil
 	}
+	return data, nil
 }
