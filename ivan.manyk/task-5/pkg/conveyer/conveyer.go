@@ -96,7 +96,7 @@ func (c *conveyerType) RegisterSeparator(
 }
 
 func (c *conveyerType) Run(ctx context.Context) error {
-	var waitGroup  sync.WaitGroup
+	var waitGroup sync.WaitGroup
 
 	errChan := make(chan error, 1)
 
@@ -104,7 +104,7 @@ func (c *conveyerType) Run(ctx context.Context) error {
 	defer cancel()
 
 	for _, handler := range c.handlers {
-		waitGroup .Add(1)
+		waitGroup.Add(1)
 
 		go func(h func(ctx context.Context) error) {
 			defer waitGroup.Done()
