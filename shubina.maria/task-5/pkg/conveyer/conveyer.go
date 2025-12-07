@@ -164,4 +164,3 @@ func (c *conveyerImpl) closeAllChannels() {
     close(ch)
   }
 }
-
