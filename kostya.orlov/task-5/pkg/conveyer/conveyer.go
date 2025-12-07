@@ -13,11 +13,12 @@ var (
 )
 
 type ConveyerFunc func(ctx context.Context, input chan string, outputs []chan string) error
-type MultiplexerFuncAdaptor func(ctx context.Context, inputs []chan string, outputs []chan string) error
+type MultiplexerFunc func(ctx context.Context, inputs []chan string, outputs []chan string) error
 
 type HandlerRegistration struct {
 	Type        string
 	Fn          ConveyerFunc
+	MultiplexFn MultiplexerFunc
 	InputID     string
 	InputIDs    []string
 	OutputIDs   []string
@@ -55,9 +56,9 @@ func (c *Conveyer) AddChannel(channelID string) error {
 	defer c.mu.Unlock()
 
 	if _, exists := c.channels[channelID]; exists {
-		return fmt.Errorf("%w: ID %s", ErrChannelExists, channelID) 
+		return fmt.Errorf("%w: ID %s", ErrChannelExists, channelID)
 	}
-	
+
 	c.channels[channelID] = make(chan string, c.size)
 	return nil
 }
@@ -74,10 +75,10 @@ func (c *Conveyer) RegisterDecorator(fn ConveyerFunc, inputID string, outputID s
 	})
 }
 
-func (c *Conveyer) RegisterMultiplexer(fn ConveyerFunc, inputIDs []string, outputID string) {
+func (c *Conveyer) RegisterMultiplexer(fn MultiplexerFunc, inputIDs []string, outputID string) {
 	c.handlers = append(c.handlers, HandlerRegistration{
 		Type:        "Multiplexer",
-		Fn:          fn,
+		MultiplexFn: fn,
 		InputIDs:    inputIDs,
 		OutputIDs:   []string{outputID},
 		InputID:     "",
@@ -111,7 +112,7 @@ func (c *Conveyer) resolveChannels() error {
 				if channel, ok := c.channels[inputID]; ok {
 					handler.InputChans = append(handler.InputChans, channel)
 				} else {
-					return fmt.Errorf("input channel ID %s not found: %w", inputID, ErrChanNotFound) 
+					return fmt.Errorf("input channel ID %s not found: %w", inputID, ErrChanNotFound)
 				}
 			}
 		} else if handler.InputID != "" {
@@ -147,12 +148,16 @@ func (c *Conveyer) Run(ctx context.Context) error {
 		go func(handlerReg HandlerRegistration) {
 			defer c.waitGroup.Done()
 
-			var inputChannel chan string
-			if len(handlerReg.InputChans) > 0 {
-				inputChannel = handlerReg.InputChans[0]
+			var err error
+			if handlerReg.Type == "Multiplexer" {
+				err = handlerReg.MultiplexFn(c.ctx, handlerReg.InputChans, handlerReg.OutputChans)
+			} else {
+				var inputChannel chan string
+				if len(handlerReg.InputChans) > 0 {
+					inputChannel = handlerReg.InputChans[0]
+				}
+				err = handlerReg.Fn(c.ctx, inputChannel, handlerReg.OutputChans)
 			}
-
-			err := handlerReg.Fn(c.ctx, inputChannel, handlerReg.OutputChans)
 
 			if err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
 				select {
@@ -181,7 +186,7 @@ func (c *Conveyer) Run(ctx context.Context) error {
 
 	case <-ctx.Done():
 		c.cancel()
-		runError = fmt.Errorf("external context cancelled: %w", ctx.Err()) 
+		runError = fmt.Errorf("external context cancelled: %w", ctx.Err())
 	}
 
 	<-done
@@ -202,7 +207,7 @@ func (c *Conveyer) Send(inputID string, data string) error {
 
 	select {
 	case <-c.ctx.Done():
-		return fmt.Errorf("send failed: %w", c.ctx.Err()) 
+		return fmt.Errorf("send failed: %w", c.ctx.Err())
 	case channel <- data:
 		return nil
 	}
@@ -239,7 +244,8 @@ func (c *Conveyer) closeAllChannels() {
 		default:
 			func() {
 				defer func() {
-					if r := recover(); r != nil {}
+					if r := recover(); r != nil {
+					}
 				}()
 				close(channel)
 			}()
