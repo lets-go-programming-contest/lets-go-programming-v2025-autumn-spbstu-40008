@@ -21,9 +21,8 @@ type Conveyer struct {
 func New(size int) *Conveyer {
 	return &Conveyer{
 		channels: make(map[string]chan string),
-		tasks:    make([]func(ctx context.Context) error, 0),
+		tasks:    []func(ctx context.Context) error{},
 		size:     size,
-		mu:       sync.RWMutex{},
 	}
 }
 
@@ -60,21 +59,23 @@ func (c *Conveyer) getChan(name string) (chan string, bool) {
 	return ch, ok
 }
 
-func (c *Conveyer) RegisterDecorator(
-	action interface{},
-	input string,
-	output string,
-) {
+func (c *Conveyer) RegisterDecorator(action interface{}, input, output string) {
 	inChan := c.getOrCreateChan(input)
 	outChan := c.getOrCreateChan(output)
 
-	task := func(ctx context.Context) error {
-		switch fn := action.(type) {
-		case func(context.Context, chan string, chan string) error:
+	var task func(context.Context) error
+
+	switch fn := action.(type) {
+	case func(context.Context, chan string, chan string) error:
+		task = func(ctx context.Context) error {
 			return fn(ctx, inChan, outChan)
-		case func(context.Context, chan string, []chan string) error:
+		}
+	case func(context.Context, chan string, []chan string) error:
+		task = func(ctx context.Context) error {
 			return fn(ctx, inChan, []chan string{outChan})
-		default:
+		}
+	default:
+		task = func(context.Context) error {
 			return errors.New("unsupported decorator function type")
 		}
 	}
@@ -84,11 +85,7 @@ func (c *Conveyer) RegisterDecorator(
 	c.mu.Unlock()
 }
 
-func (c *Conveyer) RegisterMultiplexer(
-	action interface{},
-	input []string,
-	outputs string,
-) {
+func (c *Conveyer) RegisterMultiplexer(action interface{}, input []string, outputs string) {
 	inChans := make([]chan string, 0, len(input))
 	for _, name := range input {
 		inChans = append(inChans, c.getOrCreateChan(name))
@@ -96,13 +93,19 @@ func (c *Conveyer) RegisterMultiplexer(
 
 	outChan := c.getOrCreateChan(outputs)
 
-	task := func(ctx context.Context) error {
-		switch fn := action.(type) {
-		case func(context.Context, []chan string, chan string) error:
+	var task func(context.Context) error
+
+	switch fn := action.(type) {
+	case func(context.Context, []chan string, chan string) error:
+		task = func(ctx context.Context) error {
 			return fn(ctx, inChans, outChan)
-		case func(context.Context, []chan string, []chan string) error:
+		}
+	case func(context.Context, []chan string, []chan string) error:
+		task = func(ctx context.Context) error {
 			return fn(ctx, inChans, []chan string{outChan})
-		default:
+		}
+	default:
+		task = func(context.Context) error {
 			return errors.New("unsupported multiplexer function type")
 		}
 	}
@@ -112,11 +115,7 @@ func (c *Conveyer) RegisterMultiplexer(
 	c.mu.Unlock()
 }
 
-func (c *Conveyer) RegisterSeparator(
-	action interface{},
-	input string,
-	outputs []string,
-) {
+func (c *Conveyer) RegisterSeparator(action interface{}, input string, outputs []string) {
 	inChan := c.getOrCreateChan(input)
 
 	outChans := make([]chan string, 0, len(outputs))
@@ -124,11 +123,15 @@ func (c *Conveyer) RegisterSeparator(
 		outChans = append(outChans, c.getOrCreateChan(name))
 	}
 
-	task := func(ctx context.Context) error {
-		switch fn := action.(type) {
-		case func(context.Context, chan string, []chan string) error:
+	var task func(context.Context) error
+
+	switch fn := action.(type) {
+	case func(context.Context, chan string, []chan string) error:
+		task = func(ctx context.Context) error {
 			return fn(ctx, inChan, outChans)
-		default:
+		}
+	default:
+		task = func(context.Context) error {
 			return errors.New("unsupported separator function type")
 		}
 	}
@@ -142,19 +145,19 @@ func (c *Conveyer) Run(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	var waitGroup sync.WaitGroup
-	var errOnce sync.Once
+	var wg sync.WaitGroup
+	var once sync.Once
 	var firstErr error
 
-	for _, task := range c.tasks {
-		waitGroup.Add(1)
-		currentTask := task
+	for i := range c.tasks {
+		wg.Add(1)
+		currentTask := c.tasks[i]
 
 		go func() {
-			defer waitGroup.Done()
+			defer wg.Done()
 
 			if err := currentTask(ctx); err != nil {
-				errOnce.Do(func() {
+				once.Do(func() {
 					firstErr = err
 					cancel()
 				})
@@ -162,7 +165,7 @@ func (c *Conveyer) Run(ctx context.Context) error {
 		}()
 	}
 
-	waitGroup.Wait()
+	wg.Wait()
 
 	c.mu.Lock()
 	for _, ch := range c.channels {
@@ -180,7 +183,7 @@ func (c *Conveyer) Run(ctx context.Context) error {
 	return firstErr
 }
 
-func (c *Conveyer) Send(name string, data string) error {
+func (c *Conveyer) Send(name, data string) error {
 	ch, ok := c.getChan(name)
 	if !ok {
 		return ErrChanNotFound
