@@ -49,15 +49,13 @@ func (c *Conveyer) getOrCreateChannel(name string) chan string {
 }
 
 func (c *Conveyer) RegisterDecorator(
-	fn func(context.Context, chan string, chan string) error,
+	fn func(ctx context.Context, input chan string, output chan string) error,
 	input, output string,
 ) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-
 	c.getOrCreateChannel(input)
 	c.getOrCreateChannel(output)
-
 	c.handlers = append(c.handlers, handlerFunc{
 		fn:      fn,
 		inputs:  []string{input},
@@ -67,18 +65,15 @@ func (c *Conveyer) RegisterDecorator(
 }
 
 func (c *Conveyer) RegisterMultiplexer(
-	fn func(context.Context, []chan string, chan string) error,
-	inputs []string,
-	output string,
+	fn func(ctx context.Context, inputs []chan string, output chan string) error,
+	inputs []string, output string,
 ) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-
 	for _, in := range inputs {
 		c.getOrCreateChannel(in)
 	}
 	c.getOrCreateChannel(output)
-
 	c.handlers = append(c.handlers, handlerFunc{
 		fn:      fn,
 		inputs:  inputs,
@@ -88,18 +83,15 @@ func (c *Conveyer) RegisterMultiplexer(
 }
 
 func (c *Conveyer) RegisterSeparator(
-	fn func(context.Context, chan string, []chan string) error,
-	input string,
-	outputs []string,
+	fn func(ctx context.Context, input chan string, outputs []chan string) error,
+	input string, outputs []string,
 ) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-
 	c.getOrCreateChannel(input)
 	for _, out := range outputs {
 		c.getOrCreateChannel(out)
 	}
-
 	c.handlers = append(c.handlers, handlerFunc{
 		fn:      fn,
 		inputs:  []string{input},
@@ -113,7 +105,7 @@ func (c *Conveyer) Run(ctx context.Context) error {
 	c.cancel = cancel
 
 	c.wg.Add(len(c.handlers))
-	errCh := make(chan error, len(c.handlers))
+	errorChan := make(chan error, len(c.handlers))
 
 	for _, h := range c.handlers {
 		go func(h handlerFunc) {
@@ -142,7 +134,7 @@ func (c *Conveyer) Run(ctx context.Context) error {
 
 			if err != nil {
 				select {
-				case errCh <- err:
+				case errorChan <- err:
 				default:
 				}
 			}
@@ -161,13 +153,11 @@ func (c *Conveyer) Run(ctx context.Context) error {
 		c.wg.Wait()
 		c.closeAllChannels()
 		return ctx.Err()
-
-	case err := <-errCh:
+	case err := <-errorChan:
 		cancel()
 		c.wg.Wait()
 		c.closeAllChannels()
 		return err
-
 	case <-done:
 		cancel()
 		c.closeAllChannels()
@@ -176,16 +166,17 @@ func (c *Conveyer) Run(ctx context.Context) error {
 }
 
 func (c *Conveyer) closeAllChannels() {
-	if c.closed.Load() {
+	if !c.closed.CompareAndSwap(false, true) {
 		return
 	}
-	c.closed.Store(true)
 
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	for name, ch := range c.channels {
-		close(ch)
+		if ch != nil {
+			close(ch)
+		}
 		delete(c.channels, name)
 	}
 }
@@ -202,15 +193,12 @@ func (c *Conveyer) Send(input string, data string) error {
 	if c.closed.Load() {
 		return errors.New("conveyer closed")
 	}
-
 	c.mu.RLock()
 	ch, ok := c.channels[input]
 	c.mu.RUnlock()
-
 	if !ok {
 		return errors.New("chan not found")
 	}
-
 	select {
 	case ch <- data:
 		return nil
@@ -223,19 +211,15 @@ func (c *Conveyer) Recv(output string) (string, error) {
 	if c.closed.Load() {
 		return "", errors.New("conveyer closed")
 	}
-
 	c.mu.RLock()
 	ch, ok := c.channels[output]
 	c.mu.RUnlock()
-
 	if !ok {
 		return "", errors.New("chan not found")
 	}
-
 	data, ok := <-ch
 	if !ok {
 		return "undefined", nil
 	}
-
 	return data, nil
 }

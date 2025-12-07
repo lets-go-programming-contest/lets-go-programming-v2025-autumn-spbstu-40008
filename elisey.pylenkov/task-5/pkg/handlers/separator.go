@@ -6,7 +6,6 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 	if len(outputs) == 0 {
 		return nil
 	}
-
 	i := 0
 	for {
 		select {
@@ -17,10 +16,10 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 				return nil
 			}
 			select {
-			case outputs[i] <- data:
-				i = (i + 1) % len(outputs)
 			case <-ctx.Done():
 				return ctx.Err()
+			case outputs[i] <- data:
+				i = (i + 1) % len(outputs)
 			}
 		}
 	}
