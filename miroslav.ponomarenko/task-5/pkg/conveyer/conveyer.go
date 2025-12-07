@@ -36,6 +36,7 @@ func (c *Conveyer) getChannel(name string) chan string {
 
 	ch := make(chan string, c.size)
 	c.channels[name] = ch
+
 	return ch
 }
 
@@ -130,6 +131,7 @@ func (c *Conveyer) Send(input string, data string) error {
 	}
 
 	ch <- data
+
 	return nil
 }
 
