@@ -7,9 +7,16 @@ import (
 	"sync"
 )
 
+var (
+	ErrDecoratorRequiresOutput   = errors.New("decorator requires at least one output channel")
+	ErrSeparatorRequiresOutput   = errors.New("separator requires at least one output channel")
+	ErrMultiplexerRequiresOutput = errors.New("multiplexer requires at least one output channel")
+	ErrCantBeDecorated           = errors.New("can't be decorated")
+)
+
 func PrefixDecoratorFunc(ctx context.Context, input chan string, outputs []chan string) error {
 	if len(outputs) == 0 {
-		return errors.New("decorator requires at least one output channel")
+		return ErrDecoratorRequiresOutput
 	}
 	output := outputs[0]
 
@@ -24,7 +31,7 @@ func PrefixDecoratorFunc(ctx context.Context, input chan string, outputs []chan 
 			}
 
 			if strings.Contains(data, "no decorator") {
-				return errors.New("can't be decorated")
+				return ErrCantBeDecorated
 			}
 
 			if !strings.HasPrefix(data, "decorated:") {
@@ -42,7 +49,7 @@ func PrefixDecoratorFunc(ctx context.Context, input chan string, outputs []chan 
 
 func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string) error {
 	if len(outputs) == 0 {
-		return errors.New("separator requires at least one output channel")
+		return ErrSeparatorRequiresOutput
 	}
 
 	index := 0
@@ -73,22 +80,22 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 
 func MultiplexerFunc(ctx context.Context, inputs []chan string, outputs []chan string) error {
 	if len(outputs) == 0 {
-		return errors.New("multiplexer requires at least one output channel")
+		return ErrMultiplexerRequiresOutput
 	}
 	output := outputs[0]
 
-	var wg sync.WaitGroup
+	var waitGroup sync.WaitGroup
 	fanIn := make(chan string)
 
-	for _, inputCh := range inputs {
-		wg.Add(1)
-		go func(ch chan string) {
-			defer wg.Done()
+	for _, inputChannel := range inputs {
+		waitGroup.Add(1)
+		go func(channel chan string) {
+			defer waitGroup.Done()
 			for {
 				select {
 				case <-ctx.Done():
 					return
-				case data, ok := <-ch:
+				case data, ok := <-channel:
 					if !ok {
 						return
 					}
@@ -99,11 +106,11 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, outputs []chan s
 					}
 				}
 			}
-		}(inputCh)
+		}(inputChannel)
 	}
 
 	go func() {
-		wg.Wait()
+		waitGroup.Wait()
 		close(fanIn)
 	}()
 
