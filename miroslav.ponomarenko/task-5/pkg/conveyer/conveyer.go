@@ -67,6 +67,7 @@ func (c *Conveyer) RegisterMultiplexer(
 	defer c.mutex.Unlock()
 
 	ins := make([]chan string, len(inputs))
+
 	for i, name := range inputs {
 		ins[i] = c.getChannel(name)
 	}
@@ -90,6 +91,7 @@ func (c *Conveyer) RegisterSeparator(
 
 	inputChannel := c.getChannel(input)
 	outs := make([]chan string, len(outputs))
+
 	for i, name := range outputs {
 		outs[i] = c.getChannel(name)
 	}
