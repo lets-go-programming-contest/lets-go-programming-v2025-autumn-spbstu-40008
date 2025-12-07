@@ -66,6 +66,7 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 	}
 
 	var waitGroup sync.WaitGroup
+
 	done := make(chan struct{})
 
 	for _, inputCh := range inputs {
@@ -107,6 +108,7 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 		return nil
 	case <-ctx.Done():
 		waitGroup.Wait()
+
 		return nil
 	}
 }
