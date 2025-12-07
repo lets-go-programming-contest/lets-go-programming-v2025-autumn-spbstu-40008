@@ -8,224 +8,126 @@ import (
 
 var ErrChanNotFound = errors.New("chan not found")
 
-type DecoratorFunc func(ctx context.Context, input chan string, output chan string) error
-type MultiplexerFunc func(ctx context.Context, inputs []chan string, output chan string) error
-type SeparatorFunc func(ctx context.Context, input chan string, outputs []chan string) error
-
-type conveyerImpl struct {
-	size       int
-	channels   map[string]chan string
-	decorators []struct {
-		fn            DecoratorFunc
-		input, output string
-	}
-	multiplexers []struct {
-		fn     MultiplexerFunc
-		inputs []string
-		output string
-	}
-	separators []struct {
-		fn      SeparatorFunc
-		input   string
-		outputs []string
-	}
-	mu sync.Mutex
+type conveyer struct {
+	mu       sync.RWMutex
+	channels map[string]chan string
+	stages   []func(context.Context) error
+	bufSize  int
 }
 
-type Conveyer interface {
-	RegisterDecorator(fn DecoratorFunc, input, output string)
-	RegisterMultiplexer(fn MultiplexerFunc, inputs []string, output string)
-	RegisterSeparator(fn SeparatorFunc, input string, outputs []string)
-	Run(ctx context.Context) error
-	Send(input string, data string) error
-	Recv(output string) (string, error)
-}
-
-func New(size int) Conveyer {
-	return &conveyerImpl{
-		size:         size,
-		channels:     make(map[string]chan string),
-		decorators:   nil,
-		multiplexers: nil,
-		separators:   nil,
-		mu:           sync.Mutex{},
+func New(size int) *conveyer {
+	return &conveyer{
+		channels: make(map[string]chan string),
+		stages:   make([]func(context.Context) error, 0),
+		bufSize:  size,
 	}
 }
 
-func (c *conveyerImpl) getChannel(name string) chan string {
+func (c *conveyer) lookupChan(name string) chan string {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if ch, exists := c.channels[name]; exists {
+	if ch, ok := c.channels[name]; ok {
 		return ch
 	}
-	ch := make(chan string, c.size)
+	ch := make(chan string, c.bufSize)
 	c.channels[name] = ch
 	return ch
 }
 
-func (c *conveyerImpl) isChannelKnown(name string) bool {
+func (c *conveyer) RegisterDecorator(fn func(context.Context, chan string, chan string) error, in, out string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	_, known := c.channels[name]
-	return known
+	input := c.lookupChan(in)
+	output := c.lookupChan(out)
+	c.stages = append(c.stages, func(ctx context.Context) error {
+		return fn(ctx, input, output)
+	})
 }
 
-func (c *conveyerImpl) getAllChannelNames() map[string]bool {
+func (c *conveyer) RegisterMultiplexer(fn func(context.Context, []chan string, chan string) error, ins []string, out string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	names := make(map[string]bool, len(c.channels))
-	for name := range c.channels {
-		names[name] = true
+	inputs := make([]chan string, len(ins))
+	for i, name := range ins {
+		inputs[i] = c.lookupChan(name)
 	}
-	return names
+	output := c.lookupChan(out)
+	c.stages = append(c.stages, func(ctx context.Context) error {
+		return fn(ctx, inputs, output)
+	})
 }
 
-func (c *conveyerImpl) RegisterDecorator(fn DecoratorFunc, input, output string) {
-	c.decorators = append(c.decorators, struct {
-		fn     DecoratorFunc
-		input  string
-		output string
-	}{fn: fn, input: input, output: output})
+func (c *conveyer) RegisterSeparator(fn func(context.Context, chan string, []chan string) error, in string, outs []string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	input := c.lookupChan(in)
+	outputs := make([]chan string, len(outs))
+	for i, name := range outs {
+		outputs[i] = c.lookupChan(name)
+	}
+	c.stages = append(c.stages, func(ctx context.Context) error {
+		return fn(ctx, input, outputs)
+	})
 }
 
-func (c *conveyerImpl) RegisterMultiplexer(fn MultiplexerFunc, inputs []string, output string) {
-	c.multiplexers = append(c.multiplexers, struct {
-		fn     MultiplexerFunc
-		inputs []string
-		output string
-	}{fn: fn, inputs: inputs, output: output})
-}
-
-func (c *conveyerImpl) RegisterSeparator(fn SeparatorFunc, input string, outputs []string) {
-	c.separators = append(c.separators, struct {
-		fn      SeparatorFunc
-		input   string
-		outputs []string
-	}{fn: fn, input: input, outputs: outputs})
-}
-
-func (c *conveyerImpl) Run(ctx context.Context) error {
+func (c *conveyer) Run(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	var runWaitGroup sync.WaitGroup
-	errChannel := make(chan error, 1)
+	errCh := make(chan error, 1)
+	var wg sync.WaitGroup
 
-	for _, decorator := range c.decorators {
-		runWaitGroup.Add(1)
-		go func(currentDecorator struct {
-			fn     DecoratorFunc
-			input  string
-			output string
-		}) {
-			defer runWaitGroup.Done()
-			inputChannel := c.getChannel(currentDecorator.input)
-			outputChannel := c.getChannel(currentDecorator.output)
-			if err := currentDecorator.fn(ctx, inputChannel, outputChannel); err != nil {
+	for _, stage := range c.stages {
+		wg.Add(1)
+		go func(s func(context.Context) error) {
+			defer wg.Done()
+			if err := s(ctx); err != nil {
 				select {
-				case errChannel <- err:
+				case errCh <- err:
+					cancel()
 				default:
 				}
 			}
-		}(decorator)
+		}(stage)
 	}
 
-	for _, multiplexer := range c.multiplexers {
-		runWaitGroup.Add(1)
-		go func(currentMultiplexer struct {
-			fn     MultiplexerFunc
-			inputs []string
-			output string
-		}) {
-			defer runWaitGroup.Done()
-			var inputChannels []chan string
-			for _, inputName := range currentMultiplexer.inputs {
-				channel := c.getChannel(inputName)
-				inputChannels = append(inputChannels, channel)
-			}
-			outputChannel := c.getChannel(currentMultiplexer.output)
-			if err := currentMultiplexer.fn(ctx, inputChannels, outputChannel); err != nil {
-				select {
-				case errChannel <- err:
-				default:
-				}
-			}
-		}(multiplexer)
-	}
+	wg.Wait()
 
-	for _, separator := range c.separators {
-		runWaitGroup.Add(1)
-		go func(currentSeparator struct {
-			fn      SeparatorFunc
-			input   string
-			outputs []string
-		}) {
-			defer runWaitGroup.Done()
-			inputChannel := c.getChannel(currentSeparator.input)
-			var outputChannels []chan string
-			for _, outputName := range currentSeparator.outputs {
-				channel := c.getChannel(outputName)
-				outputChannels = append(outputChannels, channel)
-			}
-			if err := currentSeparator.fn(ctx, inputChannel, outputChannels); err != nil {
-				select {
-				case errChannel <- err:
-				default:
-				}
-			}
-		}(separator)
+	c.mu.Lock()
+	for _, ch := range c.channels {
+		close(ch)
 	}
-
-	done := make(chan struct{})
-	go func() {
-		runWaitGroup.Wait()
-		close(done)
-	}()
+	c.mu.Unlock()
 
 	select {
-	case err := <-errChannel:
-		c.mu.Lock()
-		for _, ch := range c.channels {
-			close(ch)
-		}
-		c.mu.Unlock()
+	case err := <-errCh:
 		return err
-
-	case <-done:
-		c.mu.Lock()
-		for _, ch := range c.channels {
-			close(ch)
-		}
-		c.mu.Unlock()
+	default:
 		return nil
-
-	case <-ctx.Done():
-		c.mu.Lock()
-		for _, ch := range c.channels {
-			close(ch)
-		}
-		c.mu.Unlock()
-		return ctx.Err()
 	}
 }
 
-func (c *conveyerImpl) Send(input string, data string) error {
-	if !c.isChannelKnown(input) {
+func (c *conveyer) Send(chName string, data string) error {
+	c.mu.RLock()
+	ch, exists := c.channels[chName]
+	c.mu.RUnlock()
+	if !exists {
 		return ErrChanNotFound
 	}
-	ch := c.getChannel(input)
 	ch <- data
 	return nil
 }
 
-func (c *conveyerImpl) Recv(output string) (string, error) {
-	if !c.isChannelKnown(output) {
+func (c *conveyer) Recv(chName string) (string, error) {
+	c.mu.RLock()
+	ch, exists := c.channels[chName]
+	c.mu.RUnlock()
+	if !exists {
 		return "", ErrChanNotFound
 	}
-	ch := c.getChannel(output)
-	data, ok := <-ch
-	if !ok {
+	msg, open := <-ch
+	if !open {
 		return "undefined", nil
 	}
-	return data, nil
+	return msg, nil
 }
