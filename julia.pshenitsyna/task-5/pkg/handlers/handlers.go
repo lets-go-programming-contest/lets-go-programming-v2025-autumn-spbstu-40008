@@ -48,7 +48,7 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 			}
 		}
 	}
-	
+
 	cnt := 0
 
 	for {
@@ -112,7 +112,7 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 	doneChan := make(chan struct{})
 	go func() {
 		waitGroup.Wait()
-		
+
 		close(doneChan)
 	}()
 
