@@ -14,7 +14,6 @@ var (
 
 type ConveyerFunc func(ctx context.Context, input chan string, outputs []chan string) error
 
-
 type MultiplexerFunc func(ctx context.Context, inputs []chan string, outputs []chan string) error
 
 type HandlerRegistration struct {
@@ -45,7 +44,7 @@ func New(size int) *Conveyer {
 	return &Conveyer{
 		channels:  make(map[string]chan string),
 		handlers:  make([]HandlerRegistration, 0),
-		errorChan: make(chan error, 1),
+		errorChan: make(chan error, 10),
 		size:      size,
 		waitGroup: sync.WaitGroup{},
 		mu:        sync.RWMutex{},
@@ -172,15 +171,16 @@ func (c *Conveyer) Run(ctx context.Context) error {
 			defer c.waitGroup.Done()
 
 			var err error
-			var inputChannel chan string
-			if len(handlerReg.InputChans) > 0 {
-				inputChannel = handlerReg.InputChans[0]
-			}
 
 			if handlerReg.Type == "Multiplexer" {
 				multiplexFn := handlerReg.Fn.(MultiplexerFunc)
 				err = multiplexFn(c.ctx, handlerReg.InputChans, handlerReg.OutputChans)
 			} else {
+				var inputChannel chan string
+				if len(handlerReg.InputChans) > 0 {
+					inputChannel = handlerReg.InputChans[0]
+				}
+
 				switch fn := handlerReg.Fn.(type) {
 				case ConveyerFunc:
 					err = fn(c.ctx, inputChannel, handlerReg.OutputChans)
@@ -200,7 +200,7 @@ func (c *Conveyer) Run(ctx context.Context) error {
 			if err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
 				select {
 				case c.errorChan <- err:
-				case <-c.ctx.Done():
+				default:
 				}
 			}
 		}(handler)
@@ -208,26 +208,23 @@ func (c *Conveyer) Run(ctx context.Context) error {
 
 	var runError error
 
-	done := make(chan struct{})
 	go func() {
 		c.waitGroup.Wait()
-		close(done)
+		c.cancel()
+		close(c.errorChan)
 	}()
 
 	select {
 	case err := <-c.errorChan:
-		c.cancel()
 		runError = err
-
-	case <-done:
-		runError = nil
-
-	case <-ctx.Done():
 		c.cancel()
+		c.waitGroup.Wait()
+	case <-ctx.Done():
 		runError = ctx.Err()
+		c.cancel()
+		c.waitGroup.Wait()
+	case <-c.ctx.Done():
 	}
-
-	<-done
 
 	c.closeAllChannels()
 
@@ -237,48 +234,52 @@ func (c *Conveyer) Run(ctx context.Context) error {
 func (c *Conveyer) Send(inputID string, data string) error {
 	c.mu.RLock()
 	channel, ok := c.channels[inputID]
-	ctx := c.ctx
 	c.mu.RUnlock()
 
 	if !ok {
 		return ErrChanNotFound
 	}
 
-	if ctx == nil {
-		channel <- data
-		return nil
+	if c.ctx != nil {
+		select {
+		case <-c.ctx.Done():
+			return c.ctx.Err()
+		default:
+		}
 	}
 
 	select {
-	case <-ctx.Done():
-		return ctx.Err()
 	case channel <- data:
 		return nil
+	default:
+		return errors.New("channel is full")
 	}
 }
 
 func (c *Conveyer) Recv(outputID string) (string, error) {
 	c.mu.RLock()
 	channel, ok := c.channels[outputID]
-	ctx := c.ctx
 	c.mu.RUnlock()
 
 	if !ok {
 		return "", ErrChanNotFound
 	}
 
-	if ctx == nil {
-		data, open := <-channel
-		if !open {
-			return "undefined", nil
+	if c.ctx == nil {
+		select {
+		case data, open := <-channel:
+			if !open {
+				return "undefined", nil
+			}
+			return data, nil
+		default:
+			return "", errors.New("no data available")
 		}
-		return data, nil
 	}
 
 	select {
-	case <-ctx.Done():
-		return "", ctx.Err()
-
+	case <-c.ctx.Done():
+		return "", c.ctx.Err()
 	case data, open := <-channel:
 		if !open {
 			return "undefined", nil
@@ -290,18 +291,31 @@ func (c *Conveyer) Recv(outputID string) (string, error) {
 func (c *Conveyer) closeAllChannels() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	
+	closedChannels := make(map[chan string]bool)
+	
 	for _, channel := range c.channels {
+		if closedChannels[channel] {
+			continue
+		}
+		
 		select {
 		case <-c.ctx.Done():
-			return
 		default:
 			func() {
 				defer func() {
-					if r := recover(); r != nil {
-					}
+					if r := recover(); r != nil {}
 				}()
 				close(channel)
+				closedChannels[channel] = true
 			}()
 		}
 	}
+}
+
+func (c *Conveyer) Close() {
+	if c.cancel != nil {
+		c.cancel()
+	}
+	c.closeAllChannels()
 }
