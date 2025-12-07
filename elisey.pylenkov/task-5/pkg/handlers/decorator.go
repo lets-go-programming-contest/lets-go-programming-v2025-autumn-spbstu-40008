@@ -13,14 +13,18 @@ func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan str
 			return ctx.Err()
 		case data, ok := <-input:
 			if !ok {
+				close(output)
 				return nil
 			}
+
 			if strings.Contains(data, "no decorator") {
 				return errors.New("can't be decorated")
 			}
+
 			if !strings.HasPrefix(data, "decorated: ") {
 				data = "decorated: " + data
 			}
+
 			select {
 			case output <- data:
 			case <-ctx.Done():
