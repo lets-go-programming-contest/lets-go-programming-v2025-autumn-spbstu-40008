@@ -78,7 +78,7 @@ func (c *conveyerType) RegisterMultiplexer(
 }
 
 func (c *conveyerType) RegisterSeparator(
-	fn func(ctx context.Context, input chan string, outputs []chan string) error,
+	handlerFunc func(ctx context.Context, input chan string, outputs []chan string) error,
 	input string,
 	outputs []string,
 ) {
@@ -89,20 +89,20 @@ func (c *conveyerType) RegisterSeparator(
 	}
 
 	c.handlers = append(c.handlers, func(ctx context.Context) error {
-		return fn(ctx, inputCh, outputChs)
+		return handlerFunc(ctx, inputCh, outputChs)
 	})
 }
 
 func (c *conveyerType) Run(ctx context.Context) error {
-	var wg sync.WaitGroup
+	var waitGroup  sync.WaitGroup
 	errChan := make(chan error, 1)
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	for _, handler := range c.handlers {
-		wg.Add(1)
+		waitGroup .Add(1)
 		go func(h func(ctx context.Context) error) {
-			defer wg.Done()
+			defer waitGroup.Done()
 			if err := h(ctx); err != nil {
 				select {
 				case errChan <- err:
@@ -115,21 +115,24 @@ func (c *conveyerType) Run(ctx context.Context) error {
 
 	done := make(chan struct{})
 	go func() {
-		wg.Wait()
+		waitGroup.Wait()
 		close(done)
 	}()
 
 	select {
 	case <-ctx.Done():
-		wg.Wait()
+		waitGroup.Wait()
 		c.closeAllChannels()
+
 		return nil
 	case err := <-errChan:
-		wg.Wait()
+		waitGroup.Wait()
 		c.closeAllChannels()
+
 		return err
 	case <-done:
 		c.closeAllChannels()
+
 		return nil
 	}
 }
