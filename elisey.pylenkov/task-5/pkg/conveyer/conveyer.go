@@ -5,7 +5,6 @@ import (
 	"errors"
 	"sync"
 	"sync/atomic"
-	"time"
 )
 
 type handlerType int
@@ -110,7 +109,6 @@ func (c *Conveyer) RegisterSeparator(
 func (c *Conveyer) Run(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	c.cancel = cancel
-	defer cancel()
 
 	c.wg.Add(len(c.handlers))
 	errorChan := make(chan error, len(c.handlers))
@@ -146,7 +144,6 @@ func (c *Conveyer) Run(ctx context.Context) error {
 				case errorChan <- err:
 				default:
 				}
-				cancel()
 			}
 		}(h)
 	}
@@ -155,20 +152,19 @@ func (c *Conveyer) Run(ctx context.Context) error {
 	go func() {
 		c.wg.Wait()
 		close(done)
+		c.closeAllChannels()
 	}()
 
 	select {
 	case <-ctx.Done():
-		c.closeAllChannels()
+		cancel()
 		<-done
 		return ctx.Err()
 	case err := <-errorChan:
 		cancel()
-		c.closeAllChannels()
 		<-done
 		return err
 	case <-done:
-		c.closeAllChannels()
 		return nil
 	}
 }
@@ -214,7 +210,7 @@ func (c *Conveyer) Send(input string, data string) error {
 	select {
 	case ch <- data:
 		return nil
-	case <-time.After(100 * time.Millisecond):
+	default:
 		return errors.New("send timeout")
 	}
 }
@@ -232,13 +228,9 @@ func (c *Conveyer) Recv(output string) (string, error) {
 		return "", errors.New("chan not found")
 	}
 
-	select {
-	case data, ok := <-ch:
-		if !ok {
-			return "undefined", nil
-		}
-		return data, nil
-	case <-time.After(100 * time.Millisecond):
-		return "", errors.New("receive timeout")
+	data, ok := <-ch
+	if !ok {
+		return "undefined", nil
 	}
+	return data, nil
 }
