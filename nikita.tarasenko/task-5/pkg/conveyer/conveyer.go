@@ -9,7 +9,7 @@ import (
 
 var ErrChanNotFound = errors.New("chan not found")
 
-type conveyer interface {
+type Conveyer interface {
 	RegisterDecorator(
 		handlerFunc func(context.Context, chan string, chan string) error,
 		input string,
@@ -40,7 +40,7 @@ type pipeline struct {
 	closer   sync.Once
 }
 
-func New(size int) *pipeline { // Изменено: возвращаем конкретный тип вместо интерфейса
+func New(size int) Conveyer {
 	return &pipeline{
 		size:     size,
 		channels: make(map[string]chan string),
@@ -225,8 +225,8 @@ func (p *pipeline) Recv(channelName string) (string, error) {
 		return "", ErrChanNotFound
 	}
 
-	value, ok := <-channel
-	if !ok {
+	value, dataAvailable := <-channel
+	if !dataAvailable {
 		return undefinedValue, nil
 	}
 
