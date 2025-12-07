@@ -64,7 +64,7 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 			case <-ctx.Done():
 				return nil
 
-			case outputs[cnt]<- val:
+			case outputs[cnt] <- val:
 			}
 
 			cnt = (cnt + 1) % len(outputs)
