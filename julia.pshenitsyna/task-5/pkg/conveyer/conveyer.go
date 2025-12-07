@@ -105,46 +105,57 @@ func (conv *Conveyer) RegisterSeparator(handlerFn func(
 }
 
 func (conv *Conveyer) Run(ctx context.Context) error {
-	if len(conv.handlers) == 0 {
-		return nil
-	}
+	conv.myMutex.RLock()
+	handlers := make([]func(context.Context) error, len(conv.handlers))
+	copy(handlers, conv.handlers)
+	conv.myMutex.RUnlock()
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
 	var waitGroup sync.WaitGroup
-	errChan := make(chan error, 1)
 
-	for _, handler := range conv.handlers {
+	errCh := make(chan error, 1)
+
+	for _, handler := range handlers {
 		waitGroup.Add(1)
-		go func(handler func(context.Context) error) {
-			defer waitGroup.Done()
-			if err := handler(ctx); err != nil {
-				select {
-				case errChan <- err:
-				default:
 
+		go func(handlerFunc func(context.Context) error) {
+			defer waitGroup.Done()
+
+			if err := handlerFunc(ctx); err != nil {
+				select {
+				case errCh <- err:
+				default:
 				}
+				cancel()
 			}
 		}(handler)
 	}
 
+	done := make(chan struct{})
+
 	go func() {
 		waitGroup.Wait()
-		close(errChan)
+		close(done)
 	}()
 
 	select {
-	case err := <-errChan:
-		if err != nil {
-			conv.closeAll()
-
-			return err
-		}
-	case <-ctx.Done():
-		waitGroup.Wait()
+	case err := <-errCh:
+		<-done
 		conv.closeAll()
 
-		return ctx.Err()
+		return err
+	case <-done:
+		conv.closeAll()
+
+		return nil
+	case <-ctx.Done():
+		<-done
+		conv.closeAll()
+
+		return nil
 	}
-	return nil
 }
 
 func (conv *Conveyer) Send(input string, data string) error {
