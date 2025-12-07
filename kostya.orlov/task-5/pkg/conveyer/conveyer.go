@@ -100,8 +100,30 @@ func (c *Conveyer) RegisterSeparator(fn interface{}, inputID string, outputIDs [
 }
 
 func (c *Conveyer) resolveChannels() error {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	for i := range c.handlers {
+		handler := &c.handlers[i]
+
+		if handler.Type == "Multiplexer" {
+			for _, inputID := range handler.InputIDs {
+				if _, exists := c.channels[inputID]; !exists {
+					c.channels[inputID] = make(chan string, c.size)
+				}
+			}
+		} else if handler.InputID != "" {
+			if _, exists := c.channels[handler.InputID]; !exists {
+				c.channels[handler.InputID] = make(chan string, c.size)
+			}
+		}
+
+		for _, outputID := range handler.OutputIDs {
+			if _, exists := c.channels[outputID]; !exists {
+				c.channels[outputID] = make(chan string, c.size)
+			}
+		}
+	}
 
 	for i := range c.handlers {
 		handler := &c.handlers[i]
@@ -109,27 +131,15 @@ func (c *Conveyer) resolveChannels() error {
 		if handler.Type == "Multiplexer" {
 			handler.InputChans = make([]chan string, 0, len(handler.InputIDs))
 			for _, inputID := range handler.InputIDs {
-				if channel, ok := c.channels[inputID]; ok {
-					handler.InputChans = append(handler.InputChans, channel)
-				} else {
-					return ErrChanNotFound
-				}
+				handler.InputChans = append(handler.InputChans, c.channels[inputID])
 			}
 		} else if handler.InputID != "" {
-			if channel, ok := c.channels[handler.InputID]; ok {
-				handler.InputChans = []chan string{channel}
-			} else {
-				return ErrChanNotFound
-			}
+			handler.InputChans = []chan string{c.channels[handler.InputID]}
 		}
 
 		handler.OutputChans = make([]chan string, 0, len(handler.OutputIDs))
 		for _, outputID := range handler.OutputIDs {
-			if channel, ok := c.channels[outputID]; ok {
-				handler.OutputChans = append(handler.OutputChans, channel)
-			} else {
-				return ErrChanNotFound
-			}
+			handler.OutputChans = append(handler.OutputChans, c.channels[outputID])
 		}
 	}
 	return nil
