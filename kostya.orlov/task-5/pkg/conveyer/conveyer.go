@@ -64,6 +64,16 @@ func (c *Conveyer) AddChannel(channelID string) error {
 }
 
 func (c *Conveyer) RegisterDecorator(fn interface{}, inputID string, outputID string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if _, exists := c.channels[inputID]; !exists {
+		c.channels[inputID] = make(chan string, c.size)
+	}
+	if _, exists := c.channels[outputID]; !exists {
+		c.channels[outputID] = make(chan string, c.size)
+	}
+
 	c.handlers = append(c.handlers, HandlerRegistration{
 		Type:        "Decorator",
 		Fn:          fn,
@@ -76,6 +86,18 @@ func (c *Conveyer) RegisterDecorator(fn interface{}, inputID string, outputID st
 }
 
 func (c *Conveyer) RegisterMultiplexer(fn MultiplexerFunc, inputIDs []string, outputID string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	for _, inputID := range inputIDs {
+		if _, exists := c.channels[inputID]; !exists {
+			c.channels[inputID] = make(chan string, c.size)
+		}
+	}
+	if _, exists := c.channels[outputID]; !exists {
+		c.channels[outputID] = make(chan string, c.size)
+	}
+
 	c.handlers = append(c.handlers, HandlerRegistration{
 		Type:        "Multiplexer",
 		Fn:          fn,
@@ -88,6 +110,18 @@ func (c *Conveyer) RegisterMultiplexer(fn MultiplexerFunc, inputIDs []string, ou
 }
 
 func (c *Conveyer) RegisterSeparator(fn interface{}, inputID string, outputIDs []string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if _, exists := c.channels[inputID]; !exists {
+		c.channels[inputID] = make(chan string, c.size)
+	}
+	for _, outputID := range outputIDs {
+		if _, exists := c.channels[outputID]; !exists {
+			c.channels[outputID] = make(chan string, c.size)
+		}
+	}
+
 	c.handlers = append(c.handlers, HandlerRegistration{
 		Type:        "Separator",
 		Fn:          fn,
@@ -102,28 +136,6 @@ func (c *Conveyer) RegisterSeparator(fn interface{}, inputID string, outputIDs [
 func (c *Conveyer) resolveChannels() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-
-	for i := range c.handlers {
-		handler := &c.handlers[i]
-
-		if handler.Type == "Multiplexer" {
-			for _, inputID := range handler.InputIDs {
-				if _, exists := c.channels[inputID]; !exists {
-					c.channels[inputID] = make(chan string, c.size)
-				}
-			}
-		} else if handler.InputID != "" {
-			if _, exists := c.channels[handler.InputID]; !exists {
-				c.channels[handler.InputID] = make(chan string, c.size)
-			}
-		}
-
-		for _, outputID := range handler.OutputIDs {
-			if _, exists := c.channels[outputID]; !exists {
-				c.channels[outputID] = make(chan string, c.size)
-			}
-		}
-	}
 
 	for i := range c.handlers {
 		handler := &c.handlers[i]
