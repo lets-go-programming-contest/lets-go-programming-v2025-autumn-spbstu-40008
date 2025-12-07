@@ -40,7 +40,7 @@ type pipeline struct {
 	closer   sync.Once
 }
 
-func New(size int) Conveyer {
+func New(size int) *pipeline {
 	return &pipeline{
 		size:     size,
 		channels: make(map[string]chan string),
