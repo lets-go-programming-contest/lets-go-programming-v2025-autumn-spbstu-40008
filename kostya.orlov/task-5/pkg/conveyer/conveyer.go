@@ -41,6 +41,8 @@ type Conveyer struct {
 }
 
 func New(size int) *Conveyer {
+    ctx, cancel := context.WithCancel(context.Background())
+    cancel()
 	return &Conveyer{
 		channels:  make(map[string]chan string),
 		handlers:  make([]HandlerRegistration, 0),
@@ -48,6 +50,9 @@ func New(size int) *Conveyer {
 		size:      size,
 		waitGroup: sync.WaitGroup{},
 		mu:        sync.RWMutex{},
+        
+        ctx: ctx, 
+        cancel: cancel,
 	}
 }
 
@@ -158,7 +163,7 @@ func (c *Conveyer) resolveChannels() error {
 }
 
 func (c *Conveyer) Run(ctx context.Context) error {
-	c.ctx, c.cancel = context.WithCancel(ctx)
+	c.ctx, c.cancel = context.WithCancel(ctx) 
 	defer c.cancel()
 
 	if err := c.resolveChannels(); err != nil {
