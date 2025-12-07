@@ -22,7 +22,7 @@ func New(size int) *conveyerType {
 		size:     size,
 		channels: make(map[string]chan string),
 		mu:       sync.RWMutex{},
-        handlers: []func(ctx context.Context) error{},
+		handlers: []func(ctx context.Context) error{},
 	}
 }
 
@@ -97,7 +97,9 @@ func (c *conveyerType) RegisterSeparator(
 
 func (c *conveyerType) Run(ctx context.Context) error {
 	var waitGroup  sync.WaitGroup
+
 	errChan := make(chan error, 1)
+
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
