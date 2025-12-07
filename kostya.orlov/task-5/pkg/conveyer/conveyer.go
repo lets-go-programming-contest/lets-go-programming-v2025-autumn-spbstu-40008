@@ -310,7 +310,7 @@ func (c *Conveyer) closeAllChannels() {
 		if closedChannels[channel] {
 			continue
 		}
-		
+
 		func() {
 			defer func() {
 				if r := recover(); r != nil {}
