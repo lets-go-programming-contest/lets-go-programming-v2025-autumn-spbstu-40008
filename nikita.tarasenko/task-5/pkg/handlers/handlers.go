@@ -1,1 +1,113 @@
 package handlers
+
+import (
+	"context"
+	"errors"
+	"strings"
+	"sync"
+
+	"task-5/pkg/conveyer"
+)
+
+var (
+	ErrCantBeDecorated = errors.New("can't be decorated")
+	ErrEmptyOutputs    = errors.New("empty outputs")
+)
+
+const (
+	noDecorator     = "no decorator"
+	noMultiplexer   = "no multiplexer"
+	decoratedPrefix = "decorated: "
+)
+
+func PrefixDecoratorFunc(
+	ctx context.Context,
+	in conveyer.Item,
+	out conveyer.Item,
+) error {
+	for {
+		select {
+		case data, ok := <-in:
+			if !ok {
+				return nil
+			}
+			if strings.Contains(data, noDecorator) {
+				return ErrCantBeDecorated
+			}
+			if !strings.HasPrefix(data, decoratedPrefix) {
+				data = decoratedPrefix + data
+			}
+			select {
+			case out <- data:
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+}
+
+func SeparatorFunc(
+	ctx context.Context,
+	in conveyer.Item,
+	outs []conveyer.Item,
+) error {
+	if len(outs) == 0 {
+		return ErrEmptyOutputs
+	}
+	idx := 0
+	for {
+		select {
+		case data, ok := <-in:
+			if !ok {
+				return nil
+			}
+			select {
+			case outs[idx] <- data:
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+			idx = (idx + 1) % len(outs)
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+}
+
+func MultiplexerFunc(
+	ctx context.Context,
+	ins []conveyer.Item,
+	out conveyer.Item,
+) error {
+	var wg sync.WaitGroup
+	wg.Add(len(ins))
+
+	for _, ch := range ins {
+		ch := ch // захват в замыкание
+		go func() {
+			defer wg.Done()
+			for {
+				select {
+				case data, ok := <-ch:
+					if !ok {
+						return
+					}
+					if strings.Contains(data, noMultiplexer) {
+						continue
+					}
+					select {
+					case out <- data:
+					case <-ctx.Done():
+						return
+					}
+				case <-ctx.Done():
+					return
+				}
+			}
+		}()
+	}
+
+	wg.Wait()
+	return nil
+}
