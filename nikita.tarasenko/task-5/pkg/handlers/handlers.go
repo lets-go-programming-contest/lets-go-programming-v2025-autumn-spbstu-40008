@@ -5,8 +5,6 @@ import (
 	"errors"
 	"strings"
 	"sync"
-
-	"task-5/pkg/conveyer"
 )
 
 var (
@@ -22,8 +20,8 @@ const (
 
 func PrefixDecoratorFunc(
 	ctx context.Context,
-	in conveyer.Item,
-	out conveyer.Item,
+	in chan string,
+	out chan string,
 ) error {
 	for {
 		select {
@@ -50,8 +48,8 @@ func PrefixDecoratorFunc(
 
 func SeparatorFunc(
 	ctx context.Context,
-	in conveyer.Item,
-	outs []conveyer.Item,
+	in chan string,
+	outs []chan string,
 ) error {
 	if len(outs) == 0 {
 		return ErrEmptyOutputs
@@ -77,14 +75,14 @@ func SeparatorFunc(
 
 func MultiplexerFunc(
 	ctx context.Context,
-	ins []conveyer.Item,
-	out conveyer.Item,
+	ins []chan string,
+	out chan string,
 ) error {
 	var wg sync.WaitGroup
 	wg.Add(len(ins))
 
 	for _, ch := range ins {
-		ch := ch // захват в замыкание
+		ch := ch
 		go func() {
 			defer wg.Done()
 			for {

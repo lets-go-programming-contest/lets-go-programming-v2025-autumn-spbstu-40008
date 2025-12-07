@@ -7,12 +7,11 @@ import (
 	"sync"
 )
 
-type Item chan string
-
+// Интерфейс из задания.
 type conveyer interface {
-	RegisterDecorator(fn func(context.Context, Item, Item) error, input, output string)
-	RegisterMultiplexer(fn func(context.Context, []Item, Item) error, inputs []string, output string)
-	RegisterSeparator(fn func(context.Context, Item, []Item) error, input string, outputs []string)
+	RegisterDecorator(fn func(context.Context, chan string, chan string) error, input, output string)
+	RegisterMultiplexer(fn func(context.Context, []chan string, chan string) error, inputs []string, output string)
+	RegisterSeparator(fn func(context.Context, chan string, []chan string) error, input string, outputs []string)
 	Run(ctx context.Context) error
 	Send(input string, data string) error
 	Recv(output string) (string, error)
@@ -25,7 +24,7 @@ const undefinedValue = "undefined"
 type pipeline struct {
 	size     int
 	mu       sync.RWMutex
-	channels map[string]Item
+	channels map[string]chan string
 	handlers []func(context.Context) error
 	closer   sync.Once
 }
@@ -33,12 +32,12 @@ type pipeline struct {
 func New(size int) conveyer {
 	return &pipeline{
 		size:     size,
-		channels: make(map[string]Item),
+		channels: make(map[string]chan string),
 		handlers: make([]func(context.Context) error, 0),
 	}
 }
 
-func (p *pipeline) getOrCreateChannel(name string) Item {
+func (p *pipeline) getOrCreateChannel(name string) chan string {
 	p.mu.RLock()
 	if ch, ok := p.channels[name]; ok {
 		p.mu.RUnlock()
@@ -51,12 +50,12 @@ func (p *pipeline) getOrCreateChannel(name string) Item {
 	if ch, ok := p.channels[name]; ok {
 		return ch
 	}
-	ch := make(Item, p.size)
+	ch := make(chan string, p.size)
 	p.channels[name] = ch
 	return ch
 }
 
-func (p *pipeline) getChannel(name string) (Item, bool) {
+func (p *pipeline) getChannel(name string) (chan string, bool) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	ch, ok := p.channels[name]
@@ -72,7 +71,7 @@ func (p *pipeline) closeAll() {
 }
 
 func (p *pipeline) RegisterDecorator(
-	fn func(context.Context, Item, Item) error,
+	fn func(context.Context, chan string, chan string) error,
 	input, output string,
 ) {
 	in := p.getOrCreateChannel(input)
@@ -85,11 +84,11 @@ func (p *pipeline) RegisterDecorator(
 }
 
 func (p *pipeline) RegisterMultiplexer(
-	fn func(context.Context, []Item, Item) error,
+	fn func(context.Context, []chan string, chan string) error,
 	inputs []string,
 	output string,
 ) {
-	ins := make([]Item, len(inputs))
+	ins := make([]chan string, len(inputs))
 	for i, name := range inputs {
 		ins[i] = p.getOrCreateChannel(name)
 	}
@@ -102,11 +101,11 @@ func (p *pipeline) RegisterMultiplexer(
 }
 
 func (p *pipeline) RegisterSeparator(
-	fn func(context.Context, Item, []Item) error,
+	fn func(context.Context, chan string, []chan string) error,
 	input string,
 	outputs []string,
 ) {
-	outs := make([]Item, len(outputs))
+	outs := make([]chan string, len(outputs))
 	for i, name := range outputs {
 		outs[i] = p.getOrCreateChannel(name)
 	}
