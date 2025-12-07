@@ -42,6 +42,7 @@ type conveyerImpl struct {
 }
 
 var ErrChanNotFound = errors.New("chan not found")
+var ErrCannotDecorate = errors.New("can't be decorated")
 
 func New(size int) *conveyerImpl {
 	return &conveyerImpl{
@@ -124,44 +125,41 @@ func (c *conveyerImpl) Run(ctx context.Context) error {
 		}
 	}
 
-	g, gCtx := errgroup.WithContext(ctx)
+	eg, egCtx := errgroup.WithContext(ctx)
 
 	for _, dec := range c.decorators {
-		dec := dec
-		g.Go(func() error {
+		eg.Go(func() error {
 			inCh, _ := c.getChannel(dec.input)
 			outCh, _ := c.getChannel(dec.output)
-			return dec.fn(gCtx, inCh, outCh)
+			return dec.fn(egCtx, inCh, outCh)
 		})
 	}
 
 	for _, mux := range c.multiplexers {
-		mux := mux
-		g.Go(func() error {
+		eg.Go(func() error {
 			var inChs []chan string
 			for _, inName := range mux.inputs {
 				ch, _ := c.getChannel(inName)
 				inChs = append(inChs, ch)
 			}
 			outCh, _ := c.getChannel(mux.output)
-			return mux.fn(gCtx, inChs, outCh)
+			return mux.fn(egCtx, inChs, outCh)
 		})
 	}
 
 	for _, sep := range c.separators {
-		sep := sep
-		g.Go(func() error {
+		eg.Go(func() error {
 			inCh, _ := c.getChannel(sep.input)
 			var outChs []chan string
 			for _, outName := range sep.outputs {
 				ch, _ := c.getChannel(outName)
 				outChs = append(outChs, ch)
 			}
-			return sep.fn(gCtx, inCh, outChs)
+			return sep.fn(egCtx, inCh, outChs)
 		})
 	}
 
-	if err := g.Wait(); err != nil {
+	if err := eg.Wait(); err != nil {
 		c.mu.Lock()
 		for _, ch := range c.channels {
 			close(ch)
@@ -175,17 +173,18 @@ func (c *conveyerImpl) Run(ctx context.Context) error {
 		close(ch)
 	}
 	c.mu.Unlock()
+
 	return nil
 }
 
 func (c *conveyerImpl) Send(input string, data string) error {
-	ch, exists := c.getChannel(input)
+	channel, exists := c.getChannel(input)
 	if !exists {
 		return ErrChanNotFound
 	}
 
 	select {
-	case ch <- data:
+	case channel <- data:
 		return nil
 	case <-context.Background().Done():
 		return context.Canceled
@@ -193,13 +192,13 @@ func (c *conveyerImpl) Send(input string, data string) error {
 }
 
 func (c *conveyerImpl) Recv(output string) (string, error) {
-	ch, exists := c.getChannel(output)
+	channel, exists := c.getChannel(output)
 	if !exists {
 		return "", ErrChanNotFound
 	}
 
 	select {
-	case data, ok := <-ch:
+	case data, ok := <-channel:
 		if !ok {
 			return "undefined", nil
 		}
