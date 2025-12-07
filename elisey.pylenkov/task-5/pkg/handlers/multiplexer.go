@@ -4,23 +4,18 @@ import (
 	"context"
 	"strings"
 	"sync"
+	"time"
 )
 
 func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan string) error {
 	var wg sync.WaitGroup
 	done := make(chan struct{})
-	once := &sync.Once{}
-
-	closeDone := func() {
-		once.Do(func() {
-			close(done)
-		})
-	}
 
 	for _, in := range inputs {
 		wg.Add(1)
 		go func(in chan string) {
 			defer wg.Done()
+
 			for {
 				select {
 				case <-done:
@@ -31,16 +26,22 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 					if !ok {
 						return
 					}
+
 					if strings.Contains(data, "no multiplexer") {
 						continue
 					}
+
 					select {
 					case output <- data:
 					case <-ctx.Done():
 						return
 					case <-done:
 						return
+					case <-time.After(50 * time.Millisecond):
+						continue
 					}
+				case <-time.After(100 * time.Millisecond):
+					continue
 				}
 			}
 		}(in)
@@ -48,13 +49,11 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 
 	go func() {
 		wg.Wait()
-		closeDone()
+		close(done)
 	}()
 
 	select {
 	case <-ctx.Done():
-		wg.Wait()
-		closeDone()
 		return ctx.Err()
 	case <-done:
 		return nil
