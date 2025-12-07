@@ -48,11 +48,11 @@ func (c *Conveyer) RegisterDecorator(
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	in := c.getChannel(input)
+	inputChannel := c.getChannel(input)
 	out := c.getChannel(output)
 
 	task := func(ctx context.Context) error {
-		return fn(ctx, in, out)
+		return fn(ctx, inputChannel, out)
 	}
 
 	c.workers = append(c.workers, task)
@@ -66,7 +66,7 @@ func (c *Conveyer) RegisterMultiplexer(
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	var ins []chan string
+	ins := make([]chan string, 0, len(inputs))
 	for _, name := range inputs {
 		ins = append(ins, c.getChannel(name))
 	}
@@ -87,14 +87,14 @@ func (c *Conveyer) RegisterSeparator(
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	in := c.getChannel(input)
-	var outs []chan string
+	inputChannel := c.getChannel(input)
+	outs := make([]chan string, 0, len(outputs))
 	for _, name := range outputs {
 		outs = append(outs, c.getChannel(name))
 	}
 
 	task := func(ctx context.Context) error {
-		return fn(ctx, in, outs)
+		return fn(ctx, inputChannel, outs)
 	}
 
 	c.workers = append(c.workers, task)
@@ -103,7 +103,7 @@ func (c *Conveyer) RegisterSeparator(
 func (c *Conveyer) Run(ctx context.Context) error {
 	defer c.cleanup()
 
-	g, gCtx := errgroup.WithContext(ctx)
+	errGroup, gCtx := errgroup.WithContext(ctx)
 	c.mutex.RLock()
 	tasks := make([]func(context.Context) error, len(c.workers))
 	copy(tasks, c.workers)
@@ -111,12 +111,12 @@ func (c *Conveyer) Run(ctx context.Context) error {
 
 	for _, t := range tasks {
 		task := t
-		g.Go(func() error {
+		errGroup.Go(func() error {
 			return task(gCtx)
 		})
 	}
 
-	if err := g.Wait(); err != nil {
+	if err := errGroup.Wait(); err != nil {
 		return fmt.Errorf("conveyer error: %w", err)
 	}
 
@@ -134,14 +134,14 @@ func (c *Conveyer) cleanup() {
 
 func (c *Conveyer) Send(input string, data string) error {
 	c.mutex.RLock()
-	ch, ok := c.channels[input]
+	channel, exists := c.channels[input]
 	c.mutex.RUnlock()
 
-	if !ok {
+	if !exists {
 		return ErrChannelNotFound
 	}
 
-	ch <- data
+	channel <- data
 
 	return nil
 }
