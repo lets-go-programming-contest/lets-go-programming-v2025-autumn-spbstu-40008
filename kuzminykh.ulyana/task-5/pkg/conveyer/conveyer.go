@@ -140,6 +140,7 @@ func (c *conveyer) Run(ctx context.Context) error {
 	c.mu.RUnlock()
 
 	var waitGroup sync.WaitGroup
+
 	errCh := make(chan error, 1)
 
 	for _, handler := range handlers {
