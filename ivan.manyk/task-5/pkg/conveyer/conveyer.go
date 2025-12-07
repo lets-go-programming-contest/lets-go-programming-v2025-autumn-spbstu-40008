@@ -88,36 +88,44 @@ func (c *conveyerType) RegisterSeparator(
 }
 
 func (c *conveyerType) Run(ctx context.Context) error {
-	var wg sync.WaitGroup
-	errChan := make(chan error, 1)
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
+    var wg sync.WaitGroup
+    errChan := make(chan error, 1)
+    ctx, cancel := context.WithCancel(ctx)
+    defer cancel()
 
-	for _, handler := range c.handlers {
-		wg.Add(1)
-		go func(h func(ctx context.Context) error) {
-			defer wg.Done()
-			if err := h(ctx); err != nil {
-				select {
-				case errChan <- err:
-				default:
-				}
-				cancel()
-			}
-		}(handler)
-	}
+    for _, handler := range c.handlers {
+        wg.Add(1)
+        go func(h func(ctx context.Context) error) {
+            defer wg.Done()
+            if err := h(ctx); err != nil {
+                select {
+                case errChan <- err:
+                default:
+                }
+                cancel()
+            }
+        }(handler)
+    }
 
-	select {
-	case <-ctx.Done():
-		wg.Wait()
-		c.closeAllChannels()
-		return ctx.Err()
-	case err := <-errChan:
-		cancel()
-		wg.Wait()
-		c.closeAllChannels()
-		return err
-	}
+    done := make(chan struct{})
+    go func() {
+        wg.Wait()
+        close(done)
+    }()
+
+    select {
+    case <-ctx.Done():
+        wg.Wait()
+        c.closeAllChannels()
+        return nil
+    case err := <-errChan:
+        wg.Wait()
+        c.closeAllChannels()
+        return err
+    case <-done:
+        c.closeAllChannels()
+        return nil
+    }
 }
 
 func (c *conveyerType) closeAllChannels() {
