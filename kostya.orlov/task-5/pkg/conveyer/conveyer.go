@@ -7,11 +7,11 @@ import (
 )
 
 var (
-	ErrChanNotFound                      = errors.New("chan not found")
-	ErrChannelExists                     = errors.New("channel already exists")
-	ErrUnsupportedDecoratorFunctionType  = errors.New("unsupported decorator function type")
+	ErrChanNotFound                     = errors.New("chan not found")
+	ErrChannelExists                    = errors.New("channel already exists")
+	ErrUnsupportedDecoratorFunctionType = errors.New("unsupported decorator function type")
 	ErrUnsupportedMultiplexerFunctionType = errors.New("unsupported multiplexer function type")
-	ErrUnsupportedSeparatorFunctionType  = errors.New("unsupported separator function type")
+	ErrUnsupportedSeparatorFunctionType = errors.New("unsupported separator function type")
 )
 
 type Conveyer struct {
@@ -182,7 +182,7 @@ func (c *Conveyer) Run(ctx context.Context) error {
 	for _, chanItem := range c.channels {
 		func(channel chan string) {
 			defer func() {
-				_ = recover()
+				_ = recover() 
 			}()
 			close(channel)
 		}(chanItem)
