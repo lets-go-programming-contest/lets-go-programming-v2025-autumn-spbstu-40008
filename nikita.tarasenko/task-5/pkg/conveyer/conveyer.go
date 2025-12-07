@@ -7,7 +7,6 @@ import (
 	"sync"
 )
 
-// Интерфейс из задания.
 type conveyer interface {
 	RegisterDecorator(fn func(context.Context, chan string, chan string) error, input, output string)
 	RegisterMultiplexer(fn func(context.Context, []chan string, chan string) error, inputs []string, output string)
@@ -16,8 +15,6 @@ type conveyer interface {
 	Send(input string, data string) error
 	Recv(output string) (string, error)
 }
-
-var ErrChannelNotFound = errors.New("channel not found")
 
 const undefinedValue = "undefined"
 
@@ -167,7 +164,7 @@ func (p *pipeline) Run(parentCtx context.Context) error {
 func (p *pipeline) Send(chName string, data string) error {
 	ch, ok := p.getChannel(chName)
 	if !ok {
-		return fmt.Errorf("channel %q not found: %w", chName, ErrChannelNotFound)
+		return errors.New("chan not found")
 	}
 	ch <- data
 	return nil
@@ -176,7 +173,7 @@ func (p *pipeline) Send(chName string, data string) error {
 func (p *pipeline) Recv(chName string) (string, error) {
 	ch, ok := p.getChannel(chName)
 	if !ok {
-		return "", fmt.Errorf("channel %q not found: %w", chName, ErrChannelNotFound)
+		return "", errors.New("chan not found")
 	}
 	val, ok := <-ch
 	if !ok {

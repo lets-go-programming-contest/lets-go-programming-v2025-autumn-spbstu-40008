@@ -38,10 +38,10 @@ func PrefixDecoratorFunc(
 			select {
 			case out <- data:
 			case <-ctx.Done():
-				return ctx.Err()
+				return nil
 			}
 		case <-ctx.Done():
-			return ctx.Err()
+			return nil
 		}
 	}
 }
@@ -64,11 +64,11 @@ func SeparatorFunc(
 			select {
 			case outs[idx] <- data:
 			case <-ctx.Done():
-				return ctx.Err()
+				return nil
 			}
 			idx = (idx + 1) % len(outs)
 		case <-ctx.Done():
-			return ctx.Err()
+			return nil
 		}
 	}
 }
