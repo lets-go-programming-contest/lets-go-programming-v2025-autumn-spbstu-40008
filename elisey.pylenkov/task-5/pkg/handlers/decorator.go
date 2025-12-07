@@ -22,9 +22,9 @@ func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan str
 				data = "decorated: " + data
 			}
 			select {
+			case output <- data:
 			case <-ctx.Done():
 				return ctx.Err()
-			case output <- data:
 			}
 		}
 	}

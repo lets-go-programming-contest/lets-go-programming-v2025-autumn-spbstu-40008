@@ -37,10 +37,9 @@ func main() {
 		fmt.Println("Conveyer stopped")
 	}()
 
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(50 * time.Millisecond)
 
 	go func() {
-		time.Sleep(50 * time.Millisecond)
 		conv.Send("input1", "test data 1")
 		conv.Send("input1", "test data 2")
 		conv.Send("input1", "test data 3")
@@ -77,11 +76,7 @@ func main() {
 	<-done
 
 	fmt.Println("All data received")
-
-	time.Sleep(500 * time.Millisecond)
 	cancel()
-
-	time.Sleep(200 * time.Millisecond)
-
+	time.Sleep(100 * time.Millisecond)
 	fmt.Println("Program finished")
 }
