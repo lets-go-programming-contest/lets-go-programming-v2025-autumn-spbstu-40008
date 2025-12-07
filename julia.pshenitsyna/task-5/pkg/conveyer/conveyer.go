@@ -191,11 +191,9 @@ func (conv *Conveyer) closeAll() {
 	conv.myMutex.Lock()
 	defer conv.myMutex.Unlock()
 
-	for name, channel := range conv.channels {
+	for _, channel := range conv.channels {
 		if channel != nil {
 			close(channel)
-			
-			conv.channels[name] = nil
 		}
 	}
 }
