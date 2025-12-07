@@ -13,12 +13,12 @@ var (
 )
 
 type ConveyerFunc func(ctx context.Context, input chan string, outputs []chan string) error
+
 type MultiplexerFunc func(ctx context.Context, inputs []chan string, outputs []chan string) error
 
 type HandlerRegistration struct {
 	Type        string
-	Fn          ConveyerFunc
-	MultiplexFn MultiplexerFunc
+	Fn          interface{}
 	InputID     string
 	InputIDs    []string
 	OutputIDs   []string
@@ -63,7 +63,7 @@ func (c *Conveyer) AddChannel(channelID string) error {
 	return nil
 }
 
-func (c *Conveyer) RegisterDecorator(fn ConveyerFunc, inputID string, outputID string) {
+func (c *Conveyer) RegisterDecorator(fn interface{}, inputID string, outputID string) {
 	c.handlers = append(c.handlers, HandlerRegistration{
 		Type:        "Decorator",
 		Fn:          fn,
@@ -78,7 +78,7 @@ func (c *Conveyer) RegisterDecorator(fn ConveyerFunc, inputID string, outputID s
 func (c *Conveyer) RegisterMultiplexer(fn MultiplexerFunc, inputIDs []string, outputID string) {
 	c.handlers = append(c.handlers, HandlerRegistration{
 		Type:        "Multiplexer",
-		MultiplexFn: fn,
+		Fn:          fn,
 		InputIDs:    inputIDs,
 		OutputIDs:   []string{outputID},
 		InputID:     "",
@@ -87,7 +87,7 @@ func (c *Conveyer) RegisterMultiplexer(fn MultiplexerFunc, inputIDs []string, ou
 	})
 }
 
-func (c *Conveyer) RegisterSeparator(fn ConveyerFunc, inputID string, outputIDs []string) {
+func (c *Conveyer) RegisterSeparator(fn interface{}, inputID string, outputIDs []string) {
 	c.handlers = append(c.handlers, HandlerRegistration{
 		Type:        "Separator",
 		Fn:          fn,
@@ -149,14 +149,29 @@ func (c *Conveyer) Run(ctx context.Context) error {
 			defer c.waitGroup.Done()
 
 			var err error
+			var inputChannel chan string
+			if len(handlerReg.InputChans) > 0 {
+				inputChannel = handlerReg.InputChans[0]
+			}
+
 			if handlerReg.Type == "Multiplexer" {
-				err = handlerReg.MultiplexFn(c.ctx, handlerReg.InputChans, handlerReg.OutputChans)
+				multiplexFn := handlerReg.Fn.(MultiplexerFunc)
+				err = multiplexFn(c.ctx, handlerReg.InputChans, handlerReg.OutputChans)
 			} else {
-				var inputChannel chan string
-				if len(handlerReg.InputChans) > 0 {
-					inputChannel = handlerReg.InputChans[0]
+				switch fn := handlerReg.Fn.(type) {
+				case ConveyerFunc:
+					err = fn(c.ctx, inputChannel, handlerReg.OutputChans)
+				case func(context.Context, chan string, []chan string) error:
+					err = fn(c.ctx, inputChannel, handlerReg.OutputChans)
+				case func(context.Context, chan string, chan string) error:
+					if len(handlerReg.OutputChans) > 0 {
+						err = fn(c.ctx, inputChannel, handlerReg.OutputChans[0])
+					} else {
+						err = errors.New("no output channels provided")
+					}
+				default:
+					err = fmt.Errorf("unsupported function type for handler %s", handlerReg.Type)
 				}
-				err = handlerReg.Fn(c.ctx, inputChannel, handlerReg.OutputChans)
 			}
 
 			if err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
