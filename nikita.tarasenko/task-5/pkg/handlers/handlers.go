@@ -9,7 +9,6 @@ import (
 
 var ErrChanNotFound = errors.New("chan not found")
 
-// Conveyer - публичный интерфейс конвейера
 type Conveyer interface {
 	RegisterDecorator(
 		handlerFunc func(context.Context, chan string, chan string) error,
@@ -33,7 +32,7 @@ type Conveyer interface {
 
 const undefinedValue = "undefined"
 
-type Pipeline struct {
+type pipeline struct {
 	size     int
 	mu       sync.RWMutex
 	channels map[string]chan string
@@ -41,8 +40,8 @@ type Pipeline struct {
 	closer   sync.Once
 }
 
-func New(size int) *Pipeline {
-	return &Pipeline{
+func New(size int) *pipeline {
+	return &pipeline{
 		size:     size,
 		channels: make(map[string]chan string),
 		handlers: make([]func(context.Context) error, 0),
@@ -51,7 +50,7 @@ func New(size int) *Pipeline {
 	}
 }
 
-func (p *Pipeline) getOrCreateChannel(name string) chan string {
+func (p *pipeline) getOrCreateChannel(name string) chan string {
 	p.mu.RLock()
 
 	existingChannel, channelExists := p.channels[name]
@@ -77,7 +76,7 @@ func (p *Pipeline) getOrCreateChannel(name string) chan string {
 	return newChannel
 }
 
-func (p *Pipeline) getChannel(name string) (chan string, bool) {
+func (p *pipeline) getChannel(name string) (chan string, bool) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
@@ -86,7 +85,7 @@ func (p *Pipeline) getChannel(name string) (chan string, bool) {
 	return channel, channelExists
 }
 
-func (p *Pipeline) closeAll() {
+func (p *pipeline) closeAll() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -95,7 +94,7 @@ func (p *Pipeline) closeAll() {
 	}
 }
 
-func (p *Pipeline) RegisterDecorator(
+func (p *pipeline) RegisterDecorator(
 	handlerFunc func(context.Context, chan string, chan string) error,
 	input string,
 	output string,
@@ -111,7 +110,7 @@ func (p *Pipeline) RegisterDecorator(
 	})
 }
 
-func (p *Pipeline) RegisterMultiplexer(
+func (p *pipeline) RegisterMultiplexer(
 	handlerFunc func(context.Context, []chan string, chan string) error,
 	inputs []string,
 	output string,
@@ -132,7 +131,7 @@ func (p *Pipeline) RegisterMultiplexer(
 	})
 }
 
-func (p *Pipeline) RegisterSeparator(
+func (p *pipeline) RegisterSeparator(
 	handlerFunc func(context.Context, chan string, []chan string) error,
 	input string,
 	outputs []string,
@@ -153,7 +152,7 @@ func (p *Pipeline) RegisterSeparator(
 	})
 }
 
-func (p *Pipeline) Run(parentCtx context.Context) error {
+func (p *pipeline) Run(parentCtx context.Context) error {
 	defer p.closer.Do(p.closeAll)
 
 	ctx, cancel := context.WithCancel(parentCtx)
@@ -209,7 +208,7 @@ func (p *Pipeline) Run(parentCtx context.Context) error {
 	}
 }
 
-func (p *Pipeline) Send(channelName string, data string) error {
+func (p *pipeline) Send(channelName string, data string) error {
 	channel, channelExists := p.getChannel(channelName)
 	if !channelExists {
 		return ErrChanNotFound
@@ -220,7 +219,7 @@ func (p *Pipeline) Send(channelName string, data string) error {
 	return nil
 }
 
-func (p *Pipeline) Recv(channelName string) (string, error) {
+func (p *pipeline) Recv(channelName string) (string, error) {
 	channel, channelExists := p.getChannel(channelName)
 	if !channelExists {
 		return "", ErrChanNotFound
