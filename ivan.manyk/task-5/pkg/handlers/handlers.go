@@ -60,12 +60,16 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 	}
 }
 
-func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan string) error {
+func MultiplexerFunc(ctx context.Context,
+	inputs []chan string,
+	output chan string,
+) error {
 	if len(inputs) == 0 {
 		return nil
 	}
 
 	var waitGroup sync.WaitGroup
+
 	done := make(chan string)
 
 	for _, inputCh := range inputs {
