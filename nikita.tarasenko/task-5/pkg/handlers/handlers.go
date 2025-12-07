@@ -1,122 +1,235 @@
-package handlers
+package conveyer
 
 import (
 	"context"
 	"errors"
-	"strings"
+	"fmt"
 	"sync"
 )
 
-var (
-	ErrCantBeDecorated = errors.New("can't be decorated")
-	ErrEmptyOutputs    = errors.New("empty outputs")
-)
+var ErrChanNotFound = errors.New("chan not found")
 
-const (
-	noDecorator     = "no decorator"
-	noMultiplexer   = "no multiplexer"
-	decoratedPrefix = "decorated: "
-)
+// Conveyer - публичный интерфейс конвейера
+type Conveyer interface {
+	RegisterDecorator(
+		handlerFunc func(context.Context, chan string, chan string) error,
+		input string,
+		output string,
+	)
+	RegisterMultiplexer(
+		handlerFunc func(context.Context, []chan string, chan string) error,
+		inputs []string,
+		output string,
+	)
+	RegisterSeparator(
+		handlerFunc func(context.Context, chan string, []chan string) error,
+		input string,
+		outputs []string,
+	)
+	Run(ctx context.Context) error
+	Send(input string, data string) error
+	Recv(output string) (string, error)
+}
 
-func PrefixDecoratorFunc(
-	ctx context.Context,
-	inputChannel chan string,
-	outputChannel chan string,
-) error {
-	for {
-		select {
-		case data, ok := <-inputChannel:
-			if !ok {
-				return nil
-			}
+const undefinedValue = "undefined"
 
-			if strings.Contains(data, noDecorator) {
-				return ErrCantBeDecorated
-			}
+type Pipeline struct {
+	size     int
+	mu       sync.RWMutex
+	channels map[string]chan string
+	handlers []func(context.Context) error
+	closer   sync.Once
+}
 
-			if !strings.HasPrefix(data, decoratedPrefix) {
-				data = decoratedPrefix + data
-			}
-
-			select {
-			case outputChannel <- data:
-			case <-ctx.Done():
-				return nil
-			}
-		case <-ctx.Done():
-			return nil
-		}
+func New(size int) *Pipeline {
+	return &Pipeline{
+		size:     size,
+		channels: make(map[string]chan string),
+		handlers: make([]func(context.Context) error, 0),
+		mu:       sync.RWMutex{},
+		closer:   sync.Once{},
 	}
 }
 
-func SeparatorFunc(
-	ctx context.Context,
-	inputChannel chan string,
-	outputChannels []chan string,
-) error {
-	if len(outputChannels) == 0 {
-		return ErrEmptyOutputs
+func (p *Pipeline) getOrCreateChannel(name string) chan string {
+	p.mu.RLock()
+
+	existingChannel, channelExists := p.channels[name]
+	if channelExists {
+		p.mu.RUnlock()
+
+		return existingChannel
 	}
 
-	index := 0
+	p.mu.RUnlock()
 
-	for {
-		select {
-		case data, ok := <-inputChannel:
-			if !ok {
-				return nil
-			}
+	p.mu.Lock()
+	defer p.mu.Unlock()
 
-			select {
-			case outputChannels[index] <- data:
-			case <-ctx.Done():
-				return nil
-			}
+	existingChannel, channelExists = p.channels[name]
+	if channelExists {
+		return existingChannel
+	}
 
-			index = (index + 1) % len(outputChannels)
-		case <-ctx.Done():
-			return nil
-		}
+	newChannel := make(chan string, p.size)
+	p.channels[name] = newChannel
+
+	return newChannel
+}
+
+func (p *Pipeline) getChannel(name string) (chan string, bool) {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	channel, channelExists := p.channels[name]
+
+	return channel, channelExists
+}
+
+func (p *Pipeline) closeAll() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	for _, channel := range p.channels {
+		close(channel)
 	}
 }
 
-func MultiplexerFunc(
-	ctx context.Context,
-	inputChannels []chan string,
-	outputChannel chan string,
-) error {
+func (p *Pipeline) RegisterDecorator(
+	handlerFunc func(context.Context, chan string, chan string) error,
+	input string,
+	output string,
+) {
+	inputChannel := p.getOrCreateChannel(input)
+	outputChannel := p.getOrCreateChannel(output)
+
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	p.handlers = append(p.handlers, func(ctx context.Context) error {
+		return handlerFunc(ctx, inputChannel, outputChannel)
+	})
+}
+
+func (p *Pipeline) RegisterMultiplexer(
+	handlerFunc func(context.Context, []chan string, chan string) error,
+	inputs []string,
+	output string,
+) {
+	inputChannels := make([]chan string, len(inputs))
+
+	for i, name := range inputs {
+		inputChannels[i] = p.getOrCreateChannel(name)
+	}
+
+	outputChannel := p.getOrCreateChannel(output)
+
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	p.handlers = append(p.handlers, func(ctx context.Context) error {
+		return handlerFunc(ctx, inputChannels, outputChannel)
+	})
+}
+
+func (p *Pipeline) RegisterSeparator(
+	handlerFunc func(context.Context, chan string, []chan string) error,
+	input string,
+	outputs []string,
+) {
+	outputChannels := make([]chan string, len(outputs))
+
+	for i, name := range outputs {
+		outputChannels[i] = p.getOrCreateChannel(name)
+	}
+
+	inputChannel := p.getOrCreateChannel(input)
+
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	p.handlers = append(p.handlers, func(ctx context.Context) error {
+		return handlerFunc(ctx, inputChannel, outputChannels)
+	})
+}
+
+func (p *Pipeline) Run(parentCtx context.Context) error {
+	defer p.closer.Do(p.closeAll)
+
+	ctx, cancel := context.WithCancel(parentCtx)
+	defer cancel()
+
 	var waitGroup sync.WaitGroup
 
-	waitGroup.Add(len(inputChannels))
+	p.mu.RLock()
+	handlers := make([]func(context.Context) error, len(p.handlers))
+	copy(handlers, p.handlers)
+	p.mu.RUnlock()
 
-	for _, inputChannel := range inputChannels {
-		go func(ch chan string) {
+	errorChannel := make(chan error, 1)
+
+	for _, handlerFunc := range handlers {
+		waitGroup.Add(1)
+
+		go func(handler func(context.Context) error) {
 			defer waitGroup.Done()
 
-			for {
+			if err := handler(ctx); err != nil {
 				select {
-				case data, ok := <-ch:
-					if !ok {
-						return
-					}
-
-					if strings.Contains(data, noMultiplexer) {
-						continue
-					}
-
-					select {
-					case outputChannel <- data:
-					case <-ctx.Done():
-						return
-					}
-				case <-ctx.Done():
-					return
+				case errorChannel <- err:
+				default:
 				}
+
+				cancel()
 			}
-		}(inputChannel)
+		}(handlerFunc)
 	}
 
-	waitGroup.Wait()
+	done := make(chan struct{})
+
+	go func() {
+		waitGroup.Wait()
+		close(done)
+	}()
+
+	select {
+	case err := <-errorChannel:
+		return fmt.Errorf("pipeline failed: %w", err)
+
+	case <-done:
+		return nil
+
+	case <-ctx.Done():
+		select {
+		case err := <-errorChannel:
+			return fmt.Errorf("pipeline failed: %w", err)
+		default:
+			return nil
+		}
+	}
+}
+
+func (p *Pipeline) Send(channelName string, data string) error {
+	channel, channelExists := p.getChannel(channelName)
+	if !channelExists {
+		return ErrChanNotFound
+	}
+
+	channel <- data
 
 	return nil
+}
+
+func (p *Pipeline) Recv(channelName string) (string, error) {
+	channel, channelExists := p.getChannel(channelName)
+	if !channelExists {
+		return "", ErrChanNotFound
+	}
+
+	value, dataAvailable := <-channel
+	if !dataAvailable {
+		return undefinedValue, nil
+	}
+
+	return value, nil
 }
