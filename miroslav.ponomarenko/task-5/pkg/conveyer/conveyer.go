@@ -40,7 +40,11 @@ func (c *Conveyer) getChannel(name string) chan string {
 	return ch
 }
 
-func (c *Conveyer) RegisterDecorator(fn func(ctx context.Context, input chan string, output chan string) error, input string, output string) {
+func (c *Conveyer) RegisterDecorator(
+	fn func(ctx context.Context, input chan string, output chan string) error,
+	input string,
+	output string,
+) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
@@ -54,7 +58,11 @@ func (c *Conveyer) RegisterDecorator(fn func(ctx context.Context, input chan str
 	c.workers = append(c.workers, task)
 }
 
-func (c *Conveyer) RegisterMultiplexer(fn func(ctx context.Context, inputs []chan string, output chan string) error, inputs []string, output string) {
+func (c *Conveyer) RegisterMultiplexer(
+	fn func(ctx context.Context, inputs []chan string, output chan string) error,
+	inputs []string,
+	output string,
+) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
@@ -71,7 +79,11 @@ func (c *Conveyer) RegisterMultiplexer(fn func(ctx context.Context, inputs []cha
 	c.workers = append(c.workers, task)
 }
 
-func (c *Conveyer) RegisterSeparator(fn func(ctx context.Context, input chan string, outputs []chan string) error, input string, outputs []string) {
+func (c *Conveyer) RegisterSeparator(
+	fn func(ctx context.Context, input chan string, outputs []chan string) error,
+	input string,
+	outputs []string,
+) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
@@ -92,7 +104,6 @@ func (c *Conveyer) Run(ctx context.Context) error {
 	defer c.cleanup()
 
 	g, gCtx := errgroup.WithContext(ctx)
-
 	c.mutex.RLock()
 	tasks := make([]func(context.Context) error, len(c.workers))
 	copy(tasks, c.workers)
