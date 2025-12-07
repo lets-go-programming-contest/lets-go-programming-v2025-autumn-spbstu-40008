@@ -49,6 +49,7 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 	}
 
 	var idx int
+
 	count := len(outputs)
 
 	for {
@@ -77,6 +78,7 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 
 	handle := func(channel chan string) {
 		defer waitGroup.Done()
+
 		for {
 			select {
 			case <-ctx.Done():

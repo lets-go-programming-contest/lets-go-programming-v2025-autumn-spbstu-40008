@@ -41,7 +41,7 @@ func (c *Conveyer) getChannel(name string) chan string {
 }
 
 func (c *Conveyer) RegisterDecorator(
-	fn func(ctx context.Context, input chan string, output chan string) error,
+	handlerFunc func(ctx context.Context, input chan string, output chan string) error,
 	input string,
 	output string,
 ) {
@@ -49,38 +49,39 @@ func (c *Conveyer) RegisterDecorator(
 	defer c.mutex.Unlock()
 
 	inputChannel := c.getChannel(input)
-	out := c.getChannel(output)
+	outChannel := c.getChannel(output)
 
 	task := func(ctx context.Context) error {
-		return fn(ctx, inputChannel, out)
+		return handlerFunc(ctx, inputChannel, outChannel)
 	}
 
 	c.workers = append(c.workers, task)
 }
 
 func (c *Conveyer) RegisterMultiplexer(
-	fn func(ctx context.Context, inputs []chan string, output chan string) error,
+	handlerFunc func(ctx context.Context, inputs []chan string, output chan string) error,
 	inputs []string,
 	output string,
 ) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	ins := make([]chan string, 0, len(inputs))
-	for _, name := range inputs {
-		ins = append(ins, c.getChannel(name))
+	ins := make([]chan string, len(inputs))
+	for i, name := range inputs {
+		ins[i] = c.getChannel(name)
 	}
-	out := c.getChannel(output)
+
+	outChannel := c.getChannel(output)
 
 	task := func(ctx context.Context) error {
-		return fn(ctx, ins, out)
+		return handlerFunc(ctx, ins, outChannel)
 	}
 
 	c.workers = append(c.workers, task)
 }
 
 func (c *Conveyer) RegisterSeparator(
-	fn func(ctx context.Context, input chan string, outputs []chan string) error,
+	handlerFunc func(ctx context.Context, input chan string, outputs []chan string) error,
 	input string,
 	outputs []string,
 ) {
@@ -88,13 +89,13 @@ func (c *Conveyer) RegisterSeparator(
 	defer c.mutex.Unlock()
 
 	inputChannel := c.getChannel(input)
-	outs := make([]chan string, 0, len(outputs))
-	for _, name := range outputs {
-		outs = append(outs, c.getChannel(name))
+	outs := make([]chan string, len(outputs))
+	for i, name := range outputs {
+		outs[i] = c.getChannel(name)
 	}
 
 	task := func(ctx context.Context) error {
-		return fn(ctx, inputChannel, outs)
+		return handlerFunc(ctx, inputChannel, outs)
 	}
 
 	c.workers = append(c.workers, task)
@@ -104,6 +105,7 @@ func (c *Conveyer) Run(ctx context.Context) error {
 	defer c.cleanup()
 
 	errGroup, gCtx := errgroup.WithContext(ctx)
+
 	c.mutex.RLock()
 	tasks := make([]func(context.Context) error, len(c.workers))
 	copy(tasks, c.workers)
@@ -111,6 +113,7 @@ func (c *Conveyer) Run(ctx context.Context) error {
 
 	for _, t := range tasks {
 		task := t
+
 		errGroup.Go(func() error {
 			return task(gCtx)
 		})
@@ -148,15 +151,15 @@ func (c *Conveyer) Send(input string, data string) error {
 
 func (c *Conveyer) Recv(output string) (string, error) {
 	c.mutex.RLock()
-	ch, ok := c.channels[output]
+	channel, exists := c.channels[output]
 	c.mutex.RUnlock()
 
-	if !ok {
+	if !exists {
 		return "", ErrChannelNotFound
 	}
 
-	val, ok := <-ch
-	if !ok {
+	val, exists := <-channel
+	if !exists {
 		return UndefinedValue, nil
 	}
 
