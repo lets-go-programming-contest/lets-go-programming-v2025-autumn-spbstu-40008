@@ -6,9 +6,7 @@ import (
 	"sync"
 )
 
-var (
-	ErrChanNotFound = errors.New("chan not found")
-)
+var ErrChanNotFound = errors.New("chan not found")
 
 type Conveyer struct {
 	mutex    sync.Mutex
