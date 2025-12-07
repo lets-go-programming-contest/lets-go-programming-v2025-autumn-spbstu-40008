@@ -12,7 +12,6 @@ func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan str
 		select {
 		case <-ctx.Done():
 			return nil
-
 		case val, ok := <-input:
 			if !ok {
 				return nil
