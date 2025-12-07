@@ -31,23 +31,33 @@ func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan str
 				return nil
 			case output <- val:
 			}
-			output <- val
 		}
 	}
 }
 
 func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string) error {
+	if len(outputs) == 0{
+		return nil
+	}
+	
 	cnt := 0
 
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
-
 		case val, ok := <-input:
 			if !ok {
-
 				return nil
+			}
+
+			outputChan := outputs[cnt]
+			if outputChan == nil {
+				cnt++
+				if cnt >= len(outputs) {
+					cnt = 0
+				}
+				continue
 			}
 
 			select {
@@ -55,11 +65,10 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 
 				return nil
 
-			case outputs[cnt] <- val:
+			case outputChan <- val:
 			}
 
 			cnt++
-
 			if cnt >= len(outputs) {
 				cnt = 0
 			}
@@ -80,7 +89,6 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 				select {
 				case <-ctx.Done():
 					return
-
 				case val, ok := <-channel:
 					if !ok {
 						return

@@ -67,7 +67,7 @@ func (conv *Conveyer) RegisterMultiplexer(handlerFn func(
 ) {
 	inputChannels := make([]chan string, len(inputs))
 
-	for i := range inputs{
+	for i := range inputs {
 		inputChannels[i] = conv.createChan(inputs[i])
 	}
 
@@ -90,7 +90,7 @@ func (conv *Conveyer) RegisterSeparator(handlerFn func(
 ) {
 	outputChannels := make([]chan string, len(outputs))
 
-	for i := range outputs{
+	for i := range outputs {
 		outputChannels[i] = conv.createChan(outputs[i])
 	}
 
@@ -138,7 +138,6 @@ func (conv *Conveyer) Run(ctx context.Context) error {
 
 			return err
 		}
-		conv.closeAll()
 	case <-ctx.Done():
 		waitGroup.Wait()
 		conv.closeAll()
@@ -183,7 +182,10 @@ func (conv *Conveyer) closeAll() {
 	conv.myMutex.Lock()
 	defer conv.myMutex.Unlock()
 
-	for _, channel := range conv.channels {
-		close(channel)
+	for name, channel := range conv.channels {
+		if channel != nil {
+			close(channel)
+			conv.channels[name] = nil
+		}
 	}
 }
