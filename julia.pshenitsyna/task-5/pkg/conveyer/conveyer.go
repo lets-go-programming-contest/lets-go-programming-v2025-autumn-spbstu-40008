@@ -35,10 +35,6 @@ func (conv *Conveyer) createChan(name string) chan string {
 	return channel
 }
 
-/*func (conv *Conveyer) getChan(name string) chan string{
-
-}*/
-
 func (conv *Conveyer) RegisterDecorator(fn func(
 	ctx context.Context,
 	input chan string,
@@ -69,7 +65,7 @@ func (conv *Conveyer) RegisterMultiplexer(fn func(
 ) {
 	conv.myMutex.Lock()
 	inputChannels := make([]chan string, len(inputs))
-	for i := 0; i < len(inputs); i++ {
+	for i := range inputs{
 		inputChannels[i] = conv.createChan(inputs[i])
 	}
 	outputChannel := conv.createChan(output)
@@ -92,7 +88,7 @@ func (conv *Conveyer) RegisterSeparator(fn func(
 	defer conv.myMutex.Unlock()
 
 	outputChannels := make([]chan string, len(outputs))
-	for i := 0; i < len(outputs); i++ {
+	for i := range outputs{
 		outputChannels[i] = conv.createChan(outputs[i])
 	}
 	inputChannel := conv.createChan(input)
