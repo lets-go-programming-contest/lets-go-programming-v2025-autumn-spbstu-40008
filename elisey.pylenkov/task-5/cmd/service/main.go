@@ -19,14 +19,15 @@ func main() {
 	defer cancel()
 
 	go func() {
-		if err := conv.Run(ctx); err != nil && err != context.Canceled {
+		if err := conv.Run(ctx); err != nil {
 			fmt.Println("Conveyer error:", err)
 		}
 	}()
 
-	time.Sleep(50 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 
-	for _, v := range []string{"data1", "data2", "data3"} {
+	messages := []string{"data1", "data2", "data3", "data4"}
+	for _, v := range messages {
 		if err := conv.Send("input1", v); err != nil {
 			fmt.Println("Send error:", err)
 		}
@@ -41,11 +42,13 @@ func main() {
 		}
 	}
 
-	data, err := conv.Recv("out2")
-	if err != nil {
-		fmt.Println("Recv out2 error:", err)
-	} else {
-		fmt.Println("out2:", data)
+	for i := 0; i < 2; i++ {
+		data, err := conv.Recv("out2")
+		if err != nil {
+			fmt.Println("Recv out2 error:", err)
+		} else {
+			fmt.Println("out2:", data)
+		}
 	}
 
 	time.Sleep(100 * time.Millisecond)

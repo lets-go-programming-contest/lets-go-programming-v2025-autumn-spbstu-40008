@@ -1,11 +1,14 @@
 package handlers
 
-import "context"
+import (
+	"context"
+)
 
 func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string) error {
 	if len(outputs) == 0 {
 		return nil
 	}
+
 	i := 0
 	for {
 		select {
@@ -15,11 +18,18 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 			if !ok {
 				return nil
 			}
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			case outputs[i] <- data:
-				i = (i + 1) % len(outputs)
+
+			sent := false
+			for attempts := 0; attempts < len(outputs) && !sent; attempts++ {
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case outputs[i] <- data:
+					sent = true
+					i = (i + 1) % len(outputs)
+				default:
+					i = (i + 1) % len(outputs)
+				}
 			}
 		}
 	}
