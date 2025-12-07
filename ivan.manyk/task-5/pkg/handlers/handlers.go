@@ -60,17 +60,13 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 	}
 }
 
-func MultiplexerFunc(ctx context.Context,
-	inputs []chan string,
-	output chan string,
-) error {
+func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan string) error {
 	if len(inputs) == 0 {
 		return nil
 	}
 
 	var waitGroup sync.WaitGroup
-
-	done := make(chan string)
+	done := make(chan struct{})
 
 	for _, inputCh := range inputs {
 		waitGroup.Add(1)
@@ -86,10 +82,15 @@ func MultiplexerFunc(ctx context.Context,
 					if !ok {
 						return
 					}
+
+					if strings.Contains(data, "no multiplexer") {
+						continue
+					}
+
 					select {
+					case output <- data:
 					case <-ctx.Done():
 						return
-					case done <- data:
 					}
 				}
 			}
@@ -101,24 +102,11 @@ func MultiplexerFunc(ctx context.Context,
 		close(done)
 	}()
 
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		case data, ok := <-done:
-			if !ok {
-				return nil
-			}
-
-			if strings.Contains(data, "no multiplexer") {
-				continue
-			}
-
-			select {
-			case <-ctx.Done():
-				return nil
-			case output <- data:
-			}
-		}
+	select {
+	case <-done:
+		return nil
+	case <-ctx.Done():
+		waitGroup.Wait()
+		return nil
 	}
 }
