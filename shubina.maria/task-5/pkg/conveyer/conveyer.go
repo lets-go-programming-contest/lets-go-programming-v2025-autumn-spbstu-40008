@@ -38,7 +38,7 @@ type conveyerImpl struct {
 	handlers []func(ctx context.Context) error
 }
 
-func New(size int) Conveyer {
+func New(size int) *conveyerImpl {
 	return &conveyerImpl{
 		size:     size,
 		channels: make(map[string]chan string),
@@ -73,6 +73,7 @@ func (c *conveyerImpl) RegisterDecorator(
 	input, output string,
 ) {
 	inputChan := c.ensureChannel(input)
+
 	outputChan := c.ensureChannel(output)
 
 	c.handlers = append(c.handlers, func(ctx context.Context) error {
@@ -89,6 +90,7 @@ func (c *conveyerImpl) RegisterMultiplexer(
 	for i, name := range inputs {
 		inputChans[i] = c.ensureChannel(name)
 	}
+
 	outputChan := c.ensureChannel(output)
 
 	c.handlers = append(c.handlers, func(ctx context.Context) error {
@@ -103,6 +105,7 @@ func (c *conveyerImpl) RegisterSeparator(
 ) {
 	inputChan := c.ensureChannel(input)
 	outputChans := make([]chan string, len(outputs))
+
 	for i, name := range outputs {
 		outputChans[i] = c.ensureChannel(name)
 	}
@@ -147,6 +150,7 @@ func (c *conveyerImpl) Run(ctx context.Context) error {
 	}
 
 	err := group.Wait()
+
 	c.closeAllChannels()
 
 	if err != nil {
@@ -164,3 +168,4 @@ func (c *conveyerImpl) closeAllChannels() {
 		close(ch)
 	}
 }
+
