@@ -6,7 +6,7 @@ import (
 	"sync"
 )
 
-var ErrorChanNotFound = errors.New("chan not found")
+var ErrChanNotFound = errors.New("chan not found")
 
 type Conveyer struct { 
 	channels map[string] chan string
@@ -152,7 +152,7 @@ func (conv *Conveyer) Send(input string, data string) error {
 	conv.myMutex.RUnlock()
 
 	if !ok {
-		return ErrorChanNotFound
+		return ErrChanNotFound
 	}
 
 	channel <- data
@@ -166,7 +166,7 @@ func (conv *Conveyer) Recv(output string) (string, error) {
 	conv.myMutex.RUnlock()
 
 	if !ok {
-		return "", ErrorChanNotFound
+		return "", ErrChanNotFound
 	}
 
 	val, ok := <- channel
