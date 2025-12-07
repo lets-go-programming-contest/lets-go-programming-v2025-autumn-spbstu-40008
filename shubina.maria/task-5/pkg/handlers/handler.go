@@ -45,7 +45,6 @@ func SeparatorFunc(
 	outputChans []chan string,
 ) error {
 	if len(outputChans) == 0 {
-
 		for {
 			select {
 			case <-ctx.Done():
