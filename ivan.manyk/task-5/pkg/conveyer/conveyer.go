@@ -2,24 +2,28 @@ package conveyer
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"sync"
 )
 
 const undefined = "undefined"
 
+var ErrChannelDoesNotExist = errors.New("chan not found")
+
 type conveyerType struct {
-	size int
+	size     int
 	channels map[string]chan string
 	mu       sync.RWMutex
 	handlers []func(ctx context.Context) error
 }
 
 func New(size int) *conveyerType {
-    return &conveyerType{
-        size:     size,
-        channels: make(map[string]chan string),
-    }
+	return &conveyerType{
+		size:     size,
+		channels: make(map[string]chan string),
+		mu:       sync.RWMutex{},
+        handlers: []func(ctx context.Context) error{},
+	}
 }
 
 func (c *conveyerType) getOrCreateChannel(name string) chan string {
@@ -32,6 +36,7 @@ func (c *conveyerType) getOrCreateChannel(name string) chan string {
 
 	ch := make(chan string, c.size)
 	c.channels[name] = ch
+
 	return ch
 }
 
@@ -39,6 +44,7 @@ func (c *conveyerType) getChannel(name string) (chan string, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	ch, exists := c.channels[name]
+
 	return ch, exists
 }
 
@@ -88,44 +94,44 @@ func (c *conveyerType) RegisterSeparator(
 }
 
 func (c *conveyerType) Run(ctx context.Context) error {
-    var wg sync.WaitGroup
-    errChan := make(chan error, 1)
-    ctx, cancel := context.WithCancel(ctx)
-    defer cancel()
+	var wg sync.WaitGroup
+	errChan := make(chan error, 1)
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
-    for _, handler := range c.handlers {
-        wg.Add(1)
-        go func(h func(ctx context.Context) error) {
-            defer wg.Done()
-            if err := h(ctx); err != nil {
-                select {
-                case errChan <- err:
-                default:
-                }
-                cancel()
-            }
-        }(handler)
-    }
+	for _, handler := range c.handlers {
+		wg.Add(1)
+		go func(h func(ctx context.Context) error) {
+			defer wg.Done()
+			if err := h(ctx); err != nil {
+				select {
+				case errChan <- err:
+				default:
+				}
+				cancel()
+			}
+		}(handler)
+	}
 
-    done := make(chan struct{})
-    go func() {
-        wg.Wait()
-        close(done)
-    }()
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
 
-    select {
-    case <-ctx.Done():
-        wg.Wait()
-        c.closeAllChannels()
-        return nil
-    case err := <-errChan:
-        wg.Wait()
-        c.closeAllChannels()
-        return err
-    case <-done:
-        c.closeAllChannels()
-        return nil
-    }
+	select {
+	case <-ctx.Done():
+		wg.Wait()
+		c.closeAllChannels()
+		return nil
+	case err := <-errChan:
+		wg.Wait()
+		c.closeAllChannels()
+		return err
+	case <-done:
+		c.closeAllChannels()
+		return nil
+	}
 }
 
 func (c *conveyerType) closeAllChannels() {
@@ -140,22 +146,24 @@ func (c *conveyerType) closeAllChannels() {
 func (c *conveyerType) Send(input string, data string) error {
 	ch, exists := c.getChannel(input)
 	if !exists {
-		return fmt.Errorf("chan not found")
+		return ErrChannelDoesNotExist
 	}
 
 	ch <- data
+
 	return nil
 }
 
 func (c *conveyerType) Recv(output string) (string, error) {
 	ch, exists := c.getChannel(output)
 	if !exists {
-		return "", fmt.Errorf("chan not found")
+		return "", ErrChannelDoesNotExist
 	}
 
 	data, ok := <-ch
 	if !ok {
 		return undefined, nil
 	}
+
 	return data, nil
 }
