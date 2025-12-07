@@ -15,10 +15,8 @@ func PrefixDecoratorFunc(ctx context.Context, input, output chan string) error {
 
 	for {
 		select {
-		case data, ok := <-input:
-			if !ok {
-				close(output)
-
+		case data, exist := <-input:
+			if !exist {
 				return nil
 			}
 
@@ -29,25 +27,19 @@ func PrefixDecoratorFunc(ctx context.Context, input, output chan string) error {
 			if !strings.HasPrefix(data, prefix) {
 				data = prefix + data
 			}
-
 			select {
 			case <-ctx.Done():
-
-				return ctx.Err()
+				return nil
 			case output <- data:
 			}
-
 		case <-ctx.Done():
-
-			return ctx.Err()
+			return nil
 		}
 	}
 }
 
 func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan string) error {
 	if len(inputs) == 0 {
-		close(output)
-
 		return nil
 	}
 
@@ -55,15 +47,10 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 	waitGroup.Add(len(inputs))
 
 	done := make(chan struct{})
-	var doneOnce sync.Once
 
 	go func() {
 		waitGroup.Wait()
-
-		doneOnce.Do(func() {
-			close(output)
-			close(done)
-		})
+		close(done)
 	}()
 
 	for _, inputChan := range inputs {
@@ -72,8 +59,8 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 
 			for {
 				select {
-				case data, ok := <-in:
-					if !ok {
+				case data, exist := <-in:
+					if !exist {
 						return
 					}
 
@@ -83,13 +70,10 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 
 					select {
 					case <-ctx.Done():
-
 						return
 					case output <- data:
 					}
-
 				case <-ctx.Done():
-
 					return
 				}
 			}
@@ -98,29 +82,32 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 
 	select {
 	case <-ctx.Done():
-
-		return ctx.Err()
+		return nil
 	case <-done:
-
 		return nil
 	}
 }
 
 func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string) error {
 	if len(outputs) == 0 {
-		return nil
+		for {
+			select {
+			case <-ctx.Done():
+				return nil
+			case _, exist := <-input:
+				if !exist {
+					return nil
+				}
+			}
+		}
 	}
 
 	var counter int64 = 0
 
 	for {
 		select {
-		case data, ok := <-input:
-			if !ok {
-				for _, outChan := range outputs {
-					close(outChan)
-				}
-
+		case data, exist := <-input:
+			if !exist {
 				return nil
 			}
 
@@ -129,13 +116,11 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 
 			select {
 			case <-ctx.Done():
-
-				return ctx.Err()
+				return nil
 			case outChan <- data:
 			}
-
 		case <-ctx.Done():
-			return ctx.Err()
+			return nil
 		}
 	}
 }
