@@ -10,10 +10,12 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 	}
 
 	i := 0
+
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
+
 		case data, ok := <-input:
 			if !ok {
 				return nil

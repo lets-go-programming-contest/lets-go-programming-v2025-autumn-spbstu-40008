@@ -1,50 +1,31 @@
 package handlers
 
-import "context"
+import (
+	"context"
+	"errors"
+	"strings"
+)
 
-type DecoratorFunc[T any] func(context.Context, T) (T, error)
-
-type Decorator[T any] struct {
-	fn     DecoratorFunc[T]
-	input  chan T
-	output chan T
-}
-
-func NewDecorator[T any](fn DecoratorFunc[T], size int) *Decorator[T] {
-	return &Decorator[T]{
-		fn:     fn,
-		input:  make(chan T, size),
-		output: make(chan T, size),
-	}
-}
-
-func (d *Decorator[T]) Run(ctx context.Context) {
+func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan string) error {
 	for {
 		select {
 		case <-ctx.Done():
-			close(d.output)
-			return
-		case v, ok := <-d.input:
+			return ctx.Err()
+		case data, ok := <-input:
 			if !ok {
-				close(d.output)
-				return
+				return nil
 			}
-			res, err := d.fn(ctx, v)
-			if err == nil {
-				select {
-				case d.output <- res:
-				case <-ctx.Done():
-					return
-				}
+			if strings.Contains(data, "no decorator") {
+				return errors.New("can't be decorated")
+			}
+			if !strings.HasPrefix(data, "decorated: ") {
+				data = "decorated: " + data
+			}
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case output <- data:
 			}
 		}
 	}
-}
-
-func (d *Decorator[T]) Input() chan T {
-	return d.input
-}
-
-func (d *Decorator[T]) Output() chan T {
-	return d.output
 }

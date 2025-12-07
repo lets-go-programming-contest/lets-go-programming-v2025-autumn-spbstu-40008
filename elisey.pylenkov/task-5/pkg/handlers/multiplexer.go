@@ -11,19 +11,23 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 
 	for _, in := range inputs {
 		wg.Add(1)
-		go func(in chan string) {
+
+		go func(ch chan string) {
 			defer wg.Done()
 			for {
 				select {
 				case <-ctx.Done():
 					return
-				case data, ok := <-in:
+
+				case data, ok := <-ch:
 					if !ok {
 						return
 					}
+
 					if strings.Contains(data, "no multiplexer") {
 						continue
 					}
+
 					select {
 					case <-ctx.Done():
 						return
