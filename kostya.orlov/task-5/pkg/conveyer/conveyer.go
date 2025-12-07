@@ -172,7 +172,7 @@ func (c *Conveyer) Run(ctx context.Context) error {
 		func(channel chan string) {
 			defer func() {
 				if r := recover(); r != nil {
-				
+
 				}
 			}()
 			close(channel)
