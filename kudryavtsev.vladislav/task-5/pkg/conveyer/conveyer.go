@@ -34,11 +34,13 @@ func (c *Conveyer) RegisterDecorator(
 	if _, exists := c.channels[input]; !exists {
 		c.channels[input] = make(chan string, c.size)
 	}
+
 	inCh := c.channels[input]
 
 	if _, exists := c.channels[output]; !exists {
 		c.channels[output] = make(chan string, c.size)
 	}
+
 	outCh := c.channels[output]
 
 	c.mutex.Unlock()
@@ -65,12 +67,14 @@ func (c *Conveyer) RegisterMultiplexer(
 		if _, exists := c.channels[name]; !exists {
 			c.channels[name] = make(chan string, c.size)
 		}
+
 		inChs = append(inChs, c.channels[name])
 	}
 
 	if _, exists := c.channels[output]; !exists {
 		c.channels[output] = make(chan string, c.size)
 	}
+
 	outCh := c.channels[output]
 
 	c.mutex.Unlock()
@@ -94,6 +98,7 @@ func (c *Conveyer) RegisterSeparator(
 	if _, exists := c.channels[input]; !exists {
 		c.channels[input] = make(chan string, c.size)
 	}
+
 	inCh := c.channels[input]
 
 	outChs := make([]chan string, 0, len(outputs))
@@ -102,6 +107,7 @@ func (c *Conveyer) RegisterSeparator(
 		if _, exists := c.channels[name]; !exists {
 			c.channels[name] = make(chan string, c.size)
 		}
+
 		outChs = append(outChs, c.channels[name])
 	}
 
@@ -118,6 +124,7 @@ func (c *Conveyer) RegisterSeparator(
 
 func (c *Conveyer) Run(ctx context.Context) error {
 	var waitGroup sync.WaitGroup
+
 	errChan := make(chan error, len(c.tasks))
 
 	ctxCancel, cancel := context.WithCancel(ctx)
@@ -125,8 +132,10 @@ func (c *Conveyer) Run(ctx context.Context) error {
 
 	for _, task := range c.tasks {
 		waitGroup.Add(1)
+
 		go func(work func(context.Context) error) {
 			defer waitGroup.Done()
+
 			err := work(ctxCancel)
 			if err != nil {
 				errChan <- err
@@ -135,12 +144,14 @@ func (c *Conveyer) Run(ctx context.Context) error {
 	}
 
 	done := make(chan struct{})
+
 	go func() {
 		waitGroup.Wait()
 		close(done)
 	}()
 
 	var err error
+
 	select {
 	case err = <-errChan:
 		cancel()
@@ -162,6 +173,7 @@ func (c *Conveyer) closeAllChannels() {
 			defer func() {
 				_ = recover()
 			}()
+
 			close(channel)
 		}()
 	}
