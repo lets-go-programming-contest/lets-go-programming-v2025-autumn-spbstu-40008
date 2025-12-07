@@ -8,18 +8,14 @@ import (
 
 func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan string) error {
 	var wg sync.WaitGroup
-	done := make(chan struct{})
 
 	for _, in := range inputs {
 		wg.Add(1)
 
 		go func(in chan string) {
 			defer wg.Done()
-
 			for {
 				select {
-				case <-done:
-					return
 				case <-ctx.Done():
 					return
 				case data, ok := <-in:
@@ -35,25 +31,12 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 					case output <- data:
 					case <-ctx.Done():
 						return
-					case <-done:
-						return
 					}
 				}
 			}
 		}(in)
 	}
 
-	go func() {
-		wg.Wait()
-		close(done)
-	}()
-
-	select {
-	case <-ctx.Done():
-		close(done)
-		wg.Wait()
-		return ctx.Err()
-	case <-done:
-		return nil
-	}
+	wg.Wait()
+	return nil
 }
