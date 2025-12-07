@@ -17,7 +17,6 @@ func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan str
 		case item, isOpen := <-input:
 			if !isOpen {
 				close(output)
-
 				return nil
 			}
 
@@ -94,7 +93,6 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 				for _, outCh := range outputs {
 					close(outCh)
 				}
-
 				return nil
 			}
 
