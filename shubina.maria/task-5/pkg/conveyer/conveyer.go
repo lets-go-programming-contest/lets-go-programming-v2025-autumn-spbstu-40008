@@ -11,7 +11,6 @@ import (
 
 var ErrChannelNotFound = errors.New("chan not found")
 
-// Conveyer defines the interface for the conveyor belt.
 type Conveyer interface {
 	RegisterDecorator(
 		handler func(ctx context.Context, input, output chan string) error,
@@ -32,7 +31,6 @@ type Conveyer interface {
 	Recv(output string) (string, error)
 }
 
-// New creates a new instance of Conveyer.
 func New(size int) Conveyer {
 	return &conveyerImpl{
 		size:     size,
@@ -92,7 +90,7 @@ func (c *conveyerImpl) RegisterMultiplexer(
 		inputChans[i] = c.ensureChannel(name)
 	}
 
-	outputChan := c.ensureChannel(output) // Разделено пустой строкой
+	outputChan := c.ensureChannel(output)
 
 	c.handlers = append(c.handlers, func(ctx context.Context) error {
 		return handler(ctx, inputChans, outputChan)
@@ -110,8 +108,6 @@ func (c *conveyerImpl) RegisterSeparator(
 		outputChans[i] = c.ensureChannel(name)
 	}
 
-	outputChan := c.ensureChannel(output) // Разделено пустой строкой
-
 	c.handlers = append(c.handlers, func(ctx context.Context) error {
 		return handler(ctx, inputChan, outputChans)
 	})
@@ -123,9 +119,13 @@ func (c *conveyerImpl) Send(input, data string) error {
 		return ErrChannelNotFound
 	}
 
-	channel <- data
-
-	return nil
+	select {
+	case channel <- data:
+		return nil
+	default:
+		// Канал заполнен
+		return fmt.Errorf("channel %s is full", input)
+	}
 }
 
 func (c *conveyerImpl) Recv(output string) (string, error) {
@@ -134,25 +134,29 @@ func (c *conveyerImpl) Recv(output string) (string, error) {
 		return "", ErrChannelNotFound
 	}
 
-	data, ok := <-channel
-	if !ok {
-		return "undefined", nil
+	select {
+	case data, ok := <-channel:
+		if !ok {
+			return "undefined", nil
+		}
+		return data, nil
+	default:
+		// Нет данных в канале
+		return "", fmt.Errorf("no data in channel %s", output)
 	}
-
-	return data, nil
 }
 
 func (c *conveyerImpl) Run(ctx context.Context) error {
 	group, innerCtx := errgroup.WithContext(ctx)
 
 	for _, handlerFunc := range c.handlers {
+		handlerFunc := handlerFunc // capture loop variable
 		group.Go(func() error {
 			return handlerFunc(innerCtx)
 		})
 	}
 
 	err := group.Wait()
-
 	c.closeAllChannels()
 
 	if err != nil {
@@ -166,8 +170,9 @@ func (c *conveyerImpl) closeAllChannels() {
 	c.chMutex.Lock()
 	defer c.chMutex.Unlock()
 
-	for _, ch := range c.channels {
+	for name, ch := range c.channels {
 		close(ch)
+		delete(c.channels, name)
 	}
 }
 
