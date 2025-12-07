@@ -5,7 +5,6 @@ import (
 	"errors"
 	"sync"
 	"sync/atomic"
-	"time"
 )
 
 type handlerType int
@@ -112,7 +111,7 @@ func (c *Conveyer) Run(ctx context.Context) error {
 	c.cancel = cancel
 
 	c.wg.Add(len(c.handlers))
-	errChan := make(chan error, len(c.handlers))
+	errorChan := make(chan error, len(c.handlers))
 
 	for _, h := range c.handlers {
 		go func(h handlerFunc) {
@@ -142,7 +141,7 @@ func (c *Conveyer) Run(ctx context.Context) error {
 
 			if err != nil {
 				select {
-				case errChan <- err:
+				case errorChan <- err:
 				default:
 				}
 			}
@@ -156,13 +155,13 @@ func (c *Conveyer) Run(ctx context.Context) error {
 
 	select {
 	case <-ctx.Done():
+		cancel()
+		c.wg.Wait()
 		return ctx.Err()
-	case err := <-errChan:
+	case err := <-errorChan:
 		cancel()
+		c.wg.Wait()
 		return err
-	case <-time.After(1 * time.Second):
-		cancel()
-		return context.DeadlineExceeded
 	}
 }
 
@@ -207,7 +206,7 @@ func (c *Conveyer) Send(input string, data string) error {
 	select {
 	case ch <- data:
 		return nil
-	case <-time.After(50 * time.Millisecond):
+	default:
 		return errors.New("send timeout")
 	}
 }
@@ -225,13 +224,9 @@ func (c *Conveyer) Recv(output string) (string, error) {
 		return "", errors.New("chan not found")
 	}
 
-	select {
-	case data, ok := <-ch:
-		if !ok {
-			return "undefined", nil
-		}
-		return data, nil
-	case <-time.After(50 * time.Millisecond):
-		return "", errors.New("receive timeout")
+	data, ok := <-ch
+	if !ok {
+		return "undefined", nil
 	}
+	return data, nil
 }

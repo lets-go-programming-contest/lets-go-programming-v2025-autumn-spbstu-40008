@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"strings"
-	"time"
 )
 
 func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan string) error {
@@ -29,8 +28,6 @@ func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan str
 			case <-ctx.Done():
 				return ctx.Err()
 			case output <- data:
-			case <-time.After(50 * time.Millisecond):
-				continue
 			}
 		}
 	}
