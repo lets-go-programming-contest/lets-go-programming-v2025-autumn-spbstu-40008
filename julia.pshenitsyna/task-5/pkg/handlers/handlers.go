@@ -7,6 +7,8 @@ import (
 	"sync"
 )
 
+var ErrCantBeDecorated = errors.New("can't be decorated")
+
 func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan string) error {
 	for {
 		select {
@@ -18,13 +20,17 @@ func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan str
 			}
 
 			if strings.Contains(val, "no decorator") {
-				return errors.New("can't be decorated")
+				return ErrCantBeDecorated
 			}
 
 			if !strings.HasPrefix(val, "decorated:") {
 				val = "decorated:" + val
 			}
-
+			select {
+			case <-ctx.Done():
+				return nil
+			case output <- val:
+			}
 			output <- val
 		}
 	}

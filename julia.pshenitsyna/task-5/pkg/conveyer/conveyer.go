@@ -28,7 +28,7 @@ func (conv *Conveyer) createChan(name string) chan string {
 	conv.myMutex.Lock()
 	defer conv.myMutex.Unlock()
 
-	if channel, ok := conv.channels[name]; ok {
+	if channel, okey := conv.channels[name]; okey {
 		return channel
 	}
 
@@ -38,7 +38,7 @@ func (conv *Conveyer) createChan(name string) chan string {
 	return channel
 }
 
-func (conv *Conveyer) RegisterDecorator(fn func(
+func (conv *Conveyer) RegisterDecorator(handlerFn func(
 	ctx context.Context,
 	input chan string,
 	output chan string,
@@ -51,14 +51,13 @@ func (conv *Conveyer) RegisterDecorator(fn func(
 	outputChannel := conv.createChan(output)
 
 	conv.myMutex.Lock()
-	defer conv.myMutex.Unlock()
-
 	conv.handlers = append(conv.handlers, func(ctx context.Context) error {
-		return fn(ctx, inputChannel, outputChannel)
+		return handlerFn(ctx, inputChannel, outputChannel)
 	})
+	conv.myMutex.Unlock()
 }
 
-func (conv *Conveyer) RegisterMultiplexer(fn func(
+func (conv *Conveyer) RegisterMultiplexer(handlerFn func(
 	ctx context.Context,
 	inputs []chan string,
 	output chan string,
@@ -67,6 +66,7 @@ func (conv *Conveyer) RegisterMultiplexer(fn func(
 	output string,
 ) {
 	inputChannels := make([]chan string, len(inputs))
+
 	for i := range inputs{
 		inputChannels[i] = conv.createChan(inputs[i])
 	}
@@ -74,14 +74,13 @@ func (conv *Conveyer) RegisterMultiplexer(fn func(
 	outputChannel := conv.createChan(output)
 
 	conv.myMutex.Lock()
-	defer conv.myMutex.Unlock()
-
 	conv.handlers = append(conv.handlers, func(ctx context.Context) error {
-		return fn(ctx, inputChannels, outputChannel)
+		return handlerFn(ctx, inputChannels, outputChannel)
 	})
+	conv.myMutex.Unlock()
 }
 
-func (conv *Conveyer) RegisterSeparator(fn func(
+func (conv *Conveyer) RegisterSeparator(handlerFn func(
 	ctx context.Context,
 	input chan string,
 	outputs []chan string,
@@ -90,16 +89,18 @@ func (conv *Conveyer) RegisterSeparator(fn func(
 	outputs []string,
 ) {
 	outputChannels := make([]chan string, len(outputs))
+
 	for i := range outputs{
 		outputChannels[i] = conv.createChan(outputs[i])
 	}
+
 	inputChannel := conv.createChan(input)
 
 	conv.myMutex.Lock()
 	defer conv.myMutex.Unlock()
 
 	conv.handlers = append(conv.handlers, func(ctx context.Context) error {
-		return fn(ctx, inputChannel, outputChannels)
+		return handlerFn(ctx, inputChannel, outputChannels)
 	})
 }
 
@@ -111,7 +112,7 @@ func (conv *Conveyer) Run(ctx context.Context) error {
 	var waitGroup sync.WaitGroup
 	errChan := make(chan error, 1)
 
-	for _, h := range conv.handlers {
+	for _, handler := range conv.handlers {
 		waitGroup.Add(1)
 		go func(handler func(context.Context) error) {
 			defer waitGroup.Done()
@@ -122,7 +123,7 @@ func (conv *Conveyer) Run(ctx context.Context) error {
 
 				}
 			}
-		}(h)
+		}(handler)
 	}
 
 	go func() {
@@ -134,12 +135,14 @@ func (conv *Conveyer) Run(ctx context.Context) error {
 	case err := <-errChan:
 		if err != nil {
 			conv.closeAll()
+
 			return err
 		}
 		conv.closeAll()
 	case <-ctx.Done():
 		waitGroup.Wait()
 		conv.closeAll()
+
 		return ctx.Err()
 	}
 	return nil
@@ -147,10 +150,10 @@ func (conv *Conveyer) Run(ctx context.Context) error {
 
 func (conv *Conveyer) Send(input string, data string) error {
 	conv.myMutex.RLock()
-	channel, ok := conv.channels[input]
+	channel, okey := conv.channels[input]
 	conv.myMutex.RUnlock()
 
-	if !ok {
+	if !okey {
 		return ErrChanNotFound
 	}
 
@@ -161,15 +164,15 @@ func (conv *Conveyer) Send(input string, data string) error {
 
 func (conv *Conveyer) Recv(output string) (string, error) {
 	conv.myMutex.RLock()
-	channel, ok := conv.channels[output]
+	channel, okey := conv.channels[output]
 	conv.myMutex.RUnlock()
 
-	if !ok {
+	if !okey {
 		return "", ErrChanNotFound
 	}
 
-	val, ok := <-channel
-	if !ok {
+	val, okey := <-channel
+	if !okey {
 		return "undefined", nil
 	}
 
