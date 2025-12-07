@@ -3,7 +3,6 @@ package conveyer
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 )
 
@@ -139,6 +138,9 @@ func (c *conveyer) Run(ctx context.Context) error {
 	copy(handlers, c.handlers)
 	c.mu.RUnlock()
 
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	var waitGroup sync.WaitGroup
 
 	errCh := make(chan error, 1)
@@ -146,17 +148,17 @@ func (c *conveyer) Run(ctx context.Context) error {
 	for _, handler := range handlers {
 		waitGroup.Add(1)
 
-		handlerFunc := handler
-		go func() {
+		go func(handlerFunc func(context.Context) error) {
 			defer waitGroup.Done()
 
 			if err := handlerFunc(ctx); err != nil {
 				select {
-				case errCh <- fmt.Errorf("handler error: %w", err):
+				case errCh <- err:
 				default:
 				}
+				cancel()
 			}
-		}()
+		}(handler)
 	}
 
 	done := make(chan struct{})
@@ -168,8 +170,8 @@ func (c *conveyer) Run(ctx context.Context) error {
 
 	select {
 	case err := <-errCh:
-		c.closeChannels()
 		<-done
+		c.closeChannels()
 
 		return err
 	case <-done:
@@ -177,10 +179,10 @@ func (c *conveyer) Run(ctx context.Context) error {
 
 		return nil
 	case <-ctx.Done():
-		c.closeChannels()
 		<-done
+		c.closeChannels()
 
-		return fmt.Errorf("context canceled: %w", ctx.Err())
+		return nil
 	}
 }
 

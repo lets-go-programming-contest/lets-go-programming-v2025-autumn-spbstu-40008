@@ -84,6 +84,7 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 	select {
 	case <-ctx.Done():
 		<-done
+
 		return nil
 	case <-done:
 		return nil
