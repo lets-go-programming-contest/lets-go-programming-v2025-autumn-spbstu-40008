@@ -44,7 +44,6 @@ func (conv *Conveyer) RegisterDecorator(handlerFn func(
 	output chan string,
 ) error,
 	input string,
-
 	output string,
 ) {
 	inputChannel := conv.createChan(input)
@@ -97,11 +96,10 @@ func (conv *Conveyer) RegisterSeparator(handlerFn func(
 	inputChannel := conv.createChan(input)
 
 	conv.myMutex.Lock()
-	defer conv.myMutex.Unlock()
-
 	conv.handlers = append(conv.handlers, func(ctx context.Context) error {
 		return handlerFn(ctx, inputChannel, outputChannels)
 	})
+	defer conv.myMutex.Unlock()
 }
 
 func (conv *Conveyer) Run(ctx context.Context) error {
@@ -196,6 +194,7 @@ func (conv *Conveyer) closeAll() {
 	for name, channel := range conv.channels {
 		if channel != nil {
 			close(channel)
+			
 			conv.channels[name] = nil
 		}
 	}
