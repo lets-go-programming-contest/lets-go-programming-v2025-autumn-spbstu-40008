@@ -192,7 +192,7 @@ func (c *Conveyer) Run(ctx context.Context) error {
 				if len(handlerReg.OutputChans) > 0 {
 					outputChan = handlerReg.OutputChans[0]
 				}
-				
+
 				if fn, ok := handlerReg.Fn.(DecoratorFunc); ok {
 					err = fn(c.ctx, inputChan, outputChan)
 				} else if fn, ok := handlerReg.Fn.(func(context.Context, chan string, chan string) error); ok {
@@ -205,7 +205,7 @@ func (c *Conveyer) Run(ctx context.Context) error {
 				if len(handlerReg.InputChans) > 0 {
 					inputChan = handlerReg.InputChans[0]
 				}
-				
+
 				if fn, ok := handlerReg.Fn.(SeparatorFunc); ok {
 					err = fn(c.ctx, inputChan, handlerReg.OutputChans)
 				} else if fn, ok := handlerReg.Fn.(func(context.Context, chan string, []chan string) error); ok {
@@ -232,7 +232,7 @@ func (c *Conveyer) Run(ctx context.Context) error {
 	}()
 
 	var runError error
-	
+
 	select {
 	case err := <-c.errorChan:
 		runError = err
@@ -303,9 +303,9 @@ func (c *Conveyer) Recv(outputID string) (string, error) {
 func (c *Conveyer) closeAllChannels() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	closedChannels := make(map[chan string]bool)
-	
+
 	for _, channel := range c.channels {
 		if closedChannels[channel] {
 			continue

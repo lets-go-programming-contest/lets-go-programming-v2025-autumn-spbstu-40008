@@ -15,7 +15,7 @@ func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan str
 	for {
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			return nil
 
 		case data, ok := <-input:
 			if !ok {
@@ -33,18 +33,19 @@ func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan str
 			select {
 			case output <- data:
 			case <-ctx.Done():
-				return ctx.Err()
+				return nil
 			}
 		}
 	}
 }
 
 func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string) error {
+
 	if len(outputs) == 0 {
 		for {
 			select {
 			case <-ctx.Done():
-				return ctx.Err()
+				return nil
 			case _, ok := <-input:
 				if !ok {
 					return nil
@@ -59,7 +60,7 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 	for {
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			return nil
 
 		case data, ok := <-input:
 			if !ok {
@@ -73,7 +74,7 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 			case targetOutput <- data:
 				index++
 			case <-ctx.Done():
-				return ctx.Err()
+				return nil
 			}
 		}
 	}
@@ -107,14 +108,13 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 
 	go func() {
 		wg.Wait()
-		close(fanIn) 
+		close(fanIn)
 	}()
-
 
 	for {
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			return nil
 		case data, ok := <-fanIn:
 			if !ok {
 				return nil
@@ -127,7 +127,7 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 			select {
 			case output <- data:
 			case <-ctx.Done():
-				return ctx.Err()
+				return nil
 			}
 		}
 	}
