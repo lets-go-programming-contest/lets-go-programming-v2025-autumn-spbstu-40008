@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	ErrChanNotFound  = errors.New("channel not found")
+	ErrChanNotFound  = errors.New("chan not found")
 	ErrChannelExists = errors.New("channel already exists")
 )
 
@@ -56,7 +56,7 @@ func (c *Conveyer) AddChannel(channelID string) error {
 	defer c.mu.Unlock()
 
 	if _, exists := c.channels[channelID]; exists {
-		return fmt.Errorf("%w: ID %s", ErrChannelExists, channelID)
+		return ErrChannelExists
 	}
 
 	c.channels[channelID] = make(chan string, c.size)
@@ -112,14 +112,14 @@ func (c *Conveyer) resolveChannels() error {
 				if channel, ok := c.channels[inputID]; ok {
 					handler.InputChans = append(handler.InputChans, channel)
 				} else {
-					return fmt.Errorf("input channel ID %s not found: %w", inputID, ErrChanNotFound)
+					return ErrChanNotFound
 				}
 			}
 		} else if handler.InputID != "" {
 			if channel, ok := c.channels[handler.InputID]; ok {
 				handler.InputChans = []chan string{channel}
 			} else {
-				return fmt.Errorf("input channel ID %s not found for handler %s: %w", handler.InputID, handler.Type, ErrChanNotFound)
+				return ErrChanNotFound
 			}
 		}
 
@@ -128,7 +128,7 @@ func (c *Conveyer) resolveChannels() error {
 			if channel, ok := c.channels[outputID]; ok {
 				handler.OutputChans = append(handler.OutputChans, channel)
 			} else {
-				return fmt.Errorf("output channel ID %s not found for handler %s: %w", outputID, handler.Type, ErrChanNotFound)
+				return ErrChanNotFound
 			}
 		}
 	}
@@ -140,7 +140,7 @@ func (c *Conveyer) Run(ctx context.Context) error {
 	defer c.cancel()
 
 	if err := c.resolveChannels(); err != nil {
-		return fmt.Errorf("failed to resolve channels: %w", err)
+		return err
 	}
 
 	for _, handler := range c.handlers {
@@ -176,7 +176,7 @@ func (c *Conveyer) Run(ctx context.Context) error {
 
 			if err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
 				select {
-				case c.errorChan <- fmt.Errorf("handler %s failed: %w", handlerReg.Type, err):
+				case c.errorChan <- err:
 				case <-c.ctx.Done():
 				}
 			}
@@ -201,7 +201,7 @@ func (c *Conveyer) Run(ctx context.Context) error {
 
 	case <-ctx.Done():
 		c.cancel()
-		runError = fmt.Errorf("external context cancelled: %w", ctx.Err())
+		runError = ctx.Err()
 	}
 
 	<-done
@@ -222,7 +222,7 @@ func (c *Conveyer) Send(inputID string, data string) error {
 
 	select {
 	case <-c.ctx.Done():
-		return fmt.Errorf("send failed: %w", c.ctx.Err())
+		return c.ctx.Err()
 	case channel <- data:
 		return nil
 	}
@@ -239,7 +239,7 @@ func (c *Conveyer) Recv(outputID string) (string, error) {
 
 	select {
 	case <-c.ctx.Done():
-		return "", fmt.Errorf("receive failed: %w", c.ctx.Err())
+		return "", c.ctx.Err()
 
 	case data, open := <-channel:
 		if !open {
