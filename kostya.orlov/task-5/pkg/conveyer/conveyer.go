@@ -171,7 +171,6 @@ func (c *Conveyer) Run(ctx context.Context) error {
 			defer c.waitGroup.Done()
 
 			var err error
-
 			if handlerReg.Type == "Multiplexer" {
 				if len(handlerReg.OutputChans) > 0 {
 					if fn, ok := handlerReg.Fn.(MultiplexerFunc); ok {
@@ -222,6 +221,7 @@ func (c *Conveyer) Run(ctx context.Context) error {
 				case c.errorChan <- err:
 				default:
 				}
+				c.cancel()
 			}
 		}(handler)
 	}
@@ -234,16 +234,21 @@ func (c *Conveyer) Run(ctx context.Context) error {
 	var runError error
 
 	select {
-	case err := <-c.errorChan:
-		runError = err
-		c.cancel()
-		c.waitGroup.Wait()
+	case err, ok := <-c.errorChan:
+		if ok {
+			runError = err
+		}
 	case <-ctx.Done():
 		runError = ctx.Err()
 		c.cancel()
-		c.waitGroup.Wait()
-	case <-c.ctx.Done():
 	}
+
+
+	if runError != nil {
+		for range c.errorChan {} 
+	}
+    
+	c.cancel() 
 
 	c.closeAllChannels()
 
