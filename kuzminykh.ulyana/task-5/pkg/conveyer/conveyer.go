@@ -36,6 +36,7 @@ func (c *conveyer) createChannel(name string) chan string {
 
 	channel := make(chan string, c.size)
 	c.channels[name] = channel
+
 	return channel
 }
 
@@ -69,9 +70,11 @@ func (c *conveyer) RegisterMultiplexer(
 	output string,
 ) {
 	inCh := make([]chan string, len(inputs))
+
 	for i, name := range inputs {
 		inCh[i] = c.createChannel(name)
 	}
+
 	outCh := c.createChannel(output)
 
 	handler := func(ctx context.Context) error {
@@ -89,10 +92,13 @@ func (c *conveyer) RegisterSeparator(
 	outputs []string,
 ) {
 	inCh := c.createChannel(input)
+
 	outCh := make([]chan string, len(outputs))
+
 	for i, name := range outputs {
 		outCh[i] = c.createChannel(name)
 	}
+
 	handler := func(ctx context.Context) error {
 		return handlerFunc(ctx, inCh, outCh)
 	}
@@ -138,18 +144,22 @@ func (c *conveyer) Run(ctx context.Context) error {
 
 	for _, handler := range handlers {
 		waitGroup.Add(1)
-		go func(handlerFunc func(context.Context) error) {
+
+		handlerFunc := handler
+		go func() {
 			defer waitGroup.Done()
+
 			if err := handlerFunc(ctx); err != nil {
 				select {
 				case errCh <- fmt.Errorf("handler error: %w", err):
 				default:
 				}
 			}
-		}(handler)
+		}()
 	}
 
 	done := make(chan struct{})
+
 	go func() {
 		waitGroup.Wait()
 		close(done)
@@ -157,15 +167,18 @@ func (c *conveyer) Run(ctx context.Context) error {
 
 	select {
 	case err := <-errCh:
-		<-done
 		c.closeChannels()
+		<-done
+
 		return err
 	case <-done:
 		c.closeChannels()
+
 		return nil
 	case <-ctx.Done():
-		<-done
 		c.closeChannels()
+		<-done
+
 		return fmt.Errorf("context canceled: %w", ctx.Err())
 	}
 }
@@ -173,6 +186,7 @@ func (c *conveyer) Run(ctx context.Context) error {
 func (c *conveyer) closeChannels() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+
 	for _, channel := range c.channels {
 		close(channel)
 	}
