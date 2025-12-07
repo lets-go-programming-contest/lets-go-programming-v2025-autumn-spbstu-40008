@@ -20,23 +20,26 @@ const (
 
 func PrefixDecoratorFunc(
 	ctx context.Context,
-	in chan string,
-	out chan string,
+	inputChannel chan string,
+	outputChannel chan string,
 ) error {
 	for {
 		select {
-		case data, ok := <-in:
+		case data, ok := <-inputChannel:
 			if !ok {
 				return nil
 			}
+
 			if strings.Contains(data, noDecorator) {
 				return ErrCantBeDecorated
 			}
+
 			if !strings.HasPrefix(data, decoratedPrefix) {
 				data = decoratedPrefix + data
 			}
+
 			select {
-			case out <- data:
+			case outputChannel <- data:
 			case <-ctx.Done():
 				return nil
 			}
@@ -48,25 +51,29 @@ func PrefixDecoratorFunc(
 
 func SeparatorFunc(
 	ctx context.Context,
-	in chan string,
-	outs []chan string,
+	inputChannel chan string,
+	outputChannels []chan string,
 ) error {
-	if len(outs) == 0 {
+	if len(outputChannels) == 0 {
 		return ErrEmptyOutputs
 	}
-	idx := 0
+
+	index := 0
+
 	for {
 		select {
-		case data, ok := <-in:
+		case data, ok := <-inputChannel:
 			if !ok {
 				return nil
 			}
+
 			select {
-			case outs[idx] <- data:
+			case outputChannels[index] <- data:
 			case <-ctx.Done():
 				return nil
 			}
-			idx = (idx + 1) % len(outs)
+
+			index = (index + 1) % len(outputChannels)
 		case <-ctx.Done():
 			return nil
 		}
@@ -75,27 +82,29 @@ func SeparatorFunc(
 
 func MultiplexerFunc(
 	ctx context.Context,
-	ins []chan string,
-	out chan string,
+	inputChannels []chan string,
+	outputChannel chan string,
 ) error {
-	var wg sync.WaitGroup
-	wg.Add(len(ins))
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(len(inputChannels))
 
-	for _, ch := range ins {
-		ch := ch
-		go func() {
-			defer wg.Done()
+	for _, inputChannel := range inputChannels {
+		go func(ch chan string) {
+			defer waitGroup.Done()
+
 			for {
 				select {
 				case data, ok := <-ch:
 					if !ok {
 						return
 					}
+
 					if strings.Contains(data, noMultiplexer) {
 						continue
 					}
+
 					select {
-					case out <- data:
+					case outputChannel <- data:
 					case <-ctx.Done():
 						return
 					}
@@ -103,9 +112,10 @@ func MultiplexerFunc(
 					return
 				}
 			}
-		}()
+		}(inputChannel)
 	}
 
-	wg.Wait()
+	waitGroup.Wait()
+
 	return nil
 }

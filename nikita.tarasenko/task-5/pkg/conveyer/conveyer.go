@@ -7,10 +7,26 @@ import (
 	"sync"
 )
 
+var (
+	ErrChanNotFound = errors.New("chan not found")
+)
+
 type conveyer interface {
-	RegisterDecorator(fn func(context.Context, chan string, chan string) error, input, output string)
-	RegisterMultiplexer(fn func(context.Context, []chan string, chan string) error, inputs []string, output string)
-	RegisterSeparator(fn func(context.Context, chan string, []chan string) error, input string, outputs []string)
+	RegisterDecorator(
+		handlerFunc func(context.Context, chan string, chan string) error,
+		input string,
+		output string,
+	)
+	RegisterMultiplexer(
+		handlerFunc func(context.Context, []chan string, chan string) error,
+		inputs []string,
+		output string,
+	)
+	RegisterSeparator(
+		handlerFunc func(context.Context, chan string, []chan string) error,
+		input string,
+		outputs []string,
+	)
 	Run(ctx context.Context) error
 	Send(input string, data string) error
 	Recv(output string) (string, error)
@@ -31,86 +47,109 @@ func New(size int) conveyer {
 		size:     size,
 		channels: make(map[string]chan string),
 		handlers: make([]func(context.Context) error, 0),
+		mu:       sync.RWMutex{},
+		closer:   sync.Once{},
 	}
 }
 
 func (p *pipeline) getOrCreateChannel(name string) chan string {
 	p.mu.RLock()
-	if ch, ok := p.channels[name]; ok {
+
+	channel, ok := p.channels[name]
+	if ok {
 		p.mu.RUnlock()
-		return ch
+		return channel
 	}
+
 	p.mu.RUnlock()
 
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	if ch, ok := p.channels[name]; ok {
-		return ch
+
+	channel, ok = p.channels[name]
+	if ok {
+		return channel
 	}
-	ch := make(chan string, p.size)
-	p.channels[name] = ch
-	return ch
+
+	channel = make(chan string, p.size)
+	p.channels[name] = channel
+
+	return channel
 }
 
 func (p *pipeline) getChannel(name string) (chan string, bool) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-	ch, ok := p.channels[name]
-	return ch, ok
+
+	channel, ok := p.channels[name]
+
+	return channel, ok
 }
 
 func (p *pipeline) closeAll() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	for _, ch := range p.channels {
-		close(ch)
+
+	for _, channel := range p.channels {
+		close(channel)
 	}
 }
 
 func (p *pipeline) RegisterDecorator(
-	fn func(context.Context, chan string, chan string) error,
-	input, output string,
+	handlerFunc func(context.Context, chan string, chan string) error,
+	input string,
+	output string,
 ) {
-	in := p.getOrCreateChannel(input)
-	out := p.getOrCreateChannel(output)
+	inputChannel := p.getOrCreateChannel(input)
+	outputChannel := p.getOrCreateChannel(output)
+
 	p.mu.Lock()
 	defer p.mu.Unlock()
+
 	p.handlers = append(p.handlers, func(ctx context.Context) error {
-		return fn(ctx, in, out)
+		return handlerFunc(ctx, inputChannel, outputChannel)
 	})
 }
 
 func (p *pipeline) RegisterMultiplexer(
-	fn func(context.Context, []chan string, chan string) error,
+	handlerFunc func(context.Context, []chan string, chan string) error,
 	inputs []string,
 	output string,
 ) {
-	ins := make([]chan string, len(inputs))
+	inputChannels := make([]chan string, len(inputs))
+
 	for i, name := range inputs {
-		ins[i] = p.getOrCreateChannel(name)
+		inputChannels[i] = p.getOrCreateChannel(name)
 	}
-	out := p.getOrCreateChannel(output)
+
+	outputChannel := p.getOrCreateChannel(output)
+
 	p.mu.Lock()
 	defer p.mu.Unlock()
+
 	p.handlers = append(p.handlers, func(ctx context.Context) error {
-		return fn(ctx, ins, out)
+		return handlerFunc(ctx, inputChannels, outputChannel)
 	})
 }
 
 func (p *pipeline) RegisterSeparator(
-	fn func(context.Context, chan string, []chan string) error,
+	handlerFunc func(context.Context, chan string, []chan string) error,
 	input string,
 	outputs []string,
 ) {
-	outs := make([]chan string, len(outputs))
+	outputChannels := make([]chan string, len(outputs))
+
 	for i, name := range outputs {
-		outs[i] = p.getOrCreateChannel(name)
+		outputChannels[i] = p.getOrCreateChannel(name)
 	}
-	in := p.getOrCreateChannel(input)
+
+	inputChannel := p.getOrCreateChannel(input)
+
 	p.mu.Lock()
 	defer p.mu.Unlock()
+
 	p.handlers = append(p.handlers, func(ctx context.Context) error {
-		return fn(ctx, in, outs)
+		return handlerFunc(ctx, inputChannel, outputChannels)
 	})
 }
 
@@ -120,40 +159,47 @@ func (p *pipeline) Run(parentCtx context.Context) error {
 	ctx, cancel := context.WithCancel(parentCtx)
 	defer cancel()
 
-	var wg sync.WaitGroup
-	errCh := make(chan error, 1)
+	var waitGroup sync.WaitGroup
+	errorChannel := make(chan error, 1)
 
 	p.mu.RLock()
-	for _, h := range p.handlers {
-		h := h
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			if err := h(ctx); err != nil {
+
+	for _, handlerFunc := range p.handlers {
+		waitGroup.Add(1)
+
+		go func(handler func(context.Context) error) {
+			defer waitGroup.Done()
+
+			if err := handler(ctx); err != nil {
 				select {
-				case errCh <- err:
+				case errorChannel <- err:
 				default:
 				}
+
 				cancel()
 			}
-		}()
+		}(handlerFunc)
 	}
+
 	p.mu.RUnlock()
 
 	done := make(chan struct{})
+
 	go func() {
-		wg.Wait()
+		waitGroup.Wait()
 		close(done)
 	}()
 
 	select {
-	case err := <-errCh:
+	case err := <-errorChannel:
 		return fmt.Errorf("pipeline failed: %w", err)
+
 	case <-done:
 		return nil
+
 	case <-ctx.Done():
 		select {
-		case err := <-errCh:
+		case err := <-errorChannel:
 			return fmt.Errorf("pipeline failed: %w", err)
 		default:
 			return nil
@@ -161,23 +207,27 @@ func (p *pipeline) Run(parentCtx context.Context) error {
 	}
 }
 
-func (p *pipeline) Send(chName string, data string) error {
-	ch, ok := p.getChannel(chName)
+func (p *pipeline) Send(channelName string, data string) error {
+	channel, ok := p.getChannel(channelName)
 	if !ok {
-		return errors.New("chan not found")
+		return ErrChanNotFound
 	}
-	ch <- data
+
+	channel <- data
+
 	return nil
 }
 
-func (p *pipeline) Recv(chName string) (string, error) {
-	ch, ok := p.getChannel(chName)
+func (p *pipeline) Recv(channelName string) (string, error) {
+	channel, ok := p.getChannel(channelName)
 	if !ok {
-		return "", errors.New("chan not found")
+		return "", ErrChanNotFound
 	}
-	val, ok := <-ch
+
+	value, ok := <-channel
 	if !ok {
 		return undefinedValue, nil
 	}
-	return val, nil
+
+	return value, nil
 }
