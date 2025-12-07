@@ -7,7 +7,7 @@ import (
 	"sync"
 )
 
-func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan string) error {
+func PrefixDecorator(ctx context.Context, input chan string, output chan string) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -32,7 +32,7 @@ func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan str
 	}
 }
 
-func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan string) error {
+func Multiplexer(ctx context.Context, inputs []chan string, output chan string) error {
 	var wg sync.WaitGroup
 	for _, ch := range inputs {
 		wg.Add(1)
@@ -59,12 +59,18 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 		}(ch)
 	}
 	wg.Wait()
-	close(output)
+
+	select {
+	case <-ctx.Done():
+		return nil
+	default:
+		close(output)
+	}
 	return nil
 }
 
-func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string) error {
-	i := 0
+func Separator(ctx context.Context, input chan string, outputs []chan string) error {
+	counter := 0
 	for {
 		select {
 		case <-ctx.Done():
@@ -76,12 +82,15 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 				}
 				return nil
 			}
-			target := outputs[i%len(outputs)]
-			i++
+
+			index := counter % len(outputs)
+			targetChan := outputs[index]
+			counter++
+
 			select {
 			case <-ctx.Done():
 				return nil
-			case target <- item:
+			case targetChan <- item:
 			}
 		}
 	}
