@@ -299,3 +299,4 @@ func (c *Conveyer) Recv(output string) (string, error) {
 
 	return val, nil
 }
+
