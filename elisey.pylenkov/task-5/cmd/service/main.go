@@ -8,11 +8,8 @@ import (
 	"task-5/pkg/conveyer"
 	"task-5/pkg/handlers"
 
-	_ "github.com/davecgh/go-spew/spew"
-	_ "github.com/pmezard/go-difflib/difflib"
 	_ "github.com/stretchr/testify/require"
 	_ "golang.org/x/sync/errgroup"
-	_ "gopkg.in/yaml.v3"
 )
 
 func main() {

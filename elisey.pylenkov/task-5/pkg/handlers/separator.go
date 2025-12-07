@@ -18,16 +18,20 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 			if !ok {
 				return nil
 			}
-			for sent := false; !sent; {
-				ch := outputs[i%len(outputs)]
+
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case outputs[i] <- data:
+				i = (i + 1) % len(outputs)
+			default:
+				i = (i + 1) % len(outputs)
 				select {
-				case ch <- data:
-					sent = true
 				case <-ctx.Done():
 					return ctx.Err()
-				default:
+				case outputs[i] <- data:
+					i = (i + 1) % len(outputs)
 				}
-				i++
 			}
 		}
 	}

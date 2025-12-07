@@ -5,6 +5,7 @@ import (
 	"errors"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 type handlerType int
@@ -158,13 +159,13 @@ func (c *Conveyer) Run(ctx context.Context) error {
 
 	select {
 	case <-ctx.Done():
-		c.wg.Wait()
 		c.closeAllChannels()
+		<-done
 		return ctx.Err()
 	case err := <-errorChan:
 		cancel()
-		c.wg.Wait()
 		c.closeAllChannels()
+		<-done
 		return err
 	case <-done:
 		c.closeAllChannels()
@@ -213,7 +214,7 @@ func (c *Conveyer) Send(input string, data string) error {
 	select {
 	case ch <- data:
 		return nil
-	default:
+	case <-time.After(100 * time.Millisecond):
 		return errors.New("send timeout")
 	}
 }
@@ -231,9 +232,13 @@ func (c *Conveyer) Recv(output string) (string, error) {
 		return "", errors.New("chan not found")
 	}
 
-	data, ok := <-ch
-	if !ok {
-		return "undefined", nil
+	select {
+	case data, ok := <-ch:
+		if !ok {
+			return "undefined", nil
+		}
+		return data, nil
+	case <-time.After(100 * time.Millisecond):
+		return "", errors.New("receive timeout")
 	}
-	return data, nil
 }
