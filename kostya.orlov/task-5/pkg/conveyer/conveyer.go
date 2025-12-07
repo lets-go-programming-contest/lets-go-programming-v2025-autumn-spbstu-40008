@@ -12,9 +12,9 @@ var (
 	ErrChannelExists = errors.New("channel already exists")
 )
 
-type ConveyerFunc func(ctx context.Context, input chan string, outputs []chan string) error
-
-type MultiplexerFunc func(ctx context.Context, inputs []chan string, outputs []chan string) error
+type DecoratorFunc func(ctx context.Context, input chan string, output chan string) error
+type MultiplexerFunc func(ctx context.Context, inputs []chan string, output chan string) error
+type SeparatorFunc func(ctx context.Context, input chan string, outputs []chan string) error
 
 type HandlerRegistration struct {
 	Type        string
@@ -85,7 +85,7 @@ func (c *Conveyer) RegisterDecorator(fn interface{}, inputID string, outputID st
 	})
 }
 
-func (c *Conveyer) RegisterMultiplexer(fn MultiplexerFunc, inputIDs []string, outputID string) {
+func (c *Conveyer) RegisterMultiplexer(fn interface{}, inputIDs []string, outputID string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -159,9 +159,9 @@ func (c *Conveyer) resolveChannels() error {
 
 func (c *Conveyer) Run(ctx context.Context) error {
 	c.ctx, c.cancel = context.WithCancel(ctx)
-	defer c.cancel()
 
 	if err := c.resolveChannels(); err != nil {
+		c.cancel()
 		return err
 	}
 
@@ -173,28 +173,48 @@ func (c *Conveyer) Run(ctx context.Context) error {
 			var err error
 
 			if handlerReg.Type == "Multiplexer" {
-				multiplexFn := handlerReg.Fn.(MultiplexerFunc)
-				err = multiplexFn(c.ctx, handlerReg.InputChans, handlerReg.OutputChans)
-			} else {
-				var inputChannel chan string
-				if len(handlerReg.InputChans) > 0 {
-					inputChannel = handlerReg.InputChans[0]
-				}
-
-				switch fn := handlerReg.Fn.(type) {
-				case ConveyerFunc:
-					err = fn(c.ctx, inputChannel, handlerReg.OutputChans)
-				case func(context.Context, chan string, []chan string) error:
-					err = fn(c.ctx, inputChannel, handlerReg.OutputChans)
-				case func(context.Context, chan string, chan string) error:
-					if len(handlerReg.OutputChans) > 0 {
-						err = fn(c.ctx, inputChannel, handlerReg.OutputChans[0])
+				if len(handlerReg.OutputChans) > 0 {
+					if fn, ok := handlerReg.Fn.(MultiplexerFunc); ok {
+						err = fn(c.ctx, handlerReg.InputChans, handlerReg.OutputChans[0])
+					} else if fn, ok := handlerReg.Fn.(func(context.Context, []chan string, chan string) error); ok {
+						err = fn(c.ctx, handlerReg.InputChans, handlerReg.OutputChans[0])
 					} else {
-						err = errors.New("no output channels provided")
+						err = fmt.Errorf("unsupported multiplexer function type")
 					}
-				default:
-					err = fmt.Errorf("unsupported function type for handler %s", handlerReg.Type)
+				} else {
+					err = errors.New("multiplexer requires output channel")
 				}
+			} else if handlerReg.Type == "Decorator" {
+				var inputChan, outputChan chan string
+				if len(handlerReg.InputChans) > 0 {
+					inputChan = handlerReg.InputChans[0]
+				}
+				if len(handlerReg.OutputChans) > 0 {
+					outputChan = handlerReg.OutputChans[0]
+				}
+				
+				if fn, ok := handlerReg.Fn.(DecoratorFunc); ok {
+					err = fn(c.ctx, inputChan, outputChan)
+				} else if fn, ok := handlerReg.Fn.(func(context.Context, chan string, chan string) error); ok {
+					err = fn(c.ctx, inputChan, outputChan)
+				} else {
+					err = fmt.Errorf("unsupported decorator function type")
+				}
+			} else if handlerReg.Type == "Separator" {
+				var inputChan chan string
+				if len(handlerReg.InputChans) > 0 {
+					inputChan = handlerReg.InputChans[0]
+				}
+				
+				if fn, ok := handlerReg.Fn.(SeparatorFunc); ok {
+					err = fn(c.ctx, inputChan, handlerReg.OutputChans)
+				} else if fn, ok := handlerReg.Fn.(func(context.Context, chan string, []chan string) error); ok {
+					err = fn(c.ctx, inputChan, handlerReg.OutputChans)
+				} else {
+					err = fmt.Errorf("unsupported separator function type")
+				}
+			} else {
+				err = fmt.Errorf("unknown handler type: %s", handlerReg.Type)
 			}
 
 			if err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
@@ -206,14 +226,13 @@ func (c *Conveyer) Run(ctx context.Context) error {
 		}(handler)
 	}
 
-	var runError error
-
 	go func() {
 		c.waitGroup.Wait()
-		c.cancel()
 		close(c.errorChan)
 	}()
 
+	var runError error
+	
 	select {
 	case err := <-c.errorChan:
 		runError = err
@@ -240,19 +259,16 @@ func (c *Conveyer) Send(inputID string, data string) error {
 		return ErrChanNotFound
 	}
 
-	if c.ctx != nil {
-		select {
-		case <-c.ctx.Done():
-			return c.ctx.Err()
-		default:
-		}
+	if c.ctx == nil {
+		channel <- data
+		return nil
 	}
 
 	select {
+	case <-c.ctx.Done():
+		return c.ctx.Err()
 	case channel <- data:
 		return nil
-	default:
-		return errors.New("channel is full")
 	}
 }
 
@@ -266,15 +282,11 @@ func (c *Conveyer) Recv(outputID string) (string, error) {
 	}
 
 	if c.ctx == nil {
-		select {
-		case data, open := <-channel:
-			if !open {
-				return "undefined", nil
-			}
-			return data, nil
-		default:
-			return "", errors.New("no data available")
+		data, open := <-channel
+		if !open {
+			return "undefined", nil
 		}
+		return data, nil
 	}
 
 	select {
@@ -299,23 +311,12 @@ func (c *Conveyer) closeAllChannels() {
 			continue
 		}
 		
-		select {
-		case <-c.ctx.Done():
-		default:
-			func() {
-				defer func() {
-					if r := recover(); r != nil {}
-				}()
-				close(channel)
-				closedChannels[channel] = true
+		func() {
+			defer func() {
+				if r := recover(); r != nil {}
 			}()
-		}
+			close(channel)
+			closedChannels[channel] = true
+		}()
 	}
-}
-
-func (c *Conveyer) Close() {
-	if c.cancel != nil {
-		c.cancel()
-	}
-	c.closeAllChannels()
 }

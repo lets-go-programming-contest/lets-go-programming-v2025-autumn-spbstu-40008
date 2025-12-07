@@ -8,18 +8,10 @@ import (
 )
 
 var (
-	ErrDecoratorRequiresOutput   = errors.New("decorator requires at least one output channel")
-	ErrSeparatorRequiresOutput   = errors.New("separator requires at least one output channel")
-	ErrMultiplexerRequiresOutput = errors.New("multiplexer requires at least one output channel")
-	ErrCantBeDecorated           = errors.New("can't be decorated")
+	ErrCantBeDecorated = errors.New("can't be decorated")
 )
 
-func PrefixDecoratorFunc(ctx context.Context, input chan string, outputs []chan string) error {
-	if len(outputs) == 0 {
-		return ErrDecoratorRequiresOutput
-	}
-	output := outputs[0]
-
+func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan string) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -48,10 +40,6 @@ func PrefixDecoratorFunc(ctx context.Context, input chan string, outputs []chan 
 }
 
 func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string) error {
-	if len(outputs) == 0 {
-		return ErrSeparatorRequiresOutput
-	}
-
 	index := 0
 	numOutputs := len(outputs)
 
@@ -78,12 +66,7 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 	}
 }
 
-func MultiplexerFunc(ctx context.Context, inputs []chan string, outputs []chan string) error {
-	if len(outputs) == 0 {
-		return ErrMultiplexerRequiresOutput
-	}
-	output := outputs[0]
-
+func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan string) error {
 	var wg sync.WaitGroup
 	fanIn := make(chan string)
 
