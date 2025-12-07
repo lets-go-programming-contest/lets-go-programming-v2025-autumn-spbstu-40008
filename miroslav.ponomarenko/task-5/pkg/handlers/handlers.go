@@ -7,9 +7,7 @@ import (
 	"sync"
 )
 
-var (
-	ErrInvalidContent = errors.New("can't be decorated")
-)
+var ErrInvalidContent = errors.New("can't be decorated")
 
 const (
 	skipDecorator   = "no decorator"
@@ -76,6 +74,7 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 	handle := func(ch chan string) {
 		defer wg.Done()
 		for {
+
 			select {
 			case <-ctx.Done():
 				return
