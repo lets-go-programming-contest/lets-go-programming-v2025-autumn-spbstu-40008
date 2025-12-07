@@ -8,126 +8,164 @@ import (
 
 var ErrChanNotFound = errors.New("chan not found")
 
-type conveyer struct {
-	mu       sync.RWMutex
-	channels map[string]chan string
-	stages   []func(context.Context) error
-	bufSize  int
+type Conveyer struct {
+	mutex      sync.RWMutex
+	pipeMap    map[string]chan string
+	processors []func(context.Context) error
+	bufferSize int
 }
 
-func New(size int) *conveyer {
-	return &conveyer{
-		channels: make(map[string]chan string),
-		stages:   make([]func(context.Context) error, 0),
-		bufSize:  size,
+func New(size int) *Conveyer {
+	return &Conveyer{
+		mutex:      sync.RWMutex{},
+		pipeMap:    make(map[string]chan string),
+		processors: make([]func(context.Context) error, 0),
+		bufferSize: size,
 	}
 }
 
-func (c *conveyer) lookupChan(name string) chan string {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if ch, ok := c.channels[name]; ok {
-		return ch
+func (c *Conveyer) getOrInitChannel(name string) chan string {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	if channel, exists := c.pipeMap[name]; exists {
+		return channel
 	}
-	ch := make(chan string, c.bufSize)
-	c.channels[name] = ch
-	return ch
+
+	newChannel := make(chan string, c.bufferSize)
+	c.pipeMap[name] = newChannel
+
+	return newChannel
 }
 
-func (c *conveyer) RegisterDecorator(fn func(context.Context, chan string, chan string) error, in, out string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	input := c.lookupChan(in)
-	output := c.lookupChan(out)
-	c.stages = append(c.stages, func(ctx context.Context) error {
-		return fn(ctx, input, output)
-	})
-}
+func (c *Conveyer) RegisterDecorator(
+	action func(context.Context, chan string, chan string) error,
+	inputName string,
+	outputName string,
+) {
+	inputChannel := c.getOrInitChannel(inputName)
+	outputChannel := c.getOrInitChannel(outputName)
 
-func (c *conveyer) RegisterMultiplexer(fn func(context.Context, []chan string, chan string) error, ins []string, out string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	inputs := make([]chan string, len(ins))
-	for i, name := range ins {
-		inputs[i] = c.lookupChan(name)
+	wrappedTask := func(ctx context.Context) error {
+		return action(ctx, inputChannel, outputChannel)
 	}
-	output := c.lookupChan(out)
-	c.stages = append(c.stages, func(ctx context.Context) error {
-		return fn(ctx, inputs, output)
-	})
+
+	c.mutex.Lock()
+	c.processors = append(c.processors, wrappedTask)
+	c.mutex.Unlock()
 }
 
-func (c *conveyer) RegisterSeparator(fn func(context.Context, chan string, []chan string) error, in string, outs []string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	input := c.lookupChan(in)
-	outputs := make([]chan string, len(outs))
-	for i, name := range outs {
-		outputs[i] = c.lookupChan(name)
+func (c *Conveyer) RegisterMultiplexer(
+	action func(context.Context, []chan string, chan string) error,
+	inputNames []string,
+	outputName string,
+) {
+	inputChannels := make([]chan string, 0, len(inputNames))
+	for _, name := range inputNames {
+		inputChannels = append(inputChannels, c.getOrInitChannel(name))
 	}
-	c.stages = append(c.stages, func(ctx context.Context) error {
-		return fn(ctx, input, outputs)
-	})
+
+	outputChannel := c.getOrInitChannel(outputName)
+
+	wrappedTask := func(ctx context.Context) error {
+		return action(ctx, inputChannels, outputChannel)
+	}
+
+	c.mutex.Lock()
+	c.processors = append(c.processors, wrappedTask)
+	c.mutex.Unlock()
 }
 
-func (c *conveyer) Run(ctx context.Context) error {
+func (c *Conveyer) RegisterSeparator(
+	action func(context.Context, chan string, []chan string) error,
+	inputName string,
+	outputNames []string,
+) {
+	inputChannel := c.getOrInitChannel(inputName)
+
+	outputChannels := make([]chan string, 0, len(outputNames))
+	for _, name := range outputNames {
+		outputChannels = append(outputChannels, c.getOrInitChannel(name))
+	}
+
+	wrappedTask := func(ctx context.Context) error {
+		return action(ctx, inputChannel, outputChannels)
+	}
+
+	c.mutex.Lock()
+	c.processors = append(c.processors, wrappedTask)
+	c.mutex.Unlock()
+}
+
+func (c *Conveyer) Run(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	errCh := make(chan error, 1)
-	var wg sync.WaitGroup
+	var waitGroup sync.WaitGroup
 
-	for _, stage := range c.stages {
-		wg.Add(1)
-		go func(s func(context.Context) error) {
-			defer wg.Done()
-			if err := s(ctx); err != nil {
+	errChan := make(chan error, 1)
+
+	for _, proc := range c.processors {
+		waitGroup.Add(1)
+
+		currentProc := proc
+
+		go func(p func(context.Context) error) {
+			defer waitGroup.Done()
+
+			if err := p(ctx); err != nil {
 				select {
-				case errCh <- err:
+				case errChan <- err:
 					cancel()
 				default:
 				}
 			}
-		}(stage)
+		}(currentProc)
 	}
 
-	wg.Wait()
+	waitGroup.Wait()
 
-	c.mu.Lock()
-	for _, ch := range c.channels {
-		close(ch)
+	c.mutex.Lock()
+	for _, channel := range c.pipeMap {
+		close(channel)
 	}
-	c.mu.Unlock()
+	c.mutex.Unlock()
 
 	select {
-	case err := <-errCh:
+	case err := <-errChan:
 		return err
 	default:
 		return nil
 	}
 }
 
-func (c *conveyer) Send(chName string, data string) error {
-	c.mu.RLock()
-	ch, exists := c.channels[chName]
-	c.mu.RUnlock()
-	if !exists {
+func (c *Conveyer) Send(name string, data string) error {
+	c.mutex.RLock()
+	channel, ok := c.pipeMap[name]
+	c.mutex.RUnlock()
+
+	if !ok {
 		return ErrChanNotFound
 	}
-	ch <- data
+
+	channel <- data
+
 	return nil
 }
 
-func (c *conveyer) Recv(chName string) (string, error) {
-	c.mu.RLock()
-	ch, exists := c.channels[chName]
-	c.mu.RUnlock()
-	if !exists {
+func (c *Conveyer) Recv(name string) (string, error) {
+	c.mutex.RLock()
+	channel, ok := c.pipeMap[name]
+	c.mutex.RUnlock()
+
+	if !ok {
 		return "", ErrChanNotFound
 	}
-	msg, open := <-ch
-	if !open {
+
+	val, isOpen := <-channel
+	if !isOpen {
 		return "undefined", nil
 	}
-	return msg, nil
+
+	return val, nil
 }
