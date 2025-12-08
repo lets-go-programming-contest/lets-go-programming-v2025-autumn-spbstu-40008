@@ -123,6 +123,7 @@ func (c *Conveyer) Run(ctx context.Context) error {
 	c.cancel = cancel
 	defer cancel()
 
+	// Собираем все каналы
 	c.mu.RLock()
 	channels := make(map[string]chan string)
 	for name, ch := range c.channels {
@@ -132,10 +133,12 @@ func (c *Conveyer) Run(ctx context.Context) error {
 
 	c.wg.Add(len(c.handlers))
 
+	// Запускаем обработчики
 	for _, h := range c.handlers {
 		go func(h handlerFunc) {
 			defer c.wg.Done()
 
+			// Получаем каналы
 			inputs := make([]chan string, len(h.inputs))
 			for i, name := range h.inputs {
 				inputs[i] = channels[name]
@@ -165,18 +168,28 @@ func (c *Conveyer) Run(ctx context.Context) error {
 		}(h)
 	}
 
+	// Сигнализируем, что обработчики запущены
 	close(c.ready)
+
+	done := make(chan struct{})
+	go func() {
+		c.wg.Wait()
+		close(done)
+	}()
 
 	select {
 	case <-ctx.Done():
-		c.wg.Wait()
 		c.closeAllChannels()
+		c.wg.Wait()
 		return ctx.Err()
 	case err := <-c.errors:
 		cancel()
-		c.wg.Wait()
 		c.closeAllChannels()
+		c.wg.Wait()
 		return err
+	case <-done:
+		c.closeAllChannels()
+		return nil
 	}
 }
 
@@ -190,13 +203,7 @@ func (c *Conveyer) closeAllChannels() {
 	}
 }
 
-func (c *Conveyer) waitForReady() {
-	<-c.ready
-}
-
 func (c *Conveyer) Send(input string, data string) error {
-	c.waitForReady()
-
 	c.mu.RLock()
 	ch, ok := c.channels[input]
 	c.mu.RUnlock()
@@ -205,17 +212,12 @@ func (c *Conveyer) Send(input string, data string) error {
 		return errors.New("chan not found")
 	}
 
-	select {
-	case ch <- data:
-		return nil
-	default:
-		return errors.New("send timeout")
-	}
+	// Отправка с возможностью блокировки до отправки
+	ch <- data
+	return nil
 }
 
 func (c *Conveyer) Recv(output string) (string, error) {
-	c.waitForReady()
-
 	c.mu.RLock()
 	ch, ok := c.channels[output]
 	c.mu.RUnlock()
@@ -224,9 +226,17 @@ func (c *Conveyer) Recv(output string) (string, error) {
 		return "", errors.New("chan not found")
 	}
 
+	// Чтение с блокировкой до получения данных или закрытия канала
 	data, ok := <-ch
 	if !ok {
 		return "undefined", nil
 	}
 	return data, nil
+}
+
+func (c *Conveyer) Stop() {
+	if c.cancel != nil {
+		c.cancel()
+	}
+	c.wg.Wait()
 }

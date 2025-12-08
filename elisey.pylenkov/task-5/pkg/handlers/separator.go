@@ -19,6 +19,7 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 				return nil
 			}
 
+			// Пытаемся отправить в выходные каналы по очереди
 			sent := false
 			for attempts := 0; attempts < len(outputs) && !sent; attempts++ {
 				select {
@@ -28,9 +29,12 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 					sent = true
 					i = (i + 1) % len(outputs)
 				default:
+					// Текущий канал занят, пробуем следующий
 					i = (i + 1) % len(outputs)
 				}
 			}
+
+			// Если не удалось отправить (все каналы заняты), ждем следующей итерации
 		}
 	}
 }

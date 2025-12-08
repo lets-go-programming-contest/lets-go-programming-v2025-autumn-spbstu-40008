@@ -15,29 +15,42 @@ import (
 func main() {
 	conv := conveyer.New(10)
 
-	conv.RegisterDecorator(handlers.PrefixDecoratorFunc, "input1", "decorated1")
-	conv.RegisterSeparator(handlers.SeparatorFunc, "decorated1", []string{"out1", "out2"})
+	// Тест 1: Проверка ошибок для несуществующих каналов
+	err := conv.Send("nonexistent", "test")
+	fmt.Printf("Send to nonexistent channel: %v\n", err)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	_, err = conv.Recv("nonexistent")
+	fmt.Printf("Recv from nonexistent channel: %v\n", err)
+
+	// Тест 2: Рабочий конвейер
+	conv2 := conveyer.New(10)
+	conv2.RegisterDecorator(handlers.PrefixDecoratorFunc, "input1", "decorated1")
+	conv2.RegisterSeparator(handlers.SeparatorFunc, "decorated1", []string{"out1", "out2"})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
+	// Запускаем конвейер в горутине
 	go func() {
-		if err := conv.Run(ctx); err != nil {
+		if err := conv2.Run(ctx); err != nil {
 			fmt.Println("Conveyer error:", err)
 		}
 	}()
 
+	// Даем время на запуск
 	time.Sleep(100 * time.Millisecond)
 
+	// Отправляем данные
 	messages := []string{"data1", "data2", "data3", "data4"}
 	for _, v := range messages {
-		if err := conv.Send("input1", v); err != nil {
+		if err := conv2.Send("input1", v); err != nil {
 			fmt.Println("Send error:", err)
 		}
 	}
 
+	// Получаем данные
 	for i := 0; i < 2; i++ {
-		data, err := conv.Recv("out1")
+		data, err := conv2.Recv("out1")
 		if err != nil {
 			fmt.Println("Recv out1 error:", err)
 		} else {
@@ -46,7 +59,7 @@ func main() {
 	}
 
 	for i := 0; i < 2; i++ {
-		data, err := conv.Recv("out2")
+		data, err := conv2.Recv("out2")
 		if err != nil {
 			fmt.Println("Recv out2 error:", err)
 		} else {
