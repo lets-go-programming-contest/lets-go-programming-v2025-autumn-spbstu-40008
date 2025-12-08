@@ -15,14 +15,12 @@ import (
 func main() {
 	conv := conveyer.New(10)
 
-	// Тест 1: Проверка ошибок для несуществующих каналов
 	err := conv.Send("nonexistent", "test")
 	fmt.Printf("Send to nonexistent channel: %v\n", err)
 
 	_, err = conv.Recv("nonexistent")
 	fmt.Printf("Recv from nonexistent channel: %v\n", err)
 
-	// Тест 2: Рабочий конвейер
 	conv2 := conveyer.New(10)
 	conv2.RegisterDecorator(handlers.PrefixDecoratorFunc, "input1", "decorated1")
 	conv2.RegisterSeparator(handlers.SeparatorFunc, "decorated1", []string{"out1", "out2"})
@@ -30,17 +28,14 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	// Запускаем конвейер в горутине
 	go func() {
 		if err := conv2.Run(ctx); err != nil {
 			fmt.Println("Conveyer error:", err)
 		}
 	}()
 
-	// Даем время на запуск
 	time.Sleep(100 * time.Millisecond)
 
-	// Отправляем данные
 	messages := []string{"data1", "data2", "data3", "data4"}
 	for _, v := range messages {
 		if err := conv2.Send("input1", v); err != nil {
@@ -48,7 +43,6 @@ func main() {
 		}
 	}
 
-	// Получаем данные
 	for i := 0; i < 2; i++ {
 		data, err := conv2.Recv("out1")
 		if err != nil {
