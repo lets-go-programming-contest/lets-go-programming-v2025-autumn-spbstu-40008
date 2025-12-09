@@ -3,6 +3,7 @@ package conveyer
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 
 	"golang.org/x/sync/errgroup"
@@ -119,7 +120,7 @@ func (c *Conveyer) Run(ctx context.Context) error {
 	if err := group.Wait(); err != nil {
 		c.closeAllChannels()
 
-		return err
+		return fmt.Errorf("conveyer error: %w", err)
 	}
 
 	c.closeAllChannels()
