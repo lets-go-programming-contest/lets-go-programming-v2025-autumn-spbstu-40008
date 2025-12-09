@@ -118,6 +118,7 @@ func (c *Conveyer) Run(ctx context.Context) error {
 
 	if err := group.Wait(); err != nil {
 		c.closeAllChannels()
+
 		return err
 	}
 
