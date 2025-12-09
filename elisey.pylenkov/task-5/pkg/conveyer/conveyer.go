@@ -36,6 +36,7 @@ func (c *Conveyer) getOrCreateChan(name string) chan string {
 
 	ch := make(chan string, c.size)
 	c.channels[name] = ch
+
 	return ch
 }
 
@@ -44,11 +45,12 @@ func (c *Conveyer) getChan(name string) (chan string, bool) {
 	defer c.mu.RUnlock()
 
 	ch, ok := c.channels[name]
+
 	return ch, ok
 }
 
 func (c *Conveyer) RegisterDecorator(
-	fn func(ctx context.Context, input chan string, output chan string) error,
+	handlerFunc func(ctx context.Context, input chan string, output chan string) error,
 	input string,
 	output string,
 ) {
@@ -59,12 +61,12 @@ func (c *Conveyer) RegisterDecorator(
 	defer c.mu.Unlock()
 
 	c.handlers = append(c.handlers, func(ctx context.Context) error {
-		return fn(ctx, inChan, outChan)
+		return handlerFunc(ctx, inChan, outChan)
 	})
 }
 
 func (c *Conveyer) RegisterMultiplexer(
-	fn func(ctx context.Context, inputs []chan string, output chan string) error,
+	handlerFunc func(ctx context.Context, inputs []chan string, output chan string) error,
 	inputs []string,
 	output string,
 ) {
@@ -79,12 +81,12 @@ func (c *Conveyer) RegisterMultiplexer(
 	defer c.mu.Unlock()
 
 	c.handlers = append(c.handlers, func(ctx context.Context) error {
-		return fn(ctx, inChans, outChan)
+		return handlerFunc(ctx, inChans, outChan)
 	})
 }
 
 func (c *Conveyer) RegisterSeparator(
-	fn func(ctx context.Context, input chan string, outputs []chan string) error,
+	handlerFunc func(ctx context.Context, input chan string, outputs []chan string) error,
 	input string,
 	outputs []string,
 ) {
@@ -99,26 +101,28 @@ func (c *Conveyer) RegisterSeparator(
 	defer c.mu.Unlock()
 
 	c.handlers = append(c.handlers, func(ctx context.Context) error {
-		return fn(ctx, inChan, outChans)
+		return handlerFunc(ctx, inChan, outChans)
 	})
 }
 
 func (c *Conveyer) Run(ctx context.Context) error {
-	g, gCtx := errgroup.WithContext(ctx)
+	group, groupCtx := errgroup.WithContext(ctx)
 
 	for _, handler := range c.handlers {
-		h := handler
-		g.Go(func() error {
-			return h(gCtx)
+		currentHandler := handler
+
+		group.Go(func() error {
+			return currentHandler(groupCtx)
 		})
 	}
 
-	if err := g.Wait(); err != nil {
+	if err := group.Wait(); err != nil {
 		c.closeAllChannels()
 		return err
 	}
 
 	c.closeAllChannels()
+
 	return nil
 }
 
@@ -132,23 +136,24 @@ func (c *Conveyer) closeAllChannels() {
 }
 
 func (c *Conveyer) Send(input string, data string) error {
-	ch, ok := c.getChan(input)
-	if !ok {
+	ch, exists := c.getChan(input)
+	if !exists {
 		return ErrChanNotFound
 	}
 
 	ch <- data
+
 	return nil
 }
 
 func (c *Conveyer) Recv(output string) (string, error) {
-	ch, ok := c.getChan(output)
-	if !ok {
+	ch, exists := c.getChan(output)
+	if !exists {
 		return "", ErrChanNotFound
 	}
 
-	val, ok := <-ch
-	if !ok {
+	val, isOpen := <-ch
+	if !isOpen {
 		return "undefined", nil
 	}
 
