@@ -1,4 +1,4 @@
-package wifi
+package wifi_test
 
 import (
 	"errors"
@@ -8,12 +8,17 @@ import (
 	"github.com/mdlayher/wifi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	wifiPkg "github.com/julia.pshenitsyna/task-6/internal/wifi"
+)
+
+var (
+	errFailedInterfaces = errors.New("failed to get interfaces")
+	errPermissionDenied = errors.New("permission denied")
 )
 
 func TestWiFiService_GetAddresses(t *testing.T) {
 	mockWiFi := &MockWiFiHandle{}
-
-	wifiService := New(mockWiFi)
 
 	createMockInterfaces := func(macAddresses []string) []*wifi.Interface {
 		interfaces := make([]*wifi.Interface, 0, len(macAddresses))
@@ -52,9 +57,9 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 		{
 			name: "error - faild getting interface",
 			setupMock: func() {
-				mockWiFi.On("Interfaces").Return(nil, errors.New("failed to get interfaces")).Once()
+				mockWiFi.On("Interfaces").Return(nil, errFailedInterfaces).Once()
 			},
-			expectedErr: errors.New("getting interfaces: failed to get interfaces"),
+			expectedErr: errors.New("getting interfaces: " + errFailedInterfaces.Error()),
 		},
 		{
 			name: "success - empty interfaces list",
@@ -77,10 +82,33 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 			},
 			expected: []net.HardwareAddr{nil},
 		},
+		{
+			name: "success - single interface with MAC",
+			setupMock: func() {
+				mac, _ := net.ParseMAC("00:11:22:33:44:55")
+				interfaces := []*wifi.Interface{
+					{
+						Index:        0,
+						Name:         "wlan0",
+						HardwareAddr: mac,
+					},
+				}
+				mockWiFi.On("Interfaces").Return(interfaces, nil).Once()
+			},
+			expected: func() []net.HardwareAddr {
+				mac, _ := net.ParseMAC("00:11:22:33:44:55")
+				return []net.HardwareAddr{mac}
+			}(),
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			mockWiFi := NewMockWiFiHandle(t)
+			wifiService := wifiPkg.New(mockWiFi)
+			
 			tc.setupMock()
 
 			result, err := wifiService.GetAddresses()
@@ -101,8 +129,6 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 
 func TestWiFiService_GetNames(t *testing.T) {
 	mockWiFi := &MockWiFiHandle{}
-
-	wifiService := New(mockWiFi)
 
 	createMockInterfaces := func(names []string) []*wifi.Interface {
 		interfaces := make([]*wifi.Interface, 0, len(names))
@@ -136,9 +162,9 @@ func TestWiFiService_GetNames(t *testing.T) {
 		{
 			name: "error - getting interface error",
 			setupMock: func() {
-				mockWiFi.On("Interfaces").Return(nil, errors.New("permission denied")).Once()
+				mockWiFi.On("Interfaces").Return(nil, errPermissionDenied).Once()
 			},
-			expectedErr: errors.New("getting interfaces: permission denied"),
+			expectedErr: errors.New("getting interfaces: " + errPermissionDenied.Error()),
 		},
 		{
 			name: "success - empty interfaces list",
@@ -159,10 +185,28 @@ func TestWiFiService_GetNames(t *testing.T) {
 			},
 			expected: []string{"wlan0", "wlan0", "eth0"},
 		},
+		{
+			name: "success - single interface name",
+			setupMock: func() {
+				interfaces := []*wifi.Interface{
+					{
+						Index: 0,
+						Name:  "wlan0",
+					},
+				}
+				mockWiFi.On("Interfaces").Return(interfaces, nil).Once()
+			},
+			expected: []string{"wlan0"},
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			
+			mockWiFi := NewMockWiFiHandle(t)
+			wifiService := wifiPkg.New(mockWiFi)
+
 			tc.setupMock()
 
 			result, err := wifiService.GetNames()
@@ -182,9 +226,10 @@ func TestWiFiService_GetNames(t *testing.T) {
 }
 
 func TestNewWiFiService(t *testing.T) {
-	mockWiFi := &MockWiFiHandle{}
+	t.Parallel()
 
-	service := New(mockWiFi)
+	mockWiFi := &MockWiFiHandle{}
+	service := wifiPkg.New(mockWiFi)
 
 	assert.NotNil(t, service)
 	assert.Equal(t, mockWiFi, service.WiFi)
