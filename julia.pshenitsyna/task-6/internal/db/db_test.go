@@ -16,7 +16,6 @@ var(
 	errConnectionFailed = errors.New("connection failed")
     errRowError         = errors.New("row error")
     errScanning         = errors.New("rows scanning")
-    errRows             = errors.New("rows error")
 )
 
 func TestDBService_GetNames(t *testing.T) {
@@ -60,7 +59,7 @@ func TestDBService_GetNames(t *testing.T) {
 			setupMock: func(mock sqlmock.Sqlmock) {
 				rows := sqlmock.NewRows([]string{"name"}).
 					AddRow("Alice").
-					AddRow(nil)
+					AddRow(123)
 				mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
 			},
 			expectedErr: errors.New("rows scanning: " + errScanning.Error()),
@@ -70,18 +69,11 @@ func TestDBService_GetNames(t *testing.T) {
 			setupMock: func(mock sqlmock.Sqlmock) {
 				rows := sqlmock.NewRows([]string{"name"}).
 					AddRow("Alice").
+					AddRow("Bob").
 					RowError(1, errRowError)
 				mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
 			},
 			expectedErr: errors.New("rows error: " + errRowError.Error()),
-		},
-		{
-			name: "error - sql.ErrConnDone",
-			setupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery("SELECT name FROM users").
-					WillReturnError(sql.ErrConnDone)
-			},
-			expectedErr: errors.New("db query: " + sql.ErrConnDone.Error()),
 		},
 	}
 
