@@ -108,7 +108,7 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 
 			mockWiFi := NewMockWiFiHandle(t)
 			wifiService := wifiPkg.New(mockWiFi)
-			
+
 			tc.setupMock()
 
 			result, err := wifiService.GetAddresses()
@@ -203,7 +203,7 @@ func TestWiFiService_GetNames(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			mockWiFi := NewMockWiFiHandle(t)
 			wifiService := wifiPkg.New(mockWiFi)
 
