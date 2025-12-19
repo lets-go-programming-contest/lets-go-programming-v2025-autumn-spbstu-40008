@@ -13,7 +13,7 @@ import (
 
 var (
 	errTest    = errors.New("test error")
-	errRowTest = errors.New("row test error")
+	errRowTest = errors.New("rows test error")
 )
 
 func TestNew(t *testing.T) {
