@@ -61,7 +61,7 @@ func TestDBService_GetNames(t *testing.T) {
 			name: "error - scan error",
 			setupMock: func(mock sqlmock.Sqlmock) {
 				rows := sqlmock.NewRows([]string{"name"}).
-					AddRow(123)
+					AddRow(nil)
 
 				mock.ExpectQuery("SELECT name FROM users").
 					WillReturnRows(rows)
@@ -144,7 +144,7 @@ func TestDBService_GetUniqueNames(t *testing.T) {
 			name: "error - scan error",
 			setupMock: func(mock sqlmock.Sqlmock) {
 				rows := sqlmock.NewRows([]string{"name"}).
-					AddRow(123)
+					AddRow(nil)
 
 				mock.ExpectQuery("SELECT DISTINCT name FROM users").
 					WillReturnRows(rows)
