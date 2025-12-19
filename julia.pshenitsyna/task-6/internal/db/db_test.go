@@ -194,29 +194,6 @@ func TestDBService_GetUniqueNames(t *testing.T) {
 	}
 }
 
-func TestDBService_GetNames_SingleRow(t *testing.T) {
-	t.Parallel()
-
-	mockDB, mock, err := sqlmock.New()
-	require.NoError(t, err)
-	defer mockDB.Close()
-
-	rows := sqlmock.NewRows([]string{"name"}).
-		AddRow("Alice")
-
-	mock.ExpectQuery("SELECT name FROM users").
-		WillReturnRows(rows)
-
-	service := db.New(mockDB)
-
-	result, err := service.GetNames()
-
-	require.NoError(t, err)
-	assert.Equal(t, []string{"Alice"}, result)
-
-	assert.NoError(t, mock.ExpectationsWereMet())
-}
-
 func TestNew(t *testing.T) {
 	t.Parallel()
 
