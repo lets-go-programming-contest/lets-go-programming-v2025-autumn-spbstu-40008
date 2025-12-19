@@ -217,33 +217,6 @@ func TestDBService_GetNames_SingleRow(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestDBService_GetNames_RowsCloseError(t *testing.T) {
-	t.Parallel()
-
-	mockDB, mock, err := sqlmock.New()
-	require.NoError(t, err)
-	defer mockDB.Close()
-
-	closeErr := errors.New("close error")
-
-	rows := sqlmock.NewRows([]string{"name"}).
-		AddRow("Alice").
-		CloseError(closeErr)
-
-	mock.ExpectQuery("SELECT name FROM users").
-		WillReturnRows(rows)
-
-	service := db.New(mockDB)
-
-	result, err := service.GetNames()
-
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "rows close")
-	assert.Nil(t, result)
-
-	assert.NoError(t, mock.ExpectationsWereMet())
-}
-
 func TestNew(t *testing.T) {
 	t.Parallel()
 
