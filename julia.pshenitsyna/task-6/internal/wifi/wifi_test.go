@@ -18,6 +18,8 @@ var (
 )
 
 func TestWiFiService_GetAddresses(t *testing.T) {
+	t.Parallel()
+
 	mockWiFi := &MockWiFiHandle{}
 
 	createMockInterfaces := func(macAddresses []string) []*wifi.Interface {
@@ -128,6 +130,8 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 }
 
 func TestWiFiService_GetNames(t *testing.T) {
+	t.Parallel()
+	
 	mockWiFi := &MockWiFiHandle{}
 
 	createMockInterfaces := func(names []string) []*wifi.Interface {
