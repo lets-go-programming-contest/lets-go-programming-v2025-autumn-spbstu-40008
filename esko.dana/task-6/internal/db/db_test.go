@@ -41,7 +41,7 @@ func TestDBService_GetNames(t *testing.T) {
 		require.NoError(t, err)
 		defer dbMock.Close()
 
-		mock.ExpectQuery(`SELECT name FROM users`).
+		mock.ExpectQuery(`Select name from users`).
 			WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("a").AddRow("b"))
 
 		svc := db.New(dbMock)
@@ -59,7 +59,7 @@ func TestDBService_GetNames(t *testing.T) {
 		require.NoError(t, err)
 		defer dbMock.Close()
 
-		mock.ExpectQuery(`SELECT name FROM users`).
+		mock.ExpectQuery(`Select name from users`).
 			WillReturnRows(sqlmock.NewRows([]string{"name"}))
 
 		svc := db.New(dbMock)
@@ -77,7 +77,7 @@ func TestDBService_GetNames(t *testing.T) {
 		require.NoError(t, err)
 		defer dbMock.Close()
 
-		mock.ExpectQuery(`SELECT name FROM users`).
+		mock.ExpectQuery(`Select name from users`).
 			WillReturnError(errTest)
 
 		svc := db.New(dbMock)
@@ -96,7 +96,7 @@ func TestDBService_GetNames(t *testing.T) {
 		require.NoError(t, err)
 		defer dbMock.Close()
 
-		mock.ExpectQuery(`SELECT name FROM users`).
+		mock.ExpectQuery(`Select name from users`).
 			WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow(nil))
 
 		svc := db.New(dbMock)
@@ -117,7 +117,7 @@ func TestDBService_GetNames(t *testing.T) {
 
 		rows := sqlmock.NewRows([]string{"name"}).AddRow("x")
 		rows.RowError(0, errRowTest)
-		mock.ExpectQuery(`SELECT name FROM users`).WillReturnRows(rows)
+		mock.ExpectQuery(`Select name from users`).WillReturnRows(rows)
 
 		svc := db.New(dbMock)
 		names, err := svc.GetNames()
