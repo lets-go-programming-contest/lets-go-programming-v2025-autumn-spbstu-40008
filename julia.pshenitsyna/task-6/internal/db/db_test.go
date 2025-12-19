@@ -171,6 +171,19 @@ func TestDBService_GetUniqueNames(t *testing.T) {
 			},
 			expected: []string{"Single"},
 		},
+		{
+			name: "error - rows.Err",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{"name"}).
+					AddRow("Alice").
+					AddRow("Bob").
+					RowError(1, errRowError)
+
+				mock.ExpectQuery("SELECT DISTINCT name FROM users").
+					WillReturnRows(rows)
+			},
+			expectedErr: errors.New("rows error: " + errRowError.Error()),
+		},
 	}
 
 	for _, tc := range testCases {
