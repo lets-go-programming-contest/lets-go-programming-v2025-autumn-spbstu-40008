@@ -18,7 +18,7 @@ func New(db Database) DBService {
 }
 
 func (service DBService) GetNames() ([]string, error) {
-	query := "Select name from users"
+	query := "SELECT name FROM users"
 
 	rows, err := service.DB.Query(query)
 	if err != nil {
@@ -46,7 +46,7 @@ func (service DBService) GetNames() ([]string, error) {
 }
 
 func (service DBService) GetUniqueNames() ([]string, error) {
-	query := "Select distinct name from users"
+	query := "SELECT DISTINCT name FROM users"
 
 	rows, err := service.DB.Query(query)
 	if err != nil {

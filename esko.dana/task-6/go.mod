@@ -1,13 +1,11 @@
 module esko.dana/task-6
 
-go 1.24.0
-
-toolchain go1.24.11
+go 1.22.7
 
 require (
-	github.com/DATA-DOG/go-sqlmock v1.5.2
-	github.com/mdlayher/wifi v0.7.1
-	github.com/stretchr/testify v1.11.1
+    github.com/DATA-DOG/go-sqlmock v1.5.2
+    github.com/mdlayher/wifi v0.3.0
+    github.com/stretchr/testify v1.8.4
 )
 
 require (
