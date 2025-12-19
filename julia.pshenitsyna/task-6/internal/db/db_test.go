@@ -84,8 +84,6 @@ func TestDBService_GetNames(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
-
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -169,8 +167,6 @@ func TestDBService_GetUniqueNames(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
-
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -199,28 +195,54 @@ func TestDBService_GetUniqueNames(t *testing.T) {
 }
 
 func TestDBService_GetNames_SingleRow(t *testing.T) {
-    t.Parallel()
+	t.Parallel()
 
-    mockDB, mock, err := sqlmock.New()
-    require.NoError(t, err)
-    defer mockDB.Close()
+	mockDB, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer mockDB.Close()
 
-    rows := sqlmock.NewRows([]string{"name"}).
-        AddRow("Alice")
+	rows := sqlmock.NewRows([]string{"name"}).
+		AddRow("Alice")
 
-    mock.ExpectQuery("SELECT name FROM users").
-        WillReturnRows(rows)
+	mock.ExpectQuery("SELECT name FROM users").
+		WillReturnRows(rows)
 
-    service := db.New(mockDB)
+	service := db.New(mockDB)
 
-    result, err := service.GetNames()
+	result, err := service.GetNames()
 
-    require.NoError(t, err)
-    assert.Equal(t, []string{"Alice"}, result)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"Alice"}, result)
 
-    assert.NoError(t, mock.ExpectationsWereMet())
+	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
+func TestDBService_GetNames_RowsCloseError(t *testing.T) {
+	t.Parallel()
+
+	mockDB, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer mockDB.Close()
+
+	closeErr := errors.New("close error")
+
+	rows := sqlmock.NewRows([]string{"name"}).
+		AddRow("Alice").
+		CloseError(closeErr)
+
+	mock.ExpectQuery("SELECT name FROM users").
+		WillReturnRows(rows)
+
+	service := db.New(mockDB)
+
+	result, err := service.GetNames()
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "rows close")
+	assert.Nil(t, result)
+
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
 
 func TestNew(t *testing.T) {
 	t.Parallel()
