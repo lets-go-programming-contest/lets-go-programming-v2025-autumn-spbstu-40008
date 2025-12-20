@@ -27,7 +27,7 @@ var testTable = []rowTestSysInfo{
 }
 
 func TestGetAddresses(t *testing.T) {
-	mockWifi := wifiExt.NewMockWiFiHandle(t)
+	mockWifi := NewWiFiHandle(t)
 	service := wifiExt.New(mockWifi)
 
 	for i, row := range testTable {
@@ -47,7 +47,7 @@ func TestGetAddresses(t *testing.T) {
 }
 
 func TestGetNames(t *testing.T) {
-	mockWifi := wifiExt.NewMockWiFiHandle(t)
+	mockWifi := NewWiFiHandle(t)
 	service := wifiExt.New(mockWifi)
 
 	for i, row := range testTable {

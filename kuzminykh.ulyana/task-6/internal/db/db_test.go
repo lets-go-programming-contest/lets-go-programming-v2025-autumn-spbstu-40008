@@ -66,7 +66,7 @@ func TestGetNames_ScanError(t *testing.T) {
 	names, err := service.GetNames()
 	require.Error(t, err)
 	require.Nil(t, names)
-	require.Contains(t, err.Error(), "rows scanning")
+	require.ErrorContains(t, err, "rows scanning")
 }
 
 func TestGetNames_RowsError(t *testing.T) {
@@ -85,7 +85,7 @@ func TestGetNames_RowsError(t *testing.T) {
 	names, err := service.GetNames()
 	require.Error(t, err)
 	require.Nil(t, names)
-	require.Contains(t, err.Error(), "rows error")
+	require.ErrorContains(t, err, "rows error")
 }
 
 func TestGetNames_Empty(t *testing.T) {
@@ -98,6 +98,19 @@ func TestGetNames_Empty(t *testing.T) {
 	names, err := service.GetNames()
 	require.NoError(t, err)
 	require.Empty(t, names)
+}
+
+func TestGetNames_QueryError_NilRows(t *testing.T) {
+	mockDB, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer mockDB.Close()
+
+	service := New(mockDB)
+	mock.ExpectQuery("SELECT name FROM users").WillReturnError(errors.New("db down"))
+
+	names, err := service.GetNames()
+	require.Error(t, err)
+	require.Nil(t, names)
 }
 
 func TestGetUniqueNames(t *testing.T) {
@@ -143,7 +156,7 @@ func TestGetUniqueNames_ScanError(t *testing.T) {
 	names, err := service.GetUniqueNames()
 	require.Error(t, err)
 	require.Nil(t, names)
-	require.Contains(t, err.Error(), "rows scanning")
+	require.ErrorContains(t, err, "rows scanning")
 }
 
 func TestGetUniqueNames_RowsError(t *testing.T) {
@@ -162,7 +175,7 @@ func TestGetUniqueNames_RowsError(t *testing.T) {
 	names, err := service.GetUniqueNames()
 	require.Error(t, err)
 	require.Nil(t, names)
-	require.Contains(t, err.Error(), "rows error")
+	require.ErrorContains(t, err, "rows error")
 }
 
 func TestGetUniqueNames_Empty(t *testing.T) {
@@ -175,4 +188,17 @@ func TestGetUniqueNames_Empty(t *testing.T) {
 	names, err := service.GetUniqueNames()
 	require.NoError(t, err)
 	require.Empty(t, names)
+}
+
+func TestGetUniqueNames_QueryError_NilRows(t *testing.T) {
+	mockDB, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer mockDB.Close()
+
+	service := New(mockDB)
+	mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnError(errors.New("db down"))
+
+	names, err := service.GetUniqueNames()
+	require.Error(t, err)
+	require.Nil(t, names)
 }
