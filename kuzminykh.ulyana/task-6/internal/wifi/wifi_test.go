@@ -127,5 +127,6 @@ func mustParseMAC(s string) net.HardwareAddr {
 	if err != nil {
 		panic(err)
 	}
+
 	return addr
 }
