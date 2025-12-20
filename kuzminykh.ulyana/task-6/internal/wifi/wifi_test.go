@@ -5,10 +5,11 @@ import (
 	"net"
 	"testing"
 
-	wifiExt "github.com/kuzminykh.ulyana/task-6/internal/wifi"
 	"github.com/mdlayher/wifi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	wifiExt "github.com/kuzminykh.ulyana/task-6/internal/wifi"
 )
 
 var errWiFi = errors.New("failed to get WiFi interfaces")
@@ -18,13 +19,13 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 
 	testCases := []struct {
 		name        string
-		setupMock   func(*wifiExt.MockWiFiHandle)
+		setupMock   func(*WiFiHandle)
 		expected    []net.HardwareAddr
 		expectedErr string
 	}{
 		{
 			name: "success - return addresses",
-			setupMock: func(mock *wifiExt.MockWiFiHandle) {
+			setupMock: func(mock *WiFiHandle) {
 				addr1, _ := net.ParseMAC("00:11:22:33:44:55")
 				addr2, _ := net.ParseMAC("aa:bb:cc:dd:ee:ff")
 				mock.On("Interfaces").Return([]*wifi.Interface{
@@ -39,7 +40,7 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 		},
 		{
 			name: "error - wifi interfaces error",
-			setupMock: func(mock *wifiExt.MockWiFiHandle) {
+			setupMock: func(mock *WiFiHandle) {
 				mock.On("Interfaces").Return([]*wifi.Interface(nil), errWiFi)
 			},
 			expectedErr: "getting interfaces",
@@ -50,7 +51,7 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			mockHandle := wifiExt.NewMockWiFiHandle(t)
+			mockHandle := NewWiFiHandle(t)
 			tc.setupMock(mockHandle)
 
 			service := wifiExt.New(mockHandle)
@@ -74,13 +75,13 @@ func TestWiFiService_GetNames(t *testing.T) {
 
 	testCases := []struct {
 		name        string
-		setupMock   func(*wifiExt.MockWiFiHandle)
+		setupMock   func(*WiFiHandle)
 		expected    []string
 		expectedErr string
 	}{
 		{
 			name: "success - return names",
-			setupMock: func(mock *wifiExt.MockWiFiHandle) {
+			setupMock: func(mock *WiFiHandle) {
 				addr1, _ := net.ParseMAC("00:11:22:33:44:55")
 				mock.On("Interfaces").Return([]*wifi.Interface{
 					{Name: "wlan0", HardwareAddr: addr1},
@@ -91,7 +92,7 @@ func TestWiFiService_GetNames(t *testing.T) {
 		},
 		{
 			name: "error - wifi interfaces error",
-			setupMock: func(mock *wifiExt.MockWiFiHandle) {
+			setupMock: func(mock *WiFiHandle) {
 				mock.On("Interfaces").Return([]*wifi.Interface(nil), errWiFi)
 			},
 			expectedErr: "getting interfaces",
@@ -102,7 +103,7 @@ func TestWiFiService_GetNames(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			mockHandle := wifiExt.NewMockWiFiHandle(t)
+			mockHandle := NewWiFiHandle(t)
 			tc.setupMock(mockHandle)
 
 			service := wifiExt.New(mockHandle)
