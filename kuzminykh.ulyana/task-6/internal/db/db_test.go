@@ -52,6 +52,42 @@ func TestGetNames(t *testing.T) {
 	}
 }
 
+func TestGetNames_ScanError(t *testing.T) {
+	mockDB, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer mockDB.Close()
+
+	service := New(mockDB)
+
+	rows := sqlmock.NewRows([]string{"name"}).AddRow(123)
+
+	mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
+
+	names, err := service.GetNames()
+	require.Error(t, err)
+	require.Nil(t, names)
+	require.Contains(t, err.Error(), "rows scanning")
+}
+
+func TestGetNames_RowsError(t *testing.T) {
+	mockDB, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer mockDB.Close()
+
+	service := New(mockDB)
+
+	rows := sqlmock.NewRows([]string{"name"}).
+		AddRow("Ulya").
+		RowError(0, errors.New("network failure"))
+
+	mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
+
+	names, err := service.GetNames()
+	require.Error(t, err)
+	require.Nil(t, names)
+	require.Contains(t, err.Error(), "rows error")
+}
+
 func TestGetUniqueNames(t *testing.T) {
 	mockDB, mock, err := sqlmock.New()
 	require.NoError(t, err)
@@ -82,10 +118,37 @@ func TestGetUniqueNames(t *testing.T) {
 	}
 }
 
-func mockDbRows(names []string) *sqlmock.Rows {
-	rows := sqlmock.NewRows([]string{"name"})
-	for _, name := range names {
-		rows = rows.AddRow(name)
-	}
-	return rows
+func TestGetUniqueNames_ScanError(t *testing.T) {
+	mockDB, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer mockDB.Close()
+
+	service := New(mockDB)
+
+	rows := sqlmock.NewRows([]string{"name"}).AddRow(456)
+	mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
+
+	names, err := service.GetUniqueNames()
+	require.Error(t, err)
+	require.Nil(t, names)
+	require.Contains(t, err.Error(), "rows scanning")
+}
+
+func TestGetUniqueNames_RowsError(t *testing.T) {
+	mockDB, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer mockDB.Close()
+
+	service := New(mockDB)
+
+	rows := sqlmock.NewRows([]string{"name"}).
+		AddRow("Ulya").
+		RowError(0, errors.New("io error"))
+
+	mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
+
+	names, err := service.GetUniqueNames()
+	require.Error(t, err)
+	require.Nil(t, names)
+	require.Contains(t, err.Error(), "rows error")
 }
