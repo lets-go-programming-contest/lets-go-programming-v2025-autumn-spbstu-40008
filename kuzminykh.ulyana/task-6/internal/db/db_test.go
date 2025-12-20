@@ -88,6 +88,18 @@ func TestGetNames_RowsError(t *testing.T) {
 	require.Contains(t, err.Error(), "rows error")
 }
 
+func TestGetNames_Empty(t *testing.T) {
+	mockDB, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer mockDB.Close()
+	service := New(mockDB)
+	rows := sqlmock.NewRows([]string{"name"})
+	mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
+	names, err := service.GetNames()
+	require.NoError(t, err)
+	require.Empty(t, names)
+}
+
 func TestGetUniqueNames(t *testing.T) {
 	mockDB, mock, err := sqlmock.New()
 	require.NoError(t, err)
@@ -151,4 +163,16 @@ func TestGetUniqueNames_RowsError(t *testing.T) {
 	require.Error(t, err)
 	require.Nil(t, names)
 	require.Contains(t, err.Error(), "rows error")
+}
+
+func TestGetUniqueNames_Empty(t *testing.T) {
+	mockDB, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer mockDB.Close()
+	service := New(mockDB)
+	rows := sqlmock.NewRows([]string{"name"})
+	mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
+	names, err := service.GetUniqueNames()
+	require.NoError(t, err)
+	require.Empty(t, names)
 }

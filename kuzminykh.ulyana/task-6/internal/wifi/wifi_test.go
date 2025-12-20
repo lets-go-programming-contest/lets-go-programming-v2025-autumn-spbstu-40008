@@ -9,7 +9,7 @@ import (
 	"github.com/mdlayher/wifi"
 	"github.com/stretchr/testify/require"
 
-	wifiExt "lets-go-programming-v2025-autumn-spbstu-40008/kuzminykh.ulyana/task-6/internal/wifi"
+	wifiExt "github.com/kuzminykh.ulyana/task-6/internal/wifi"
 )
 
 type rowTestSysInfo struct {
@@ -27,7 +27,7 @@ var testTable = []rowTestSysInfo{
 }
 
 func TestGetAddresses(t *testing.T) {
-	mockWifi := wifiExt.NewWiFiHandle(t)
+	mockWifi := wifiExt.NewMockWiFiHandle(t)
 	service := wifiExt.New(mockWifi)
 
 	for i, row := range testTable {
@@ -47,7 +47,7 @@ func TestGetAddresses(t *testing.T) {
 }
 
 func TestGetNames(t *testing.T) {
-	mockWifi := wifiExt.NewWiFiHandle(t)
+	mockWifi := wifiExt.NewMockWiFiHandle(t)
 	service := wifiExt.New(mockWifi)
 
 	for i, row := range testTable {
