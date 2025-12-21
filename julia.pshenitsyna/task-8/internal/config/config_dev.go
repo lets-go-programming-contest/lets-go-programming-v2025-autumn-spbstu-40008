@@ -1,7 +1,9 @@
+//go:build dev
 package config
 
 import (
 	_ "embed"
 )
 
-var devConfigData []byte
+//go:embed dev.yaml
+var ConfigData []byte
