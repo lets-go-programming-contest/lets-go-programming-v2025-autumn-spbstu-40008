@@ -17,7 +17,9 @@ func (_m *MockWiFiHandle) Interfaces() ([]*wifi.Interface, error) {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]*wifi.Interface)
+			if val, ok := ret.Get(0).([]*wifi.Interface); ok {
+				r0 = val
+			}
 		}
 	}
 
