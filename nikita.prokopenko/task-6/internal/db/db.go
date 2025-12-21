@@ -27,9 +27,11 @@ func New(db DBExecutor) DataHandler {
 func (h DataHandler) GetNames() ([]string, error) {
 	query := "SELECT name FROM users"
 	rows, err := h.DB.Query(query)
+
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrQueryExecution, err)
 	}
+
 	defer rows.Close()
 
 	var names []string
@@ -39,6 +41,7 @@ func (h DataHandler) GetNames() ([]string, error) {
 		if err := rows.Scan(&name); err != nil {
 			return nil, fmt.Errorf("%w: %w", ErrRowProcessing, err)
 		}
+
 		names = append(names, name)
 	}
 
@@ -56,12 +59,15 @@ func (h DataHandler) GetNames() ([]string, error) {
 func (h DataHandler) GetUniqueNames() ([]string, error) {
 	query := "SELECT DISTINCT name FROM users"
 	rows, err := h.DB.Query(query)
+
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrQueryExecution, err)
 	}
+
 	defer rows.Close()
 
 	unique := make(map[string]struct{})
+
 	var result []string
 
 	for rows.Next() {
@@ -69,8 +75,10 @@ func (h DataHandler) GetUniqueNames() ([]string, error) {
 		if err := rows.Scan(&name); err != nil {
 			return nil, fmt.Errorf("%w: %w", ErrRowProcessing, err)
 		}
+
 		if _, exists := unique[name]; !exists {
 			unique[name] = struct{}{}
+
 			result = append(result, name)
 		}
 	}
