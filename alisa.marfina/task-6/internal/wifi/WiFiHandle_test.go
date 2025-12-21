@@ -17,7 +17,6 @@ func (m *MockWiFiHandle) Interfaces() ([]*wifi.Interface, error) {
 	return args.Get(0).([]*wifi.Interface), args.Error(1)
 }
 
-// Добавь этот метод для проверки ожиданий
 func (m *MockWiFiHandle) AssertExpectations(t mock.TestingT) bool {
 	return m.Mock.AssertExpectations(t)
 }
