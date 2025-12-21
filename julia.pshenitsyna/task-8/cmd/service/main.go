@@ -13,5 +13,5 @@ func main() {
 		log.Fatal("Failed to load config: ", err)
 	}
 
-	fmt.Print(conf.Environment, " ",conf.LogLevel)
+	fmt.Print(conf.Environment, " ", conf.LogLevel)
 }
