@@ -9,7 +9,7 @@ import (
 	"github.com/mdlayher/wifi"
 	"github.com/stretchr/testify/require"
 
-	wifi_mocks "task-6/internal/mocks/wifi"
+	wifi_mocks "mikhail.spiridonov/task-6/internal/mocks/wifi"
 )
 
 func mockIfaces(addrs []string) []*wifi.Interface {
