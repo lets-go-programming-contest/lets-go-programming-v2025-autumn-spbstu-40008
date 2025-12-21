@@ -26,7 +26,6 @@ func New(db DBExecutor) DataHandler {
 
 func (h DataHandler) GetNames() ([]string, error) {
 	query := "SELECT name FROM users"
-
 	rows, err := h.DB.Query(query)
 
 	if err != nil {
@@ -39,7 +38,6 @@ func (h DataHandler) GetNames() ([]string, error) {
 
 	for rows.Next() {
 		var name string
-
 		if err := rows.Scan(&name); err != nil {
 			return nil, fmt.Errorf("%w: %w", ErrRowProcessing, err)
 		}
@@ -52,7 +50,7 @@ func (h DataHandler) GetNames() ([]string, error) {
 	}
 
 	if len(names) == 0 {
-		return nil, ErrNoRecords
+		return nil, fmt.Errorf("%w", ErrNoRecords)
 	}
 
 	return names, nil
@@ -60,7 +58,6 @@ func (h DataHandler) GetNames() ([]string, error) {
 
 func (h DataHandler) GetUniqueNames() ([]string, error) {
 	query := "SELECT DISTINCT name FROM users"
-
 	rows, err := h.DB.Query(query)
 
 	if err != nil {
@@ -74,7 +71,6 @@ func (h DataHandler) GetUniqueNames() ([]string, error) {
 
 	for rows.Next() {
 		var name string
-
 		if err := rows.Scan(&name); err != nil {
 			return nil, fmt.Errorf("%w: %w", ErrRowProcessing, err)
 		}
@@ -90,7 +86,7 @@ func (h DataHandler) GetUniqueNames() ([]string, error) {
 	}
 
 	if len(result) == 0 {
-		return nil, ErrNoRecords
+		return nil, fmt.Errorf("%w", ErrNoRecords)
 	}
 
 	return result, nil

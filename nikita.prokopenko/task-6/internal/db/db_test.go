@@ -3,95 +3,105 @@ package db
 import (
 	"database/sql"
 	"errors"
-	"fmt"
+	"testing"
+
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-var (
-	ErrQueryExecution = errors.New("database query failed")
-	ErrRowProcessing  = errors.New("row processing error")
-	ErrNoRecords      = errors.New("no records found")
-)
+func TestDataHandler_GetNames(t *testing.T) {
+	t.Parallel()
 
-type DBExecutor interface {
-	Query(query string, args ...any) (*sql.Rows, error)
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	handler := New(db)
+
+	t.Run("success with multiple rows", func(t *testing.T) {
+		t.Parallel()
+
+		rows := sqlmock.NewRows([]string{"name"}).
+			AddRow("Alice").
+			AddRow("Bob").
+			AddRow("Charlie")
+
+		mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
+
+		result, err := handler.GetNames()
+		require.NoError(t, err)
+		assert.Equal(t, []string{"Alice", "Bob", "Charlie"}, result)
+	})
+
+	t.Run("error on query execution", func(t *testing.T) {
+		t.Parallel()
+
+		mock.ExpectQuery("SELECT name FROM users").
+			WillReturnError(errors.New("database error"))
+
+		result, err := handler.GetNames()
+		assert.Nil(t, result)
+		assert.ErrorContains(t, err, "database query failed")
+	})
+
+	t.Run("no records found", func(t *testing.T) {
+		t.Parallel()
+
+		rows := sqlmock.NewRows([]string{"name"})
+		mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
+
+		result, err := handler.GetNames()
+		assert.Nil(t, result)
+		assert.ErrorContains(t, err, "no records found")
+	})
 }
 
-type DataHandler struct {
-	DB DBExecutor
-}
+func TestDataHandler_GetUniqueNames(t *testing.T) {
+	t.Parallel()
 
-func New(db DBExecutor) DataHandler {
-	return DataHandler{DB: db}
-}
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
 
-func (h DataHandler) GetNames() ([]string, error) {
-	query := "SELECT name FROM users"
+	handler := New(db)
 
-	rows, err := h.DB.Query(query)
+	t.Run("success with duplicates", func(t *testing.T) {
+		t.Parallel()
 
-	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrQueryExecution, err)
-	}
+		rows := sqlmock.NewRows([]string{"name"}).
+			AddRow("Alice").
+			AddRow("Bob").
+			AddRow("Alice").
+			AddRow("Charlie").
+			AddRow("Bob")
 
-	defer rows.Close()
+		mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
 
-	var names []string
+		result, err := handler.GetUniqueNames()
+		require.NoError(t, err)
+		assert.ElementsMatch(t, []string{"Alice", "Bob", "Charlie"}, result)
+	})
 
-	for rows.Next() {
-		var name string
+	t.Run("error on query execution", func(t *testing.T) {
+		t.Parallel()
 
-		if err := rows.Scan(&name); err != nil {
-			return nil, fmt.Errorf("%w: %w", ErrRowProcessing, err)
-		}
+		mock.ExpectQuery("SELECT DISTINCT name FROM users").
+			WillReturnError(errors.New("database error"))
 
-		names = append(names, name)
-	}
+		result, err := handler.GetUniqueNames()
+		assert.Nil(t, result)
+		assert.ErrorContains(t, err, "database query failed")
+	})
 
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrRowProcessing, err)
-	}
+	t.Run("no records found", func(t *testing.T) {
+		t.Parallel()
 
-	if len(names) == 0 {
-		return nil, ErrNoRecords
-	}
+		rows := sqlmock.NewRows([]string{"name"})
+		mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
 
-	return names, nil
-}
-
-func (h DataHandler) GetUniqueNames() ([]string, error) {
-	query := "SELECT DISTINCT name FROM users"
-
-	rows, err := h.DB.Query(query)
-
-	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrQueryExecution, err)
-	}
-
-	defer rows.Close()
-
-	unique := make(map[string]struct{})
-	var result []string
-
-	for rows.Next() {
-		var name string
-
-		if err := rows.Scan(&name); err != nil {
-			return nil, fmt.Errorf("%w: %w", ErrRowProcessing, err)
-		}
-
-		if _, exists := unique[name]; !exists {
-			unique[name] = struct{}{}
-			result = append(result, name)
-		}
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrRowProcessing, err)
-	}
-
-	if len(result) == 0 {
-		return nil, ErrNoRecords
-	}
-
-	return result, nil
+		result, err := handler.GetUniqueNames()
+		assert.Nil(t, result)
+		assert.ErrorContains(t, err, "no records found")
+	})
 }
