@@ -67,6 +67,7 @@ func (h DataHandler) GetUniqueNames() ([]string, error) {
 	defer rows.Close()
 
 	unique := make(map[string]struct{})
+
 	var result []string
 
 	for rows.Next() {

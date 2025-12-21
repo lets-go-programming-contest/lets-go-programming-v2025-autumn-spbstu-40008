@@ -87,6 +87,24 @@ func TestDataHandler_GetNames(t *testing.T) {
 			expectError:    true,
 			errorSubstring: "row processing error",
 		},
+		{
+			name: "single record",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{"name"}).AddRow("SingleUser")
+				mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
+			},
+			expectedResult: []string{"SingleUser"},
+		},
+		{
+			name: "error after rows close",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{"name"}).
+					AddRow("User1").
+					AddRow("User2")
+				mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
+			},
+			expectedResult: []string{"User1", "User2"},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -98,6 +116,7 @@ func TestDataHandler_GetNames(t *testing.T) {
 			defer dbConn.Close()
 
 			handler := db.New(dbConn)
+
 			tc.setupMock(mock)
 
 			result, err := handler.GetNames()
@@ -198,6 +217,25 @@ func TestDataHandler_GetUniqueNames(t *testing.T) {
 				mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
 			},
 			expectedResult: []string{""},
+		},
+		{
+			name: "all duplicate names",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{"name"}).
+					AddRow("Duplicate").
+					AddRow("Duplicate").
+					AddRow("Duplicate")
+				mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
+			},
+			expectedResult: []string{"Duplicate"},
+		},
+		{
+			name: "single unique name",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{"name"}).AddRow("SingleUser")
+				mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
+			},
+			expectedResult: []string{"SingleUser"},
 		},
 	}
 
