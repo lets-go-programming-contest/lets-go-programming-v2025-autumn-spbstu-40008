@@ -1,23 +1,29 @@
 package wifi_test
+
 import (
 	"errors"
 	"fmt"
 	"net"
 	"testing"
+
 	"github.com/mdlayher/wifi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
 	iwifi "github.com/Czeeen/lets-go-programming-v2025-autumn-spbstu-40008/nikita.prokopenko/task-6/internal/wifi"
 )
+
 var (
 	errInterfaceError = errors.New("interface access error")
 	errPermission     = errors.New("permission denied")
 	errTypeAssertion  = errors.New("type assertion failed for interface slice")
 )
+
 type MockInterfaceSource struct {
 	mock.Mock
 }
+
 func (m *MockInterfaceSource) Interfaces() ([]*wifi.Interface, error) {
 	args := m.Called()
 	if args.Get(0) == nil {
@@ -35,6 +41,7 @@ func (m *MockInterfaceSource) Interfaces() ([]*wifi.Interface, error) {
 	}
 	return interfaces, nil
 }
+
 func createTestInterface(name, macStr string) *wifi.Interface {
 	mac, _ := net.ParseMAC(macStr)
 	return &wifi.Interface{
@@ -42,6 +49,7 @@ func createTestInterface(name, macStr string) *wifi.Interface {
 		HardwareAddr: mac,
 	}
 }
+
 func TestNetworkManager_GetMACAddresses(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
@@ -105,6 +113,7 @@ func TestNetworkManager_GetMACAddresses(t *testing.T) {
 		})
 	}
 }
+
 func TestNetworkManager_GetInterfaceNames(t *testing.T) {
 	t.Parallel()
 	cases := []struct {

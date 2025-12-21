@@ -1,24 +1,33 @@
 package wifi
+
 import (
 	"errors"
 	"fmt"
 	"net"
+	"strings"
+
 	"github.com/mdlayher/wifi"
 )
+
 var (
 	ErrInterfaceFetch = errors.New("failed to fetch interfaces")
 	ErrNoValidData    = errors.New("no valid interface data")
 )
+
 const macAddressLen = 6
+
 type InterfaceSource interface {
 	Interfaces() ([]*wifi.Interface, error)
 }
+
 type NetworkManager struct {
 	source InterfaceSource
 }
+
 func CreateManager(source InterfaceSource) *NetworkManager {
 	return &NetworkManager{source: source}
 }
+
 func (m *NetworkManager) GetMACAddresses() ([]net.HardwareAddr, error) {
 	interfaces, err := m.source.Interfaces()
 	if err != nil {
@@ -38,6 +47,7 @@ func (m *NetworkManager) GetMACAddresses() ([]net.HardwareAddr, error) {
 	}
 	return macs, nil
 }
+
 func (m *NetworkManager) GetInterfaceNames() ([]string, error) {
 	interfaces, err := m.source.Interfaces()
 	if err != nil {
@@ -48,7 +58,7 @@ func (m *NetworkManager) GetInterfaceNames() ([]string, error) {
 	}
 	names := make([]string, 0, len(interfaces))
 	for _, iface := range interfaces {
-		if iface.Name != "" {
+		if strings.TrimSpace(iface.Name) != "" {
 			names = append(names, iface.Name)
 		}
 	}

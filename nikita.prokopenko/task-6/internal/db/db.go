@@ -1,23 +1,29 @@
 package db
+
 import (
 	"database/sql"
 	"errors"
 	"fmt"
 )
+
 var (
 	ErrQueryExecution = errors.New("database query failed")
 	ErrRowProcessing  = errors.New("row processing error")
 	ErrNoRecords      = errors.New("no records found")
 )
+
 type DBExecutor interface {
 	Query(query string, args ...any) (*sql.Rows, error)
 }
+
 type DataHandler struct {
 	DB DBExecutor
 }
+
 func CreateHandler(db DBExecutor) *DataHandler {
 	return &DataHandler{DB: db}
 }
+
 func (h *DataHandler) RetrieveNames() ([]string, error) {
 	const query = "SELECT name FROM users"
 	rows, err := h.DB.Query(query)
@@ -44,6 +50,7 @@ func (h *DataHandler) RetrieveNames() ([]string, error) {
 	}
 	return names, nil
 }
+
 func (h *DataHandler) RetrieveUniqueNames() ([]string, error) {
 	const query = "SELECT DISTINCT name FROM users"
 	rows, err := h.DB.Query(query)
