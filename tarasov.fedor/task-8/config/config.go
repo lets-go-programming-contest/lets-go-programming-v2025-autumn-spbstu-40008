@@ -9,8 +9,13 @@ type Config struct {
 	LogLevel    string
 }
 
+const splitParts = 2
+
 func ParseConfig(data []byte) Config {
-	cfg := Config{}
+	cfg := Config{
+		Environment: "",
+		LogLevel:    "",
+	}
 	lines := strings.Split(string(data), "\n")
 
 	for _, line := range lines {
@@ -19,8 +24,8 @@ func ParseConfig(data []byte) Config {
 			continue
 		}
 
-		parts := strings.SplitN(line, ":", 2)
-		if len(parts) != 2 {
+		parts := strings.SplitN(line, ":", splitParts)
+		if len(parts) != splitParts {
 			continue
 		}
 
@@ -35,5 +40,6 @@ func ParseConfig(data []byte) Config {
 			cfg.LogLevel = val
 		}
 	}
+
 	return cfg
 }
