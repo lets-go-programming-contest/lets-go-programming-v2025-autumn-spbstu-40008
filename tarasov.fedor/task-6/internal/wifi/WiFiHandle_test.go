@@ -28,5 +28,5 @@ func (_m *MockWiFiHandle) Interfaces() ([]*wifi.Interface, error) {
 		r1 = ret.Error(1)
 	}
 
-	return r0, r1
+	return r0, r1 //nolint:wrapcheck
 }
