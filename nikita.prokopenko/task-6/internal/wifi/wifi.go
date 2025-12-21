@@ -27,12 +27,13 @@ func New(provider InterfaceProvider) NetworkService {
 
 func (s NetworkService) GetAddresses() ([]net.HardwareAddr, error) {
 	interfaces, err := s.provider.Interfaces()
+
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrInterfaceFetch, err)
 	}
 
 	if len(interfaces) == 0 {
-		return nil, fmt.Errorf("%w", ErrNoValidInterfaces)
+		return nil, ErrNoValidInterfaces
 	}
 
 	addresses := make([]net.HardwareAddr, 0, len(interfaces))
@@ -44,7 +45,7 @@ func (s NetworkService) GetAddresses() ([]net.HardwareAddr, error) {
 	}
 
 	if len(addresses) == 0 {
-		return nil, fmt.Errorf("%w", ErrNoValidInterfaces)
+		return nil, ErrNoValidInterfaces
 	}
 
 	return addresses, nil
@@ -52,12 +53,13 @@ func (s NetworkService) GetAddresses() ([]net.HardwareAddr, error) {
 
 func (s NetworkService) GetNames() ([]string, error) {
 	interfaces, err := s.provider.Interfaces()
+
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrInterfaceFetch, err)
 	}
 
 	if len(interfaces) == 0 {
-		return nil, fmt.Errorf("%w", ErrNoValidInterfaces)
+		return nil, ErrNoValidInterfaces
 	}
 
 	names := make([]string, 0, len(interfaces))
@@ -69,7 +71,7 @@ func (s NetworkService) GetNames() ([]string, error) {
 	}
 
 	if len(names) == 0 {
-		return nil, fmt.Errorf("%w", ErrNoValidInterfaces)
+		return nil, ErrNoValidInterfaces
 	}
 
 	return names, nil

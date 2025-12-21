@@ -26,16 +26,20 @@ func New(db DBExecutor) DataHandler {
 
 func (h DataHandler) GetNames() ([]string, error) {
 	query := "SELECT name FROM users"
+
 	rows, err := h.DB.Query(query)
+
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrQueryExecution, err)
 	}
+
 	defer rows.Close()
 
 	var names []string
 
 	for rows.Next() {
 		var name string
+
 		if err := rows.Scan(&name); err != nil {
 			return nil, fmt.Errorf("%w: %w", ErrRowProcessing, err)
 		}
@@ -48,7 +52,7 @@ func (h DataHandler) GetNames() ([]string, error) {
 	}
 
 	if len(names) == 0 {
-		return nil, fmt.Errorf("%w", ErrNoRecords)
+		return nil, ErrNoRecords
 	}
 
 	return names, nil
@@ -56,25 +60,27 @@ func (h DataHandler) GetNames() ([]string, error) {
 
 func (h DataHandler) GetUniqueNames() ([]string, error) {
 	query := "SELECT DISTINCT name FROM users"
+
 	rows, err := h.DB.Query(query)
+
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrQueryExecution, err)
 	}
+
 	defer rows.Close()
 
 	unique := make(map[string]struct{})
-
 	var result []string
 
 	for rows.Next() {
 		var name string
+
 		if err := rows.Scan(&name); err != nil {
 			return nil, fmt.Errorf("%w: %w", ErrRowProcessing, err)
 		}
 
 		if _, exists := unique[name]; !exists {
 			unique[name] = struct{}{}
-
 			result = append(result, name)
 		}
 	}
@@ -84,7 +90,7 @@ func (h DataHandler) GetUniqueNames() ([]string, error) {
 	}
 
 	if len(result) == 0 {
-		return nil, fmt.Errorf("%w", ErrNoRecords)
+		return nil, ErrNoRecords
 	}
 
 	return result, nil

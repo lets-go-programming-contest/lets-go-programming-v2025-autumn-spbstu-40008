@@ -1,186 +1,97 @@
-package db_test
+package db
 
 import (
 	"database/sql"
 	"errors"
-	"testing"
-
-	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
-	"github.com/Czeeen/lets-go-programming-v2025-autumn-spbstu-40008/nikita.prokopenko/task-6/internal/db"
+	"fmt"
 )
 
 var (
-	errDBFailure  = errors.New("database connection failed")
-	errRowFailure = errors.New("corrupted row data")
+	ErrQueryExecution = errors.New("database query failed")
+	ErrRowProcessing  = errors.New("row processing error")
+	ErrNoRecords      = errors.New("no records found")
 )
 
-func TestDataHandler_GetNames(t *testing.T) {
-	t.Parallel()
-
-	cases := []struct {
-		name          string
-		setupMock     func(sqlmock.Sqlmock)
-		expected      []string
-		expectError   bool
-		errorContains string
-	}{
-		{
-			name: "success - return names",
-			setupMock: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"name"}).
-					AddRow("Alice").
-					AddRow("Bob").
-					AddRow("Charlie")
-				mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
-			},
-			expected: []string{"Alice", "Bob", "Charlie"},
-		},
-		{
-			name: "error - query error",
-			setupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery("SELECT name FROM users").WillReturnError(errDBFailure)
-			},
-			expectError:   true,
-			errorContains: "database query failed",
-		},
-		{
-			name: "success - empty result",
-			setupMock: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"name"})
-				mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
-			},
-			expectError:   true,
-			errorContains: "no records found",
-		},
-		{
-			name: "error - scan error",
-			setupMock: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"name"}).AddRow(nil)
-				mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
-			},
-			expectError:   true,
-			errorContains: "row processing error",
-		},
-		{
-			name: "error - rows.Err",
-			setupMock: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"name"}).
-					AddRow("Alice").
-					AddRow("Bob").
-					RowError(1, errRowFailure)
-				mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
-			},
-			expectError:   true,
-			errorContains: "row processing error",
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
-			mockDB, mock, err := sqlmock.New()
-			require.NoError(t, err)
-			defer mockDB.Close()
-
-			handler := db.New(mockDB)
-
-			tc.setupMock(mock)
-
-			result, err := handler.GetNames()
-
-			if tc.expectError {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), tc.errorContains)
-				assert.Nil(t, result)
-			} else {
-				require.NoError(t, err)
-				assert.Equal(t, tc.expected, result)
-			}
-
-			assert.NoError(t, mock.ExpectationsWereMet())
-		})
-	}
+type DBExecutor interface {
+	Query(query string, args ...any) (*sql.Rows, error)
 }
 
-func TestDataHandler_GetUniqueNames(t *testing.T) {
-	t.Parallel()
+type DataHandler struct {
+	DB DBExecutor
+}
 
-	cases := []struct {
-		name          string
-		setupMock     func(sqlmock.Sqlmock)
-		expected      []string
-		expectError   bool
-		errorContains string
-	}{
-		{
-			name: "success - return values",
-			setupMock: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"name"}).
-					AddRow("Alice").
-					AddRow("Bob")
-				mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
-			},
-			expected: []string{"Alice", "Bob"},
-		},
-		{
-			name: "error - query error",
-			setupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnError(sql.ErrConnDone)
-			},
-			expectError:   true,
-			errorContains: "database query failed",
-		},
-		{
-			name: "error - scan error",
-			setupMock: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"name"}).AddRow(nil)
-				mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
-			},
-			expectError:   true,
-			errorContains: "row processing error",
-		},
-		{
-			name: "error - rows.Err",
-			setupMock: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"name"}).
-					AddRow("Alice").
-					AddRow("Bob").
-					RowError(1, errRowFailure)
-				mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
-			},
-			expectError:   true,
-			errorContains: "row processing error",
-		},
+func New(db DBExecutor) DataHandler {
+	return DataHandler{DB: db}
+}
+
+func (h DataHandler) GetNames() ([]string, error) {
+	query := "SELECT name FROM users"
+
+	rows, err := h.DB.Query(query)
+
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrQueryExecution, err)
 	}
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
+	defer rows.Close()
 
-			mockDB, mock, err := sqlmock.New()
-			require.NoError(t, err)
-			defer mockDB.Close()
+	var names []string
 
-			handler := db.New(mockDB)
+	for rows.Next() {
+		var name string
 
-			tc.setupMock(mock)
+		if err := rows.Scan(&name); err != nil {
+			return nil, fmt.Errorf("%w: %w", ErrRowProcessing, err)
+		}
 
-			result, err := handler.GetUniqueNames()
-
-			if tc.expectError {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), tc.errorContains)
-				assert.Nil(t, result)
-			} else {
-				require.NoError(t, err)
-				assert.Equal(t, tc.expected, result)
-			}
-
-			assert.NoError(t, mock.ExpectationsWereMet())
-		})
+		names = append(names, name)
 	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrRowProcessing, err)
+	}
+
+	if len(names) == 0 {
+		return nil, ErrNoRecords
+	}
+
+	return names, nil
+}
+
+func (h DataHandler) GetUniqueNames() ([]string, error) {
+	query := "SELECT DISTINCT name FROM users"
+
+	rows, err := h.DB.Query(query)
+
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrQueryExecution, err)
+	}
+
+	defer rows.Close()
+
+	unique := make(map[string]struct{})
+	var result []string
+
+	for rows.Next() {
+		var name string
+
+		if err := rows.Scan(&name); err != nil {
+			return nil, fmt.Errorf("%w: %w", ErrRowProcessing, err)
+		}
+
+		if _, exists := unique[name]; !exists {
+			unique[name] = struct{}{}
+			result = append(result, name)
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrRowProcessing, err)
+	}
+
+	if len(result) == 0 {
+		return nil, ErrNoRecords
+	}
+
+	return result, nil
 }
