@@ -9,7 +9,6 @@ import (
 
 func main() {
 	conf, err := config.Load()
-	
 	if err != nil {
 		log.Fatal("Failed to load config: ", err)
 	}
