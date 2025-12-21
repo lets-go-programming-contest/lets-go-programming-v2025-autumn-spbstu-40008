@@ -12,11 +12,6 @@ import (
 	wifiPkg "github.com/Czeeen/lets-go-programming-v2025-autumn-spbstu-40008/nikita.prokopenko/task-6/internal/wifi"
 )
 
-var (
-	errInterfaceError = errors.New("interface access error")
-	errPermission     = errors.New("permission denied")
-)
-
 type MockProvider struct {
 	interfaces []*wifi.Interface
 	err        error
@@ -58,7 +53,7 @@ func TestNetworkService_GetAddresses(t *testing.T) {
 		{
 			name: "error fetching interfaces",
 			provider: &MockProvider{
-				err: errInterfaceError,
+				err: errors.New("interface error"),
 			},
 			expectError:    true,
 			errorSubstring: "failed to fetch interfaces",
@@ -80,6 +75,17 @@ func TestNetworkService_GetAddresses(t *testing.T) {
 			},
 			expectError:    true,
 			errorSubstring: "no valid network interfaces found",
+		},
+		{
+			name: "mix of valid and invalid interfaces",
+			provider: &MockProvider{
+				interfaces: []*wifi.Interface{
+					createTestInterface("eth0", "01:02:03:04:05:06"),
+					{Name: "lo", HardwareAddr: net.HardwareAddr{}},
+					createTestInterface("wlan0", "01:02:03:04:05:07"),
+				},
+			},
+			expected: []string{"01:02:03:04:05:06", "01:02:03:04:05:07"},
 		},
 	}
 
@@ -129,7 +135,7 @@ func TestNetworkService_GetNames(t *testing.T) {
 		{
 			name: "error fetching interfaces",
 			provider: &MockProvider{
-				err: errPermission,
+				err: errors.New("permission denied"),
 			},
 			expectError:    true,
 			errorSubstring: "failed to fetch interfaces",
@@ -152,6 +158,17 @@ func TestNetworkService_GetNames(t *testing.T) {
 			expectError:    true,
 			errorSubstring: "no valid network interfaces found",
 		},
+		{
+			name: "mix of valid and invalid interfaces",
+			provider: &MockProvider{
+				interfaces: []*wifi.Interface{
+					{Name: "eth0"},
+					{Name: ""},
+					{Name: "wlan0"},
+				},
+			},
+			expected: []string{"eth0", "wlan0"},
+		},
 	}
 
 	for _, tc := range cases {
@@ -171,4 +188,13 @@ func TestNetworkService_GetNames(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNetworkService_New(t *testing.T) {
+	t.Parallel()
+
+	provider := &MockProvider{}
+	service := wifiPkg.New(provider)
+	assert.NotNil(t, service)
+	assert.Equal(t, provider, service.provider)
 }
