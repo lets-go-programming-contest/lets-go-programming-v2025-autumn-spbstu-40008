@@ -9,25 +9,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/Czeeen/lets-go-programming-v2025-autumn-spbstu-40008/nikita.prokopenko/task-6/internal/wifi"
+	wifiPkg "github.com/Czeeen/lets-go-programming-v2025-autumn-spbstu-40008/nikita.prokopenko/task-6/internal/wifi"
 )
 
 var (
 	errInterfaceError = errors.New("interface access error")
-	errPermission = errors.New("permission denied")
+	errPermission     = errors.New("permission denied")
 )
-
-func createTestInterface(name, macAddress string) *wifi.Interface {
-	mac, _ := net.ParseMAC(macAddress)
-	return &wifi.Interface{
-		Name: name,
-		HardwareAddr: mac,
-	}
-}
 
 type MockProvider struct {
 	interfaces []*wifi.Interface
-	err error
+	err        error
 }
 
 func (m *MockProvider) Interfaces() ([]*wifi.Interface, error) {
@@ -36,12 +28,21 @@ func (m *MockProvider) Interfaces() ([]*wifi.Interface, error) {
 
 func TestNetworkService_GetAddresses(t *testing.T) {
 	t.Parallel()
+	
+	createTestInterface := func(name, macAddress string) *wifi.Interface {
+		mac, _ := net.ParseMAC(macAddress)
+		return &wifi.Interface{
+			Name:         name,
+			HardwareAddr: mac,
+		}
+	}
+	
 	cases := []struct {
-		name string
-		provider *MockProvider
-		expected []string
-		expectError bool
-		errorSubstring string
+		name            string
+		provider        *MockProvider
+		expected        []string
+		expectError     bool
+		errorSubstring  string
 	}{
 		{
 			name: "success with valid interfaces",
@@ -58,7 +59,7 @@ func TestNetworkService_GetAddresses(t *testing.T) {
 			provider: &MockProvider{
 				err: errInterfaceError,
 			},
-			expectError: true,
+			expectError:    true,
 			errorSubstring: "failed to fetch interfaces",
 		},
 		{
@@ -66,7 +67,7 @@ func TestNetworkService_GetAddresses(t *testing.T) {
 			provider: &MockProvider{
 				interfaces: []*wifi.Interface{},
 			},
-			expectError: true,
+			expectError:    true,
 			errorSubstring: "no valid network interfaces found",
 		},
 		{
@@ -76,14 +77,15 @@ func TestNetworkService_GetAddresses(t *testing.T) {
 					{Name: "lo", HardwareAddr: net.HardwareAddr{}},
 				},
 			},
-			expectError: true,
+			expectError:    true,
 			errorSubstring: "no valid network interfaces found",
 		},
 	}
+	
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			service := wifi.New(tc.provider)
+			service := wifiPkg.New(tc.provider)
 			result, err := service.GetAddresses()
 			if tc.expectError {
 				require.Error(t, err)
@@ -102,11 +104,12 @@ func TestNetworkService_GetAddresses(t *testing.T) {
 
 func TestNetworkService_GetNames(t *testing.T) {
 	t.Parallel()
+	
 	cases := []struct {
-		name string
-		provider *MockProvider
-		expected []string
-		expectError bool
+		name           string
+		provider       *MockProvider
+		expected       []string
+		expectError    bool
 		errorSubstring string
 	}{
 		{
@@ -124,7 +127,7 @@ func TestNetworkService_GetNames(t *testing.T) {
 			provider: &MockProvider{
 				err: errPermission,
 			},
-			expectError: true,
+			expectError:    true,
 			errorSubstring: "failed to fetch interfaces",
 		},
 		{
@@ -132,7 +135,7 @@ func TestNetworkService_GetNames(t *testing.T) {
 			provider: &MockProvider{
 				interfaces: []*wifi.Interface{},
 			},
-			expectError: true,
+			expectError:    true,
 			errorSubstring: "no valid network interfaces found",
 		},
 		{
@@ -142,14 +145,15 @@ func TestNetworkService_GetNames(t *testing.T) {
 					{Name: ""},
 				},
 			},
-			expectError: true,
+			expectError:    true,
 			errorSubstring: "no valid network interfaces found",
 		},
 	}
+	
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			service := wifi.New(tc.provider)
+			service := wifiPkg.New(tc.provider)
 			result, err := service.GetNames()
 			if tc.expectError {
 				require.Error(t, err)
