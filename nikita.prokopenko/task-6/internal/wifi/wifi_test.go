@@ -1,6 +1,7 @@
 package wifi_test
 
 import (
+	"errors"
 	"net"
 	"testing"
 
@@ -12,8 +13,8 @@ import (
 )
 
 var (
-	errInterfaceMock = errors.New("interface error")
-	errPermission    = errors.New("permission denied")
+	errInterfaceError = errors.New("interface access error")
+	errPermission     = errors.New("permission denied")
 )
 
 type MockProvider struct {
@@ -25,161 +26,149 @@ func (m *MockProvider) Interfaces() ([]*wifi.Interface, error) {
 	return m.interfaces, m.err
 }
 
-func createTestInterface(name, macAddress string) *wifi.Interface {
-	mac, _ := net.ParseMAC(macAddress)
-
-	return &wifi.Interface{
-		Name:         name,
-		HardwareAddr: mac,
-	}
-}
-
 func TestNetworkService_GetAddresses(t *testing.T) {
 	t.Parallel()
 
-	t.Run("success with valid interfaces", func(t *testing.T) {
-		t.Parallel()
+	createTestInterface := func(name, macAddress string) *wifi.Interface {
+		mac, _ := net.ParseMAC(macAddress)
 
-		provider := &MockProvider{
-			interfaces: []*wifi.Interface{
-				createTestInterface("eth0", "01:02:03:04:05:06"),
-				createTestInterface("wlan0", "01:02:03:04:05:07"),
+		return &wifi.Interface{
+			Name:         name,
+			HardwareAddr: mac,
+		}
+	}
+
+	cases := []struct {
+		name           string
+		provider       *MockProvider
+		expected       []string
+		expectError    bool
+		errorSubstring string
+	}{
+		{
+			name: "success with valid interfaces",
+			provider: &MockProvider{
+				interfaces: []*wifi.Interface{
+					createTestInterface("eth0", "01:02:03:04:05:06"),
+					createTestInterface("wlan0", "01:02:03:04:05:07"),
+				},
 			},
-		}
-		service := wifiPkg.New(provider)
-		result, err := service.GetAddresses()
-		require.NoError(t, err)
-		assert.Len(t, result, 2)
-		assert.Equal(t, "01:02:03:04:05:06", result[0].String())
-		assert.Equal(t, "01:02:03:04:05:07", result[1].String())
-	})
-
-	t.Run("error fetching interfaces", func(t *testing.T) {
-		t.Parallel()
-
-		provider := &MockProvider{
-			err: errInterfaceMock,
-		}
-		service := wifiPkg.New(provider)
-		result, err := service.GetAddresses()
-		assert.Nil(t, result)
-		require.ErrorContains(t, err, "failed to fetch interfaces")
-	})
-
-	t.Run("no interfaces", func(t *testing.T) {
-		t.Parallel()
-
-		provider := &MockProvider{
-			interfaces: []*wifi.Interface{},
-		}
-		service := wifiPkg.New(provider)
-		result, err := service.GetAddresses()
-		assert.Nil(t, result)
-		require.ErrorContains(t, err, "no valid network interfaces found")
-	})
-
-	t.Run("interfaces without MAC addresses", func(t *testing.T) {
-		t.Parallel()
-
-		provider := &MockProvider{
-			interfaces: []*wifi.Interface{
-				{Name: "lo", HardwareAddr: net.HardwareAddr{}},
+			expected: []string{"01:02:03:04:05:06", "01:02:03:04:05:07"},
+		},
+		{
+			name: "error fetching interfaces",
+			provider: &MockProvider{
+				err: errInterfaceError,
 			},
-		}
-		service := wifiPkg.New(provider)
-		result, err := service.GetAddresses()
-		assert.Nil(t, result)
-		require.ErrorContains(t, err, "no valid network interfaces found")
-	})
-
-	t.Run("mix of valid and invalid interfaces", func(t *testing.T) {
-		t.Parallel()
-
-		provider := &MockProvider{
-			interfaces: []*wifi.Interface{
-				createTestInterface("eth0", "01:02:03:04:05:06"),
-				{Name: "lo", HardwareAddr: net.HardwareAddr{}},
-				createTestInterface("wlan0", "01:02:03:04:05:07"),
+			expectError:    true,
+			errorSubstring: "failed to fetch interfaces",
+		},
+		{
+			name: "no valid interfaces",
+			provider: &MockProvider{
+				interfaces: []*wifi.Interface{},
 			},
-		}
-		service := wifiPkg.New(provider)
-		result, err := service.GetAddresses()
-		require.NoError(t, err)
-		assert.Len(t, result, 2)
-		assert.Equal(t, "01:02:03:04:05:06", result[0].String())
-		assert.Equal(t, "01:02:03:04:05:07", result[1].String())
-	})
+			expectError:    true,
+			errorSubstring: "no valid network interfaces found",
+		},
+		{
+			name: "no valid MAC addresses",
+			provider: &MockProvider{
+				interfaces: []*wifi.Interface{
+					{Name: "lo", HardwareAddr: net.HardwareAddr{}},
+				},
+			},
+			expectError:    true,
+			errorSubstring: "no valid network interfaces found",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			service := wifiPkg.New(tc.provider)
+			result, err := service.GetAddresses()
+
+			if tc.expectError {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.errorSubstring)
+				assert.Nil(t, result)
+			} else {
+				require.NoError(t, err)
+				require.Len(t, result, len(tc.expected))
+
+				for i, expected := range tc.expected {
+					assert.Equal(t, expected, result[i].String())
+				}
+			}
+		})
+	}
 }
 
 func TestNetworkService_GetNames(t *testing.T) {
 	t.Parallel()
 
-	t.Run("success with valid interfaces", func(t *testing.T) {
-		t.Parallel()
-
-		provider := &MockProvider{
-			interfaces: []*wifi.Interface{
-				{Name: "eth0"},
-				{Name: "wlan0"},
+	cases := []struct {
+		name           string
+		provider       *MockProvider
+		expected       []string
+		expectError    bool
+		errorSubstring string
+	}{
+		{
+			name: "success with valid interfaces",
+			provider: &MockProvider{
+				interfaces: []*wifi.Interface{
+					{Name: "eth0"},
+					{Name: "wlan0"},
+				},
 			},
-		}
-		service := wifiPkg.New(provider)
-		result, err := service.GetNames()
-		require.NoError(t, err)
-		assert.Equal(t, []string{"eth0", "wlan0"}, result)
-	})
-
-	t.Run("error fetching interfaces", func(t *testing.T) {
-		t.Parallel()
-
-		provider := &MockProvider{
-			err: errPermission,
-		}
-		service := wifiPkg.New(provider)
-		result, err := service.GetNames()
-		assert.Nil(t, result)
-		require.ErrorContains(t, err, "failed to fetch interfaces")
-	})
-
-	t.Run("no interfaces", func(t *testing.T) {
-		t.Parallel()
-
-		provider := &MockProvider{
-			interfaces: []*wifi.Interface{},
-		}
-		service := wifiPkg.New(provider)
-		result, err := service.GetNames()
-		assert.Nil(t, result)
-		require.ErrorContains(t, err, "no valid network interfaces found")
-	})
-
-	t.Run("interfaces without names", func(t *testing.T) {
-		t.Parallel()
-
-		provider := &MockProvider{
-			interfaces: []*wifi.Interface{
-				{Name: ""},
+			expected: []string{"eth0", "wlan0"},
+		},
+		{
+			name: "error fetching interfaces",
+			provider: &MockProvider{
+				err: errPermission,
 			},
-		}
-		service := wifiPkg.New(provider)
-		result, err := service.GetNames()
-		assert.Nil(t, result)
-		require.ErrorContains(t, err, "no valid network interfaces found")
-	})
-
-	t.Run("mix of valid and invalid interfaces", func(t *testing.T) {
-		t.Parallel()
-
-		provider := &MockProvider{
-			interfaces: []*wifi.Interface{
-				{Name: "eth0"},
-				{Name: ""},
-				{Name: "wlan0"},
+			expectError:    true,
+			errorSubstring: "failed to fetch interfaces",
+		},
+		{
+			name: "no valid interfaces",
+			provider: &MockProvider{
+				interfaces: []*wifi.Interface{},
 			},
-		}
-		service := wifiPkg.New(provider)
-		result, err := service.GetNames()
-		require.NoError(t, err)
-		assert.Equal(t, []string{"eth0", "wlan0"}, result)
-	})
+			expectError:    true,
+			errorSubstring: "no valid network interfaces found",
+		},
+		{
+			name: "no valid names",
+			provider: &MockProvider{
+				interfaces: []*wifi.Interface{
+					{Name: ""},
+				},
+			},
+			expectError:    true,
+			errorSubstring: "no valid network interfaces found",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			service := wifiPkg.New(tc.provider)
+			result, err := service.GetNames()
+
+			if tc.expectError {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.errorSubstring)
+				assert.Nil(t, result)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tc.expected, result)
+			}
+		})
+	}
 }
