@@ -28,21 +28,22 @@ func (m *MockProvider) Interfaces() ([]*wifi.Interface, error) {
 
 func TestNetworkService_GetAddresses(t *testing.T) {
 	t.Parallel()
-	
+
 	createTestInterface := func(name, macAddress string) *wifi.Interface {
 		mac, _ := net.ParseMAC(macAddress)
+
 		return &wifi.Interface{
 			Name:         name,
 			HardwareAddr: mac,
 		}
 	}
-	
+
 	cases := []struct {
-		name            string
-		provider        *MockProvider
-		expected        []string
-		expectError     bool
-		errorSubstring  string
+		name           string
+		provider       *MockProvider
+		expected       []string
+		expectError    bool
+		errorSubstring string
 	}{
 		{
 			name: "success with valid interfaces",
@@ -81,12 +82,14 @@ func TestNetworkService_GetAddresses(t *testing.T) {
 			errorSubstring: "no valid network interfaces found",
 		},
 	}
-	
+
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+
 			service := wifiPkg.New(tc.provider)
 			result, err := service.GetAddresses()
+
 			if tc.expectError {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tc.errorSubstring)
@@ -94,6 +97,7 @@ func TestNetworkService_GetAddresses(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.Len(t, result, len(tc.expected))
+
 				for i, expected := range tc.expected {
 					assert.Equal(t, expected, result[i].String())
 				}
@@ -104,7 +108,7 @@ func TestNetworkService_GetAddresses(t *testing.T) {
 
 func TestNetworkService_GetNames(t *testing.T) {
 	t.Parallel()
-	
+
 	cases := []struct {
 		name           string
 		provider       *MockProvider
@@ -149,12 +153,14 @@ func TestNetworkService_GetNames(t *testing.T) {
 			errorSubstring: "no valid network interfaces found",
 		},
 	}
-	
+
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+
 			service := wifiPkg.New(tc.provider)
 			result, err := service.GetNames()
+
 			if tc.expectError {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tc.errorSubstring)

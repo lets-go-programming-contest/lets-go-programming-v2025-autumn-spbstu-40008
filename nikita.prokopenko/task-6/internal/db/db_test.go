@@ -87,8 +87,8 @@ func TestDataHandler_GetNames(t *testing.T) {
 			defer mockDB.Close()
 
 			handler := db.New(mockDB)
-			tc.setupMock(mock)
 
+			tc.setupMock(mock)
 			result, err := handler.GetNames()
 
 			if tc.expectError {
@@ -165,8 +165,8 @@ func TestDataHandler_GetUniqueNames(t *testing.T) {
 			defer mockDB.Close()
 
 			handler := db.New(mockDB)
-			tc.setupMock(mock)
 
+			tc.setupMock(mock)
 			result, err := handler.GetUniqueNames()
 
 			if tc.expectError {

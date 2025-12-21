@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	ErrInterfaceFetch   = errors.New("failed to fetch interfaces")
+	ErrInterfaceFetch    = errors.New("failed to fetch interfaces")
 	ErrNoValidInterfaces = errors.New("no valid network interfaces found")
 )
 
