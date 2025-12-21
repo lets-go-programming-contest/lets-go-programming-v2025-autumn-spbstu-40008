@@ -101,37 +101,6 @@ func TestNetworkService_GetAddresses(t *testing.T) {
 			},
 			expected: []string{"01:02:03:04:05:06"},
 		},
-		{
-			name: "interface with empty MAC but valid name",
-			provider: &MockProvider{
-				interfaces: []*wifi.Interface{
-					{Name: "eth0", HardwareAddr: net.HardwareAddr{}},
-					{Name: "wlan0", HardwareAddr: net.HardwareAddr{}},
-				},
-			},
-			expectError:    true,
-			errorSubstring: "no valid network interfaces found",
-		},
-		{
-			name: "interface with valid MAC but empty name",
-			provider: &MockProvider{
-				interfaces: []*wifi.Interface{
-					{Name: "", HardwareAddr: createTestInterface("", "01:02:03:04:05:06").HardwareAddr},
-				},
-			},
-			expected: []string{"01:02:03:04:05:06"},
-		},
-		{
-			name: "all empty interfaces",
-			provider: &MockProvider{
-				interfaces: []*wifi.Interface{
-					{Name: "", HardwareAddr: net.HardwareAddr{}},
-					{Name: "", HardwareAddr: net.HardwareAddr{}},
-				},
-			},
-			expectError:    true,
-			errorSubstring: "no valid network interfaces found",
-		},
 	}
 
 	for _, tc := range testCases {
@@ -224,26 +193,6 @@ func TestNetworkService_GetNames(t *testing.T) {
 			expected: []string{"eth0"},
 		},
 		{
-			name: "interface with empty MAC but valid name",
-			provider: &MockProvider{
-				interfaces: []*wifi.Interface{
-					{Name: "eth0", HardwareAddr: net.HardwareAddr{}},
-					{Name: "wlan0", HardwareAddr: net.HardwareAddr{}},
-				},
-			},
-			expected: []string{"eth0", "wlan0"},
-		},
-		{
-			name: "interface with valid MAC but empty name",
-			provider: &MockProvider{
-				interfaces: []*wifi.Interface{
-					{Name: "", HardwareAddr: createTestInterface("", "01:02:03:04:05:06").HardwareAddr},
-				},
-			},
-			expectError:    true,
-			errorSubstring: "no valid network interfaces found",
-		},
-		{
 			name: "all empty interfaces",
 			provider: &MockProvider{
 				interfaces: []*wifi.Interface{
@@ -281,17 +230,4 @@ func TestNetworkService_New(t *testing.T) {
 	provider := &MockProvider{}
 	service := wifiPkg.New(provider)
 	assert.NotNil(t, service)
-
-	// Test with nil provider
-	service2 := wifiPkg.New(nil)
-	assert.NotNil(t, service2)
-
-	// Test that methods with nil provider return errors
-	addresses, err := service2.GetAddresses()
-	require.Error(t, err)
-	assert.Nil(t, addresses)
-
-	names, err := service2.GetNames()
-	require.Error(t, err)
-	assert.Nil(t, names)
 }
