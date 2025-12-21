@@ -1,4 +1,4 @@
-package netif_test
+package wifi
 
 import (
 	"errors"
@@ -8,153 +8,147 @@ import (
 	"github.com/mdlayher/wifi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/Czeeen/lets-go-programming-v2025-autumn-spbstu-40008/nikita.prokopenko/task-6/internal/netif"
 )
 
 var (
 	errInterfaceError = errors.New("interface access error")
-	errPermission     = errors.New("permission denied for interface access")
+	errPermission     = errors.New("permission denied")
 )
 
-func TestNetworkService_GetHardwareAddresses(t *testing.T) {
+func TestNetworkManager_GetMACAddresses(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
+	cases := []struct {
 		name           string
-		setupMock      func(*netif.MockInterfaceHandler)
+		mockSetup      func(*MockInterfaceSource)
 		expectedMACs   []string
 		expectError    bool
 		errorSubstring string
 	}{
 		{
-			name: "valid MAC addresses retrieval",
-			setupMock: func(m *netif.MockInterfaceHandler) {
+			name: "valid MAC addresses",
+			mockSetup: func(m *MockInterfaceSource) {
 				interfaces := []*wifi.Interface{
-					netif.CreateTestInterfaceData("eth0", "01:23:45:67:89:ab"),
-					netif.CreateTestInterfaceData("wlan0", "cd:ef:01:23:45:67"),
+					createTestInterface("eth0", "01:23:45:67:89:ab"),
+					createTestInterface("wlan0", "cd:ef:01:23:45:67"),
 				}
-				m.On("FetchInterfaces").Return(interfaces, nil).Once()
+				m.On("Interfaces").Return(interfaces, nil).Once()
 			},
 			expectedMACs: []string{"01:23:45:67:89:ab", "cd:ef:01:23:45:67"},
 		},
 		{
-			name: "interface fetch failure",
-			setupMock: func(m *netif.MockInterfaceHandler) {
-				m.On("FetchInterfaces").Return(nil, errInterfaceError).Once()
+			name: "interface fetch error",
+			mockSetup: func(m *MockInterfaceSource) {
+				m.On("Interfaces").Return(nil, errInterfaceError).Once()
 			},
 			expectError:    true,
-			errorSubstring: "failed to fetch network interfaces",
+			errorSubstring: "failed to fetch interfaces",
 		},
 		{
-			name: "no valid MAC addresses",
-			setupMock: func(m *netif.MockInterfaceHandler) {
+			name: "no valid MACs",
+			mockSetup: func(m *MockInterfaceSource) {
 				interfaces := []*wifi.Interface{
 					{Name: "lo", HardwareAddr: net.HardwareAddr{}},
 					{Name: "dummy", HardwareAddr: net.HardwareAddr{0x00}},
 				}
-				m.On("FetchInterfaces").Return(interfaces, nil).Once()
+				m.On("Interfaces").Return(interfaces, nil).Once()
 			},
 			expectError:    true,
-			errorSubstring: "no valid MAC addresses detected",
+			errorSubstring: "no valid MAC addresses",
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			
-			mockHandler := new(netif.MockInterfaceHandler)
-			service := netif.NewNetworkService(mockHandler)
-			tt.setupMock(mockHandler)
+			mockSource := new(MockInterfaceSource)
+			manager := CreateManager(mockSource)
+			tc.mockSetup(mockSource)
 
-			macs, err := service.GetHardwareAddresses()
+			macs, err := manager.GetMACAddresses()
 
-			if tt.expectError {
+			if tc.expectError {
 				require.Error(t, err)
-				assert.Contains(t, err.Error(), tt.errorSubstring)
+				assert.Contains(t, err.Error(), tc.errorSubstring)
 				assert.Nil(t, macs)
 			} else {
 				require.NoError(t, err)
-				require.Len(t, macs, len(tt.expectedMACs))
-				for i, expected := range tt.expectedMACs {
+				require.Len(t, macs, len(tc.expectedMACs))
+				for i, expected := range tc.expectedMACs {
 					assert.Equal(t, expected, macs[i].String())
 				}
 			}
 			
-			mockHandler.ValidateExpectations(t)
+			mockSource.AssertExpectations(t)
 		})
 	}
 }
 
-func TestNetworkService_GetInterfaceIdentifiers(t *testing.T) {
+func TestNetworkManager_GetInterfaceNames(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
+	cases := []struct {
 		name           string
-		setupMock      func(*netif.MockInterfaceHandler)
+		mockSetup      func(*MockInterfaceSource)
 		expectedNames  []string
 		expectError    bool
 		errorSubstring string
 	}{
 		{
-			name: "successful interface names retrieval",
-			setupMock: func(m *netif.MockInterfaceHandler) {
+			name: "valid interface names",
+			mockSetup: func(m *MockInterfaceSource) {
 				interfaces := []*wifi.Interface{
 					{Name: "eth0"},
 					{Name: "wlan1"},
 					{Name: "docker0"},
 				}
-				m.On("FetchInterfaces").Return(interfaces, nil).Once()
+				m.On("Interfaces").Return(interfaces, nil).Once()
 			},
 			expectedNames: []string{"eth0", "wlan1", "docker0"},
 		},
 		{
-			name: "permission denied error",
-			setupMock: func(m *netif.MockInterfaceHandler) {
-				m.On("FetchInterfaces").Return(nil, errPermission).Once()
+			name: "permission error",
+			mockSetup: func(m *MockInterfaceSource) {
+				m.On("Interfaces").Return(nil, errPermission).Once()
 			},
 			expectError:    true,
-			errorSubstring: "failed to fetch network interfaces",
+			errorSubstring: "failed to fetch interfaces",
 		},
 		{
-			name: "all interface names empty",
-			setupMock: func(m *netif.MockInterfaceHandler) {
+			name: "all names empty",
+			mockSetup: func(m *MockInterfaceSource) {
 				interfaces := []*wifi.Interface{
 					{Name: ""},
 					{Name: "  "},
 				}
-				m.On("FetchInterfaces").Return(interfaces, nil).Once()
+				m.On("Interfaces").Return(interfaces, nil).Once()
 			},
 			expectError:    true,
-			errorSubstring: "all interface names are empty",
+			errorSubstring: "all names empty",
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			
-			mockHandler := new(netif.MockInterfaceHandler)
-			service := netif.NewNetworkService(mockHandler)
-			tt.setupMock(mockHandler)
+			mockSource := new(MockInterfaceSource)
+			manager := CreateManager(mockSource)
+			tc.mockSetup(mockSource)
 
-			names, err := service.GetInterfaceIdentifiers()
+			names, err := manager.GetInterfaceNames()
 
-			if tt.expectError {
+			if tc.expectError {
 				require.Error(t, err)
-				assert.Contains(t, err.Error(), tt.errorSubstring)
+				assert.Contains(t, err.Error(), tc.errorSubstring)
 				assert.Nil(t, names)
 			} else {
 				require.NoError(t, err)
-				assert.Equal(t, tt.expectedNames, names)
+				assert.Equal(t, tc.expectedNames, names)
 			}
 			
-			mockHandler.ValidateExpectations(t)
+			mockSource.AssertExpectations(t)
 		})
 	}
-}
-
-func (m *netif.MockInterfaceHandler) CreateTestInterfaceData(name, macAddress string) *wifi.Interface {
-	return netif.CreateTestInterfaceData(name, macAddress)
 }

@@ -1,4 +1,4 @@
-package netif
+package wifi
 
 import (
 	"errors"
@@ -9,67 +9,66 @@ import (
 )
 
 var (
-	ErrInterfaceFetch    = errors.New("failed to fetch network interfaces")
-	ErrNoValidInterfaces = errors.New("no valid network interfaces found")
-	ErrInvalidMACAddress = errors.New("invalid MAC address format detected")
+	ErrInterfaceFetch = errors.New("failed to fetch interfaces")
+	ErrNoValidData    = errors.New("no valid interface data")
 )
 
-type InterfaceHandler interface {
-	FetchInterfaces() ([]*wifi.Interface, error)
+type InterfaceSource interface {
+	Interfaces() ([]*wifi.Interface, error)
 }
 
-type NetworkService struct {
-	handler InterfaceHandler
+type NetworkManager struct {
+	source InterfaceSource
 }
 
-func NewNetworkService(handler InterfaceHandler) *NetworkService {
-	return &NetworkService{handler: handler}
+func CreateManager(source InterfaceSource) *NetworkManager {
+	return &NetworkManager{source: source}
 }
 
-func (s *NetworkService) GetHardwareAddresses() ([]net.HardwareAddr, error) {
-	interfaces, err := s.handler.FetchInterfaces()
+func (m *NetworkManager) GetMACAddresses() ([]net.HardwareAddr, error) {
+	interfaces, err := m.source.Interfaces()
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInterfaceFetch, err)
 	}
 
 	if len(interfaces) == 0 {
-		return nil, fmt.Errorf("%w: empty interface list", ErrNoValidInterfaces)
+		return nil, fmt.Errorf("%w: empty interface list", ErrNoValidData)
 	}
 
-	var macAddresses []net.HardwareAddr
+	var macs []net.HardwareAddr
 	for _, iface := range interfaces {
 		if len(iface.HardwareAddr) == 6 {
-			macAddresses = append(macAddresses, iface.HardwareAddr)
+			macs = append(macs, iface.HardwareAddr)
 		}
 	}
 
-	if len(macAddresses) == 0 {
-		return nil, fmt.Errorf("%w: no valid MAC addresses detected", ErrInvalidMACAddress)
+	if len(macs) == 0 {
+		return nil, fmt.Errorf("%w: no valid MAC addresses", ErrNoValidData)
 	}
 
-	return macAddresses, nil
+	return macs, nil
 }
 
-func (s *NetworkService) GetInterfaceIdentifiers() ([]string, error) {
-	interfaces, err := s.handler.FetchInterfaces()
+func (m *NetworkManager) GetInterfaceNames() ([]string, error) {
+	interfaces, err := m.source.Interfaces()
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInterfaceFetch, err)
 	}
 
 	if len(interfaces) == 0 {
-		return nil, fmt.Errorf("%w: no interfaces available", ErrNoValidInterfaces)
+		return nil, fmt.Errorf("%w: no interfaces available", ErrNoValidData)
 	}
 
-	interfaceNames := make([]string, 0, len(interfaces))
+	names := make([]string, 0, len(interfaces))
 	for _, iface := range interfaces {
 		if iface.Name != "" {
-			interfaceNames = append(interfaceNames, iface.Name)
+			names = append(names, iface.Name)
 		}
 	}
 
-	if len(interfaceNames) == 0 {
-		return nil, fmt.Errorf("%w: all interface names are empty", ErrNoValidInterfaces)
+	if len(names) == 0 {
+		return nil, fmt.Errorf("%w: all names empty", ErrNoValidData)
 	}
 
-	return interfaceNames, nil
+	return names, nil
 }

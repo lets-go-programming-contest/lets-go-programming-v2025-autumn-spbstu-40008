@@ -1,4 +1,4 @@
-package usersdb
+package db
 
 import (
 	"database/sql"
@@ -7,44 +7,43 @@ import (
 )
 
 var (
-	ErrDatabaseQuery    = errors.New("database query execution failed")
-	ErrRowScan          = errors.New("error scanning row data")
-	ErrNoRowsAvailable  = errors.New("no rows available in result set")
-	ErrResultProcessing = errors.New("error processing query results")
+	ErrQueryExecution = errors.New("database query failed")
+	ErrRowProcessing  = errors.New("row processing error")
+	ErrNoRecords      = errors.New("no records found")
 )
 
-type QueryExecutor interface {
+type DBExecutor interface {
 	Query(query string, args ...any) (*sql.Rows, error)
 }
 
-type UserDataService struct {
-	executor QueryExecutor
+type DataHandler struct {
+	DB DBExecutor
 }
 
-func NewUserService(executor QueryExecutor) *UserDataService {
-	return &UserDataService{executor: executor}
+func CreateHandler(db DBExecutor) *DataHandler {
+	return &DataHandler{DB: db}
 }
 
-func (s *UserDataService) FetchUsernames() ([]string, error) {
+func (h *DataHandler) RetrieveNames() ([]string, error) {
 	const query = "SELECT name FROM users"
 	
-	rows, err := s.executor.Query(query)
+	rows, err := h.DB.Query(query)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrDatabaseQuery, err)
+		return nil, fmt.Errorf("%w: %v", ErrQueryExecution, err)
 	}
 	defer rows.Close()
 
 	if !rows.Next() {
-		return nil, fmt.Errorf("%w: empty table", ErrNoRowsAvailable)
+		return nil, fmt.Errorf("%w: empty result set", ErrNoRecords)
 	}
 
-	var usernames []string
+	var names []string
 	for {
 		var name string
 		if err := rows.Scan(&name); err != nil {
-			return nil, fmt.Errorf("%w: %v", ErrRowScan, err)
+			return nil, fmt.Errorf("%w: %v", ErrRowProcessing, err)
 		}
-		usernames = append(usernames, name)
+		names = append(names, name)
 		
 		if !rows.Next() {
 			break
@@ -52,36 +51,36 @@ func (s *UserDataService) FetchUsernames() ([]string, error) {
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrResultProcessing, err)
+		return nil, fmt.Errorf("%w: %v", ErrRowProcessing, err)
 	}
 
-	return usernames, nil
+	return names, nil
 }
 
-func (s *UserDataService) FetchUniqueUsernames() ([]string, error) {
+func (h *DataHandler) RetrieveUniqueNames() ([]string, error) {
 	const query = "SELECT DISTINCT name FROM users"
 	
-	rows, err := s.executor.Query(query)
+	rows, err := h.DB.Query(query)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrDatabaseQuery, err)
+		return nil, fmt.Errorf("%w: %v", ErrQueryExecution, err)
 	}
 	defer rows.Close()
 
 	if !rows.Next() {
-		return nil, fmt.Errorf("%w: no unique records found", ErrNoRowsAvailable)
+		return nil, fmt.Errorf("%w: no distinct records", ErrNoRecords)
 	}
 
-	uniqueNames := make(map[string]struct{})
+	unique := make(map[string]struct{})
 	var result []string
 	
 	for {
 		var name string
 		if err := rows.Scan(&name); err != nil {
-			return nil, fmt.Errorf("%w: %v", ErrRowScan, err)
+			return nil, fmt.Errorf("%w: %v", ErrRowProcessing, err)
 		}
 		
-		if _, exists := uniqueNames[name]; !exists {
-			uniqueNames[name] = struct{}{}
+		if _, exists := unique[name]; !exists {
+			unique[name] = struct{}{}
 			result = append(result, name)
 		}
 		
@@ -91,7 +90,7 @@ func (s *UserDataService) FetchUniqueUsernames() ([]string, error) {
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrResultProcessing, err)
+		return nil, fmt.Errorf("%w: %v", ErrRowProcessing, err)
 	}
 
 	return result, nil
