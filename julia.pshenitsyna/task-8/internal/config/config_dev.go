@@ -1,4 +1,5 @@
 //go:build dev
+
 package config
 
 import (
