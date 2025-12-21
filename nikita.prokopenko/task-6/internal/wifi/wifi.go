@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	ErrInterfaceFetch = errors.New("failed to fetch interfaces")
+	ErrInterfaceFetch   = errors.New("failed to fetch interfaces")
 	ErrNoValidInterfaces = errors.New("no valid network interfaces found")
 )
 
@@ -28,39 +28,49 @@ func New(provider InterfaceProvider) NetworkService {
 func (s NetworkService) GetAddresses() ([]net.HardwareAddr, error) {
 	interfaces, err := s.provider.Interfaces()
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrInterfaceFetch, err)
+		return nil, fmt.Errorf("%w: %w", ErrInterfaceFetch, err)
 	}
+
 	if len(interfaces) == 0 {
 		return nil, fmt.Errorf("%w", ErrNoValidInterfaces)
 	}
+
 	addresses := make([]net.HardwareAddr, 0, len(interfaces))
+
 	for _, iface := range interfaces {
 		if len(iface.HardwareAddr) > 0 {
 			addresses = append(addresses, iface.HardwareAddr)
 		}
 	}
+
 	if len(addresses) == 0 {
 		return nil, fmt.Errorf("%w", ErrNoValidInterfaces)
 	}
+
 	return addresses, nil
 }
 
 func (s NetworkService) GetNames() ([]string, error) {
 	interfaces, err := s.provider.Interfaces()
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrInterfaceFetch, err)
+		return nil, fmt.Errorf("%w: %w", ErrInterfaceFetch, err)
 	}
+
 	if len(interfaces) == 0 {
 		return nil, fmt.Errorf("%w", ErrNoValidInterfaces)
 	}
+
 	names := make([]string, 0, len(interfaces))
+
 	for _, iface := range interfaces {
 		if iface.Name != "" {
 			names = append(names, iface.Name)
 		}
 	}
+
 	if len(names) == 0 {
 		return nil, fmt.Errorf("%w", ErrNoValidInterfaces)
 	}
+
 	return names, nil
 }

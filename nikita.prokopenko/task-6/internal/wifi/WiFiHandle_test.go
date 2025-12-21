@@ -3,7 +3,6 @@ package wifi_test
 import (
 	"errors"
 	"fmt"
-	"net"
 
 	"github.com/mdlayher/wifi"
 	"github.com/stretchr/testify/mock"
@@ -36,13 +35,4 @@ func (m *MockInterfaceSource) Interfaces() ([]*wifi.Interface, error) {
 	}
 
 	return interfaces, nil
-}
-
-func createTestInterface(name, macStr string) *wifi.Interface {
-	mac, _ := net.ParseMAC(macStr)
-
-	return &wifi.Interface{
-		Name:         name,
-		HardwareAddr: mac,
-	}
 }

@@ -13,17 +13,18 @@ import (
 )
 
 var (
-	errDBFailure = errors.New("database connection failed")
+	errDBFailure  = errors.New("database connection failed")
 	errRowFailure = errors.New("corrupted row data")
 )
 
 func TestDataHandler_GetNames(t *testing.T) {
 	t.Parallel()
+
 	cases := []struct {
-		name string
-		setupMock func(sqlmock.Sqlmock)
-		expected []string
-		expectError bool
+		name          string
+		setupMock     func(sqlmock.Sqlmock)
+		expected      []string
+		expectError   bool
 		errorContains string
 	}{
 		{
@@ -42,7 +43,7 @@ func TestDataHandler_GetNames(t *testing.T) {
 			setupMock: func(mock sqlmock.Sqlmock) {
 				mock.ExpectQuery("SELECT name FROM users").WillReturnError(errDBFailure)
 			},
-			expectError: true,
+			expectError:   true,
 			errorContains: "database query failed",
 		},
 		{
@@ -51,7 +52,7 @@ func TestDataHandler_GetNames(t *testing.T) {
 				rows := sqlmock.NewRows([]string{"name"})
 				mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
 			},
-			expectError: true,
+			expectError:   true,
 			errorContains: "no records found",
 		},
 		{
@@ -60,7 +61,7 @@ func TestDataHandler_GetNames(t *testing.T) {
 				rows := sqlmock.NewRows([]string{"name"}).AddRow(nil)
 				mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
 			},
-			expectError: true,
+			expectError:   true,
 			errorContains: "row processing error",
 		},
 		{
@@ -72,19 +73,24 @@ func TestDataHandler_GetNames(t *testing.T) {
 					RowError(1, errRowFailure)
 				mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
 			},
-			expectError: true,
+			expectError:   true,
 			errorContains: "row processing error",
 		},
 	}
+
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+
 			mockDB, mock, err := sqlmock.New()
 			require.NoError(t, err)
 			defer mockDB.Close()
+
 			handler := db.New(mockDB)
 			tc.setupMock(mock)
+
 			result, err := handler.GetNames()
+
 			if tc.expectError {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tc.errorContains)
@@ -93,6 +99,7 @@ func TestDataHandler_GetNames(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, tc.expected, result)
 			}
+
 			assert.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
@@ -100,11 +107,12 @@ func TestDataHandler_GetNames(t *testing.T) {
 
 func TestDataHandler_GetUniqueNames(t *testing.T) {
 	t.Parallel()
+
 	cases := []struct {
-		name string
-		setupMock func(sqlmock.Sqlmock)
-		expected []string
-		expectError bool
+		name          string
+		setupMock     func(sqlmock.Sqlmock)
+		expected      []string
+		expectError   bool
 		errorContains string
 	}{
 		{
@@ -122,7 +130,7 @@ func TestDataHandler_GetUniqueNames(t *testing.T) {
 			setupMock: func(mock sqlmock.Sqlmock) {
 				mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnError(sql.ErrConnDone)
 			},
-			expectError: true,
+			expectError:   true,
 			errorContains: "database query failed",
 		},
 		{
@@ -131,7 +139,7 @@ func TestDataHandler_GetUniqueNames(t *testing.T) {
 				rows := sqlmock.NewRows([]string{"name"}).AddRow(nil)
 				mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
 			},
-			expectError: true,
+			expectError:   true,
 			errorContains: "row processing error",
 		},
 		{
@@ -143,19 +151,24 @@ func TestDataHandler_GetUniqueNames(t *testing.T) {
 					RowError(1, errRowFailure)
 				mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
 			},
-			expectError: true,
+			expectError:   true,
 			errorContains: "row processing error",
 		},
 	}
+
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+
 			mockDB, mock, err := sqlmock.New()
 			require.NoError(t, err)
 			defer mockDB.Close()
+
 			handler := db.New(mockDB)
 			tc.setupMock(mock)
+
 			result, err := handler.GetUniqueNames()
+
 			if tc.expectError {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tc.errorContains)
@@ -164,6 +177,7 @@ func TestDataHandler_GetUniqueNames(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, tc.expected, result)
 			}
+
 			assert.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
