@@ -1,24 +1,16 @@
 package db_test
-
 import (
 	"database/sql"
 	"errors"
 	"testing"
-
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
 	"github.com/Czeeen/lets-go-programming-v2025-autumn-spbstu-40008/nikita.prokopenko/task-6/internal/db"
 )
-
-var (
-	errDBFailure = errors.New("database connection failed")
-)
-
+var errDBFailure = errors.New("database connection failed")
 func TestDataHandler_RetrieveNames(t *testing.T) {
 	t.Parallel()
-
 	cases := []struct {
 		name          string
 		mockSetup     func(sqlmock.Sqlmock)
@@ -29,10 +21,7 @@ func TestDataHandler_RetrieveNames(t *testing.T) {
 		{
 			name: "valid multiple records",
 			mockSetup: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"name"}).
-					AddRow("User1").
-					AddRow("User2").
-					AddRow("User3")
+				rows := sqlmock.NewRows([]string{"name"}).AddRow("User1").AddRow("User2").AddRow("User3")
 				mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
 			},
 			expected: []string{"User1", "User2", "User3"},
@@ -42,7 +31,7 @@ func TestDataHandler_RetrieveNames(t *testing.T) {
 			mockSetup: func(mock sqlmock.Sqlmock) {
 				mock.ExpectQuery("SELECT name FROM users").WillReturnError(errDBFailure)
 			},
-			expectError:   true,
+			expectError: true,
 			errorContains: "database query failed",
 		},
 		{
@@ -51,7 +40,7 @@ func TestDataHandler_RetrieveNames(t *testing.T) {
 				rows := sqlmock.NewRows([]string{"name"})
 				mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
 			},
-			expectError:   true,
+			expectError: true,
 			errorContains: "no records found",
 		},
 		{
@@ -60,26 +49,19 @@ func TestDataHandler_RetrieveNames(t *testing.T) {
 				rows := sqlmock.NewRows([]string{"name"}).AddRow(123)
 				mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
 			},
-			expectError:   true,
+			expectError: true,
 			errorContains: "row processing error",
 		},
 	}
-
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-
 			mockDB, mock, err := sqlmock.New()
 			require.NoError(t, err)
-
 			defer mockDB.Close()
-
 			handler := db.CreateHandler(mockDB)
-
 			tc.mockSetup(mock)
-
 			result, err := handler.RetrieveNames()
-
 			if tc.expectError {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tc.errorContains)
@@ -88,15 +70,12 @@ func TestDataHandler_RetrieveNames(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, tc.expected, result)
 			}
-
 			assert.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
 }
-
 func TestDataHandler_RetrieveUniqueNames(t *testing.T) {
 	t.Parallel()
-
 	cases := []struct {
 		name          string
 		mockSetup     func(sqlmock.Sqlmock)
@@ -107,10 +86,7 @@ func TestDataHandler_RetrieveUniqueNames(t *testing.T) {
 		{
 			name: "valid distinct records",
 			mockSetup: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"name"}).
-					AddRow("UserA").
-					AddRow("UserB").
-					AddRow("UserA")
+				rows := sqlmock.NewRows([]string{"name"}).AddRow("UserA").AddRow("UserB").AddRow("UserA")
 				mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
 			},
 			expected: []string{"UserA", "UserB"},
@@ -120,7 +96,7 @@ func TestDataHandler_RetrieveUniqueNames(t *testing.T) {
 			mockSetup: func(mock sqlmock.Sqlmock) {
 				mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnError(sql.ErrNoRows)
 			},
-			expectError:   true,
+			expectError: true,
 			errorContains: "database query failed",
 		},
 		{
@@ -129,26 +105,19 @@ func TestDataHandler_RetrieveUniqueNames(t *testing.T) {
 				rows := sqlmock.NewRows([]string{"name"})
 				mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
 			},
-			expectError:   true,
+			expectError: true,
 			errorContains: "no distinct records",
 		},
 	}
-
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-
 			mockDB, mock, err := sqlmock.New()
 			require.NoError(t, err)
-
 			defer mockDB.Close()
-
 			handler := db.CreateHandler(mockDB)
-
 			tc.mockSetup(mock)
-
 			result, err := handler.RetrieveUniqueNames()
-
 			if tc.expectError {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tc.errorContains)
@@ -157,7 +126,6 @@ func TestDataHandler_RetrieveUniqueNames(t *testing.T) {
 				require.NoError(t, err)
 				assert.ElementsMatch(t, tc.expected, result)
 			}
-
 			assert.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
