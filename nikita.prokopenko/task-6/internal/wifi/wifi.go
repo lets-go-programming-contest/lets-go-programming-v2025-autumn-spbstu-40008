@@ -4,66 +4,63 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"strings"
 
 	"github.com/mdlayher/wifi"
 )
 
 var (
 	ErrInterfaceFetch = errors.New("failed to fetch interfaces")
-	ErrNoValidData    = errors.New("no valid interface data")
+	ErrNoValidInterfaces = errors.New("no valid network interfaces found")
 )
 
-const macAddressLen = 6
-
-type InterfaceSource interface {
+type InterfaceProvider interface {
 	Interfaces() ([]*wifi.Interface, error)
 }
 
-type NetworkManager struct {
-	source InterfaceSource
+type NetworkService struct {
+	provider InterfaceProvider
 }
 
-func CreateManager(source InterfaceSource) *NetworkManager {
-	return &NetworkManager{source: source}
+func New(provider InterfaceProvider) NetworkService {
+	return NetworkService{provider: provider}
 }
 
-func (m *NetworkManager) GetMACAddresses() ([]net.HardwareAddr, error) {
-	interfaces, err := m.source.Interfaces()
+func (s NetworkService) GetAddresses() ([]net.HardwareAddr, error) {
+	interfaces, err := s.provider.Interfaces()
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrInterfaceFetch, err)
+		return nil, fmt.Errorf("%w: %v", ErrInterfaceFetch, err)
 	}
 	if len(interfaces) == 0 {
-		return nil, fmt.Errorf("%w: empty interface list", ErrNoValidData)
+		return nil, fmt.Errorf("%w", ErrNoValidInterfaces)
 	}
-	var macs []net.HardwareAddr
+	addresses := make([]net.HardwareAddr, 0, len(interfaces))
 	for _, iface := range interfaces {
-		if len(iface.HardwareAddr) == macAddressLen {
-			macs = append(macs, iface.HardwareAddr)
+		if len(iface.HardwareAddr) > 0 {
+			addresses = append(addresses, iface.HardwareAddr)
 		}
 	}
-	if len(macs) == 0 {
-		return nil, fmt.Errorf("%w: no valid MAC addresses", ErrNoValidData)
+	if len(addresses) == 0 {
+		return nil, fmt.Errorf("%w", ErrNoValidInterfaces)
 	}
-	return macs, nil
+	return addresses, nil
 }
 
-func (m *NetworkManager) GetInterfaceNames() ([]string, error) {
-	interfaces, err := m.source.Interfaces()
+func (s NetworkService) GetNames() ([]string, error) {
+	interfaces, err := s.provider.Interfaces()
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrInterfaceFetch, err)
+		return nil, fmt.Errorf("%w: %v", ErrInterfaceFetch, err)
 	}
 	if len(interfaces) == 0 {
-		return nil, fmt.Errorf("%w: no interfaces available", ErrNoValidData)
+		return nil, fmt.Errorf("%w", ErrNoValidInterfaces)
 	}
 	names := make([]string, 0, len(interfaces))
 	for _, iface := range interfaces {
-		if strings.TrimSpace(iface.Name) != "" {
+		if iface.Name != "" {
 			names = append(names, iface.Name)
 		}
 	}
 	if len(names) == 0 {
-		return nil, fmt.Errorf("%w: all names empty", ErrNoValidData)
+		return nil, fmt.Errorf("%w", ErrNoValidInterfaces)
 	}
 	return names, nil
 }
