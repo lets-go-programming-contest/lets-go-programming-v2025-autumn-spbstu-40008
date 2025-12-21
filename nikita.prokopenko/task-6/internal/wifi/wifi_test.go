@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	errInterface = errors.New("interface error")
+	errInterface  = errors.New("interface error")
 	errPermission = errors.New("permission denied")
 )
 
@@ -104,7 +104,6 @@ func TestNetworkService_GetAddresses(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -207,7 +206,6 @@ func TestNetworkService_GetNames(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 

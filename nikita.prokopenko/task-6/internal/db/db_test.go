@@ -90,7 +90,6 @@ func TestDataHandler_GetNames(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -203,7 +202,6 @@ func TestDataHandler_GetUniqueNames(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -212,6 +210,7 @@ func TestDataHandler_GetUniqueNames(t *testing.T) {
 			defer dbConn.Close()
 
 			handler := db.New(dbConn)
+
 			tc.setupMock(mock)
 
 			result, err := handler.GetUniqueNames()
