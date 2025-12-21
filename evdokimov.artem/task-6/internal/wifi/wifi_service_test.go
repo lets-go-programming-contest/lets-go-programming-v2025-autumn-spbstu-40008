@@ -13,13 +13,14 @@ import (
 
 var errInterfaces = errors.New("interfaces error")
 
+func parseMAC(value string) net.HardwareAddr {
+	mac, _ := net.ParseMAC(value)
+
+	return mac
+}
+
 func TestWiFiService_GetAddresses(t *testing.T) {
 	t.Parallel()
-
-	testMAC := func(value string) net.HardwareAddr {
-		mac, _ := net.ParseMAC(value)
-		return mac
-	}
 
 	t.Run("ok", func(t *testing.T) {
 		t.Parallel()
@@ -27,13 +28,23 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 		handle := &mockWiFiHandle{}
 		service := wifipkg.New(handle)
 
-		handle.On("Interfaces").Return([]*wifi.Interface{
-			{Name: "wlan0", HardwareAddr: testMAC("00:11:22:33:44:55")},
-		}, nil).Once()
+		handle.On("Interfaces").
+			Return([]*wifi.Interface{
+				{
+					Name:         "wlan0",
+					HardwareAddr: parseMAC("00:11:22:33:44:55"),
+				},
+			}, nil).
+			Once()
 
-		got, err := service.GetAddresses()
+		result, err := service.GetAddresses()
+
 		require.NoError(t, err)
-		require.Equal(t, []net.HardwareAddr{testMAC("00:11:22:33:44:55")}, got)
+		require.Equal(
+			t,
+			[]net.HardwareAddr{parseMAC("00:11:22:33:44:55")},
+			result,
+		)
 
 		handle.AssertExpectations(t)
 	})
@@ -44,12 +55,15 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 		handle := &mockWiFiHandle{}
 		service := wifipkg.New(handle)
 
-		handle.On("Interfaces").Return(nil, errInterfaces).Once()
+		handle.On("Interfaces").
+			Return(nil, errInterfaces).
+			Once()
 
-		got, err := service.GetAddresses()
+		result, err := service.GetAddresses()
+
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "getting interfaces:")
-		require.Nil(t, got)
+		require.Nil(t, result)
 
 		handle.AssertExpectations(t)
 	})
@@ -64,14 +78,17 @@ func TestWiFiService_GetNames(t *testing.T) {
 		handle := &mockWiFiHandle{}
 		service := wifipkg.New(handle)
 
-		handle.On("Interfaces").Return([]*wifi.Interface{
-			{Name: "wlan0"},
-			{Name: "eth0"},
-		}, nil).Once()
+		handle.On("Interfaces").
+			Return([]*wifi.Interface{
+				{Name: "wlan0"},
+				{Name: "eth0"},
+			}, nil).
+			Once()
 
-		got, err := service.GetNames()
+		result, err := service.GetNames()
+
 		require.NoError(t, err)
-		require.Equal(t, []string{"wlan0", "eth0"}, got)
+		require.Equal(t, []string{"wlan0", "eth0"}, result)
 
 		handle.AssertExpectations(t)
 	})
@@ -82,12 +99,15 @@ func TestWiFiService_GetNames(t *testing.T) {
 		handle := &mockWiFiHandle{}
 		service := wifipkg.New(handle)
 
-		handle.On("Interfaces").Return(nil, errInterfaces).Once()
+		handle.On("Interfaces").
+			Return(nil, errInterfaces).
+			Once()
 
-		got, err := service.GetNames()
+		result, err := service.GetNames()
+
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "getting interfaces:")
-		require.Nil(t, got)
+		require.Nil(t, result)
 
 		handle.AssertExpectations(t)
 	})
