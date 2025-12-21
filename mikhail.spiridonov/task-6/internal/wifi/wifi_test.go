@@ -2,9 +2,10 @@ package wifi
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"testing"
-
+	"time"
 	"github.com/mdlayher/wifi"
 	"github.com/stretchr/testify/require"
 
