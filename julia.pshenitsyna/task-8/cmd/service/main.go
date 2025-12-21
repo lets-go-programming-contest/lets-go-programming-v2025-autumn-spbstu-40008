@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/julia.pshenitsyna/task-8/internal/config"
 	"log"
+
+	"github.com/julia.pshenitsyna/task-8/internal/config"
 )
 
 func main() {
@@ -11,5 +12,5 @@ func main() {
 	if err != nil {
 		log.Fatal("Failed to load config: ", err)
 	}
-	fmt.Printf("%s %s\n", conf.Environment, conf.LogLevel)
+	fmt.Printf(conf.Environment, " ",conf.LogLevel)
 }
