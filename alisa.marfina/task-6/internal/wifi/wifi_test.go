@@ -1,39 +1,148 @@
 package wifi_test
 
 import (
-	"fmt"
+	"errors"
+	"net"
+	"testing"
 
 	"github.com/mdlayher/wifi"
-	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	wifiPkg "github.com/AliseMarfina/task-6/internal/wifi"
 )
 
-type MockWiFiHandle struct {
-	mock.Mock
-}
+var (
+	errFailedInterfaces = errors.New("failed to get interfaces")
+	errPermissionDenied = errors.New("permission denied")
+)
 
-func (m *MockWiFiHandle) Interfaces() ([]*wifi.Interface, error) {
-	args := m.Called()
+func TestWiFiService_GetAddresses(t *testing.T) {
+	t.Parallel()
 
-	var err error
-	if args.Error(1) != nil {
-		err = fmt.Errorf("mock error: %w", args.Error(1))
-	}
+	createInterfaces := func(macs []string) []*wifi.Interface {
+		interfaces := make([]*wifi.Interface, 0, len(macs))
 
-	if args.Get(0) == nil {
-		return nil, err
-	}
+		for i, macStr := range macs {
+			mac, _ := net.ParseMAC(macStr)
 
-	ifaceSlice, ok := args.Get(0).([]*wifi.Interface)
-	if !ok {
-		if err != nil {
-			return nil, fmt.Errorf("type assertion failed: %w", err)
+			interfaces = append(interfaces, &wifi.Interface{
+				Index:        i,
+				Name:         "wlan",
+				HardwareAddr: mac,
+			})
 		}
-		return nil, fmt.Errorf("type assertion failed")
+
+		return interfaces
 	}
 
-	return ifaceSlice, err
+	testCases := []struct {
+		name        string
+		setupMock   func(*MockWiFiHandle)
+		expected    []net.HardwareAddr
+		expectedErr string
+	}{
+		{
+			name: "success",
+			setupMock: func(m *MockWiFiHandle) {
+				m.On("Interfaces").
+					Return(createInterfaces([]string{"00:11:22:33:44:55"}), nil).
+					Once()
+			},
+			expected: func() []net.HardwareAddr {
+				mac, _ := net.ParseMAC("00:11:22:33:44:55")
+				return []net.HardwareAddr{mac}
+			}(),
+		},
+		{
+			name: "error",
+			setupMock: func(m *MockWiFiHandle) {
+				m.On("Interfaces").
+					Return(nil, errFailedInterfaces).
+					Once()
+			},
+			expectedErr: "getting interfaces:",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			mockWiFi := &MockWiFiHandle{}
+			service := wifiPkg.New(mockWiFi)
+
+			tc.setupMock(mockWiFi)
+
+			result, err := service.GetAddresses()
+
+			if tc.expectedErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.expectedErr)
+				assert.Nil(t, result)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tc.expected, result)
+			}
+
+			mockWiFi.AssertExpectations(t)
+		})
+	}
 }
 
-func (m *MockWiFiHandle) AssertExpectations(t mock.TestingT) bool {
-	return m.Mock.AssertExpectations(t)
+func TestWiFiService_GetNames(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name        string
+		setupMock   func(*MockWiFiHandle)
+		expected    []string
+		expectedErr string
+	}{
+		{
+			name: "success",
+			setupMock: func(m *MockWiFiHandle) {
+				m.On("Interfaces").
+					Return([]*wifi.Interface{
+						{Name: "wlan0"},
+						{Name: "eth0"},
+					}, nil).
+					Once()
+			},
+			expected: []string{"wlan0", "eth0"},
+		},
+		{
+			name: "error",
+			setupMock: func(m *MockWiFiHandle) {
+				m.On("Interfaces").
+					Return(nil, errPermissionDenied).
+					Once()
+			},
+			expectedErr: "getting interfaces:",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			mockWiFi := &MockWiFiHandle{}
+			service := wifiPkg.New(mockWiFi)
+
+			tc.setupMock(mockWiFi)
+
+			result, err := service.GetNames()
+
+			if tc.expectedErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.expectedErr)
+				assert.Nil(t, result)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tc.expected, result)
+			}
+
+			mockWiFi.AssertExpectations(t)
+		})
+	}
 }
