@@ -12,5 +12,5 @@ func main() {
 	if err != nil {
 		log.Fatalf("Ошибка: %v", err)
 	}
-	fmt.Printf("%s %s\n", cfg.Environment, cfg.LogLevel)
+	fmt.Print(cfg.Environment, " ", cfg.LogLevel)
 }
