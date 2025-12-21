@@ -18,7 +18,7 @@ func Load() (Config, error) {
 func parseConfig(data []byte) (Config, error) {
 	var conf Config
 
-	err := yaml.Unmarshal(data, &conf);
+	err := yaml.Unmarshal(data, conf);
 	if err != nil {
 		return Config{}, fmt.Errorf("Config reading error: %w", err)
 	}

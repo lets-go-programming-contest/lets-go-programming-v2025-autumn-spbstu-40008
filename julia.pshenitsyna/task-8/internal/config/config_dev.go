@@ -5,7 +5,3 @@ import (
 )
 
 var devConfigData []byte
-
-func loadDevConfig() ([]byte, error) {
-	return devConfigData, nil
-}

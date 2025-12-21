@@ -9,8 +9,10 @@ import (
 
 func main() {
 	conf, err := config.Load()
+	
 	if err != nil {
 		log.Fatal("Failed to load config: ", err)
 	}
-	fmt.Printf(conf.Environment, " ",conf.LogLevel)
+
+	fmt.Print(conf.Environment, " ",conf.LogLevel)
 }

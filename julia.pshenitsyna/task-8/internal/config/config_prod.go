@@ -5,7 +5,3 @@ import (
 )
 
 var prodConfigData []byte
-
-func loadProdConfig() ([]byte, error) {
-	return prodConfigData, nil
-}
