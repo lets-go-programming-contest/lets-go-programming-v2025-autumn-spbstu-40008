@@ -1,4 +1,4 @@
-package wifi
+package wifi_test
 
 import (
 	"github.com/mdlayher/wifi"
@@ -15,11 +15,9 @@ func (_m *MockWiFiHandle) Interfaces() ([]*wifi.Interface, error) {
 	var r0 []*wifi.Interface
 	if rf, ok := ret.Get(0).(func() []*wifi.Interface); ok {
 		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			if val, ok := ret.Get(0).([]*wifi.Interface); ok {
-				r0 = val
-			}
+	} else if ret.Get(0) != nil {
+		if val, ok := ret.Get(0).([]*wifi.Interface); ok {
+			r0 = val
 		}
 	}
 

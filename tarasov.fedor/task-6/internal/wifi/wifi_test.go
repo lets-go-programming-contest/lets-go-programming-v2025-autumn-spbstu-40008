@@ -18,13 +18,13 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		mockBehavior  func(m *mywifi.MockWiFiHandle)
+		mockBehavior  func(m *MockWiFiHandle)
 		expectedAddrs []net.HardwareAddr
 		expectError   bool
 	}{
 		{
 			name: "Success",
-			mockBehavior: func(m *mywifi.MockWiFiHandle) {
+			mockBehavior: func(m *MockWiFiHandle) {
 				hwAddr, _ := net.ParseMAC("00:00:5e:00:53:01")
 				ifaces := []*wifi.Interface{
 					{HardwareAddr: hwAddr},
@@ -38,7 +38,7 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 		},
 		{
 			name: "Error Getting Interfaces",
-			mockBehavior: func(m *mywifi.MockWiFiHandle) {
+			mockBehavior: func(m *MockWiFiHandle) {
 				m.On("Interfaces").Return(nil, errMock)
 			},
 			expectedAddrs: nil,
@@ -47,11 +47,10 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			mockWifi := new(mywifi.MockWiFiHandle)
+			mockWifi := new(MockWiFiHandle)
 			tc.mockBehavior(mockWifi)
 
 			service := mywifi.New(mockWifi)
@@ -75,13 +74,13 @@ func TestWiFiService_GetNames(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		mockBehavior  func(m *mywifi.MockWiFiHandle)
+		mockBehavior  func(m *MockWiFiHandle)
 		expectedNames []string
 		expectError   bool
 	}{
 		{
 			name: "Success",
-			mockBehavior: func(m *mywifi.MockWiFiHandle) {
+			mockBehavior: func(m *MockWiFiHandle) {
 				ifaces := []*wifi.Interface{
 					{Name: "wlan0"},
 					{Name: "wlan1"},
@@ -93,7 +92,7 @@ func TestWiFiService_GetNames(t *testing.T) {
 		},
 		{
 			name: "Error Getting Interfaces",
-			mockBehavior: func(m *mywifi.MockWiFiHandle) {
+			mockBehavior: func(m *MockWiFiHandle) {
 				m.On("Interfaces").Return(nil, errMock)
 			},
 			expectedNames: nil,
@@ -102,11 +101,10 @@ func TestWiFiService_GetNames(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			mockWifi := new(mywifi.MockWiFiHandle)
+			mockWifi := new(MockWiFiHandle)
 			tc.mockBehavior(mockWifi)
 
 			service := mywifi.New(mockWifi)
