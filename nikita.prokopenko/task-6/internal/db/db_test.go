@@ -89,6 +89,7 @@ func TestDataHandler_GetNames(t *testing.T) {
 			handler := db.New(mockDB)
 
 			tc.setupMock(mock)
+
 			result, err := handler.GetNames()
 
 			if tc.expectError {
@@ -167,6 +168,7 @@ func TestDataHandler_GetUniqueNames(t *testing.T) {
 			handler := db.New(mockDB)
 
 			tc.setupMock(mock)
+
 			result, err := handler.GetUniqueNames()
 
 			if tc.expectError {
