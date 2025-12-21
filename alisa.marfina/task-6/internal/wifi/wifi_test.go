@@ -53,7 +53,7 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 				mac, _ := net.ParseMAC("00:11:22:33:44:55")
 				result := []net.HardwareAddr{mac}
 
-				return result // Добавлена пустая строка выше
+				return result
 			}(),
 		},
 		{

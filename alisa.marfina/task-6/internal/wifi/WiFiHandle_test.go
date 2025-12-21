@@ -1,14 +1,15 @@
 package wifi_test
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/mdlayher/wifi"
 	"github.com/stretchr/testify/mock"
 )
 
-// Ошибка для type assertion
-var ErrTypeAssertionFailed = fmt.Errorf("type assertion failed")
+// ErrTypeAssertionFailed возникает при неудачном приведении типа.
+var ErrTypeAssertionFailed = errors.New("type assertion failed")
 
 type MockWiFiHandle struct {
 	mock.Mock
@@ -29,8 +30,10 @@ func (m *MockWiFiHandle) Interfaces() ([]*wifi.Interface, error) {
 	ifaceSlice, ok := args.Get(0).([]*wifi.Interface)
 	if !ok {
 		if err != nil {
+			// Оборачиваем статическую ошибку.
 			return nil, fmt.Errorf("%w: %w", ErrTypeAssertionFailed, err)
 		}
+
 		return nil, ErrTypeAssertionFailed
 	}
 
