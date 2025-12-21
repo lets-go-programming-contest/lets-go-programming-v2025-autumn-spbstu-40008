@@ -10,7 +10,7 @@ import (
 
 var (
 	ErrInterfaceFetch = errors.New("failed to fetch interfaces")
-	ErrNoValidData    = errors.New("no valid interface data")
+	ErrNoValidData = errors.New("no valid interface data")
 )
 
 type InterfaceSource interface {
@@ -30,22 +30,18 @@ func (m *NetworkManager) GetMACAddresses() ([]net.HardwareAddr, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInterfaceFetch, err)
 	}
-
 	if len(interfaces) == 0 {
 		return nil, fmt.Errorf("%w: empty interface list", ErrNoValidData)
 	}
-
 	var macs []net.HardwareAddr
 	for _, iface := range interfaces {
 		if len(iface.HardwareAddr) == 6 {
 			macs = append(macs, iface.HardwareAddr)
 		}
 	}
-
 	if len(macs) == 0 {
 		return nil, fmt.Errorf("%w: no valid MAC addresses", ErrNoValidData)
 	}
-
 	return macs, nil
 }
 
@@ -54,21 +50,17 @@ func (m *NetworkManager) GetInterfaceNames() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInterfaceFetch, err)
 	}
-
 	if len(interfaces) == 0 {
 		return nil, fmt.Errorf("%w: no interfaces available", ErrNoValidData)
 	}
-
 	names := make([]string, 0, len(interfaces))
 	for _, iface := range interfaces {
 		if iface.Name != "" {
 			names = append(names, iface.Name)
 		}
 	}
-
 	if len(names) == 0 {
 		return nil, fmt.Errorf("%w: all names empty", ErrNoValidData)
 	}
-
 	return names, nil
 }

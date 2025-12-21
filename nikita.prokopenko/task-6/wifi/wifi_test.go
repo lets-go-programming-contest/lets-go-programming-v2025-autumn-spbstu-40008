@@ -12,17 +12,16 @@ import (
 
 var (
 	errInterfaceError = errors.New("interface access error")
-	errPermission     = errors.New("permission denied")
+	errPermission = errors.New("permission denied")
 )
 
 func TestNetworkManager_GetMACAddresses(t *testing.T) {
 	t.Parallel()
-
 	cases := []struct {
-		name           string
-		mockSetup      func(*MockInterfaceSource)
-		expectedMACs   []string
-		expectError    bool
+		name string
+		mockSetup func(*MockInterfaceSource)
+		expectedMACs []string
+		expectError bool
 		errorSubstring string
 	}{
 		{
@@ -41,7 +40,7 @@ func TestNetworkManager_GetMACAddresses(t *testing.T) {
 			mockSetup: func(m *MockInterfaceSource) {
 				m.On("Interfaces").Return(nil, errInterfaceError).Once()
 			},
-			expectError:    true,
+			expectError: true,
 			errorSubstring: "failed to fetch interfaces",
 		},
 		{
@@ -53,21 +52,17 @@ func TestNetworkManager_GetMACAddresses(t *testing.T) {
 				}
 				m.On("Interfaces").Return(interfaces, nil).Once()
 			},
-			expectError:    true,
+			expectError: true,
 			errorSubstring: "no valid MAC addresses",
 		},
 	}
-
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			
 			mockSource := new(MockInterfaceSource)
 			manager := CreateManager(mockSource)
 			tc.mockSetup(mockSource)
-
 			macs, err := manager.GetMACAddresses()
-
 			if tc.expectError {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tc.errorSubstring)
@@ -79,7 +74,6 @@ func TestNetworkManager_GetMACAddresses(t *testing.T) {
 					assert.Equal(t, expected, macs[i].String())
 				}
 			}
-			
 			mockSource.AssertExpectations(t)
 		})
 	}
@@ -87,12 +81,11 @@ func TestNetworkManager_GetMACAddresses(t *testing.T) {
 
 func TestNetworkManager_GetInterfaceNames(t *testing.T) {
 	t.Parallel()
-
 	cases := []struct {
-		name           string
-		mockSetup      func(*MockInterfaceSource)
-		expectedNames  []string
-		expectError    bool
+		name string
+		mockSetup func(*MockInterfaceSource)
+		expectedNames []string
+		expectError bool
 		errorSubstring string
 	}{
 		{
@@ -112,7 +105,7 @@ func TestNetworkManager_GetInterfaceNames(t *testing.T) {
 			mockSetup: func(m *MockInterfaceSource) {
 				m.On("Interfaces").Return(nil, errPermission).Once()
 			},
-			expectError:    true,
+			expectError: true,
 			errorSubstring: "failed to fetch interfaces",
 		},
 		{
@@ -124,21 +117,17 @@ func TestNetworkManager_GetInterfaceNames(t *testing.T) {
 				}
 				m.On("Interfaces").Return(interfaces, nil).Once()
 			},
-			expectError:    true,
+			expectError: true,
 			errorSubstring: "all names empty",
 		},
 	}
-
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			
 			mockSource := new(MockInterfaceSource)
 			manager := CreateManager(mockSource)
 			tc.mockSetup(mockSource)
-
 			names, err := manager.GetInterfaceNames()
-
 			if tc.expectError {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tc.errorSubstring)
@@ -147,7 +136,6 @@ func TestNetworkManager_GetInterfaceNames(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, tc.expectedNames, names)
 			}
-			
 			mockSource.AssertExpectations(t)
 		})
 	}
