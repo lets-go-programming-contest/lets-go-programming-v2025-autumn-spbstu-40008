@@ -12,15 +12,11 @@ var (
 	ErrNoRecords      = errors.New("no records found")
 )
 
-type DBExecutor interface {
-	Query(query string, args ...any) (*sql.Rows, error)
-}
-
 type DataHandler struct {
-	DB DBExecutor
+	DB *sql.DB
 }
 
-func CreateHandler(db DBExecutor) *DataHandler {
+func CreateHandler(db *sql.DB) *DataHandler {
 	return &DataHandler{DB: db}
 }
 
