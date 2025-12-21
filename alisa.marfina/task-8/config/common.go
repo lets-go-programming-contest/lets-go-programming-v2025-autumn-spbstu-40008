@@ -17,9 +17,11 @@ func Load() (Config, error) {
 
 func LoadFromData(data []byte) (Config, error) {
 	var cfg Config
+
 	err := yaml.Unmarshal(data, &cfg)
 	if err != nil {
 		return Config{}, fmt.Errorf("ошибка чтения конфига: %w", err)
 	}
+
 	return cfg, nil
 }

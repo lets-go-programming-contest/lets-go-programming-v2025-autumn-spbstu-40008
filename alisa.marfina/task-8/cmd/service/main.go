@@ -12,5 +12,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Ошибка: %v", err)
 	}
+
 	fmt.Print(cfg.Environment, " ", cfg.LogLevel)
 }
