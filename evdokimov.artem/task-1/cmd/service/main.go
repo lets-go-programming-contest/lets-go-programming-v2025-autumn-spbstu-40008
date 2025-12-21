@@ -1,42 +1,44 @@
 package main
 
-import (
-	"fmt"
-)
+import "fmt"
 
 func main() {
-	var num1, num2 int
-	var sign string
+	var a, b int
+	var op string
 
-	if _, err := fmt.Scan(&num1); err != nil {
+	if _, err := fmt.Scan(&a); err != nil {
 		fmt.Println("Invalid first operand")
 		return
 	}
 
-	if _, err := fmt.Scan(&num2); err != nil {
+	if _, err := fmt.Scan(&op); err != nil {
+		fmt.Println("Invalid operation")
+		return
+	}
+
+	if _, err := fmt.Scan(&b); err != nil {
 		fmt.Println("Invalid second operand")
 		return
 	}
 
-	if _, err := fmt.Scan(&sign); err != nil {
+	var result int
+	switch op {
+	case "+":
+		result = a + b
+	case "-":
+		result = a - b
+	case "*":
+		result = a * b
+	case "/":
+		if b == 0 {
+			fmt.Println("Division by zero")
+			return
+		}
+		result = a / b
+	default:
 		fmt.Println("Invalid operation")
 		return
 	}
 
-	switch sign {
-	case "+":
-		fmt.Println(num1 + num2)
-	case "-":
-		fmt.Println(num1 - num2)
-	case "*":
-		fmt.Println(num1 * num2)
-	case "/":
-		if num2 == 0 {
-			fmt.Println("Division by zero")
-			return
-		}
-		fmt.Println(num1 / num2)
-	default:
-		fmt.Println("Invalid operation")
-	}
+	fmt.Println(result)
 }
