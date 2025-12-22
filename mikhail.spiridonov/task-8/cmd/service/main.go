@@ -1,10 +1,17 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/mordw1n/task-8/internal/config"
+)
+
+var (
+	errInvalidEnvironment = errors.New("invalid environment")
+	errInvalidLogLevel    = errors.New("invalid log level")
 )
 
 func validateConfig(cfg config.Config) error {
@@ -13,7 +20,7 @@ func validateConfig(cfg config.Config) error {
 		"prod": true,
 	}
 	if !validEnvironments[cfg.Environment] {
-		return fmt.Errorf("invalid environment: %s", cfg.Environment)
+		return fmt.Errorf("%w: %s", errInvalidEnvironment, cfg.Environment)
 	}
 
 	validLogLevels := map[string]bool{
@@ -24,43 +31,37 @@ func validateConfig(cfg config.Config) error {
 		"fatal": true,
 	}
 	if !validLogLevels[cfg.LogLevel] {
-		return fmt.Errorf("invalid log level: %s", cfg.LogLevel)
+		return fmt.Errorf("%w: %s", errInvalidLogLevel, cfg.LogLevel)
 	}
 
 	return nil
-}
-
-func handleError(err error) {
-	if err != nil {
-		panic(err)
-	}
 }
 
 func main() {
 	cfg := config.GetConfig()
 
 	if err := validateConfig(cfg); err != nil {
-		fmt.Printf("Configuration error: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Configuration error: %v\n", err)
 		panic("Configuration validation failed")
 	}
 
 	if strings.TrimSpace(cfg.Environment) == "" {
-		fmt.Println("Error: environment is empty")
+		fmt.Fprintln(os.Stderr, "Error: environment is empty")
 		panic("Empty environment")
 	}
 
 	if strings.TrimSpace(cfg.LogLevel) == "" {
-		fmt.Println("Error: log_level is empty")
+		fmt.Fprintln(os.Stderr, "Error: log_level is empty")
 		panic("Empty log_level")
 	}
 
-	fmt.Printf("%s %s\n", cfg.Environment, cfg.LogLevel)
+	fmt.Print(cfg.Environment, " ", cfg.LogLevel)
 
 	if cfg.Environment == "dev" && cfg.LogLevel != "debug" {
-		fmt.Printf("Warning: dev environment usually uses debug log level, got %s\n", cfg.LogLevel)
+		fmt.Fprintf(os.Stderr, "Warning: dev environment usually uses debug log level, got %s\n", cfg.LogLevel)
 	}
 
 	if cfg.Environment == "prod" && cfg.LogLevel == "debug" {
-		fmt.Println("Warning: prod environment should not use debug log level for security reasons")
+		fmt.Fprintln(os.Stderr, "Warning: prod environment should not use debug log level for security reasons")
 	}
 }
