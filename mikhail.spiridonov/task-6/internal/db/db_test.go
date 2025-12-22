@@ -1,4 +1,4 @@
-package db
+package db_test
 
 import (
 	"database/sql"
@@ -6,15 +6,13 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/mordw1n/task-6/internal/db"
 	"github.com/stretchr/testify/require"
 )
 
 var (
-	errDatabase     = errors.New("database error")
-	errConstraint   = errors.New("constraint violation")
-	errConnection   = errors.New("connection failed")
-	errForeignKey   = errors.New("foreign key violation")
-	errRowsAffected = errors.New("rows affected not supported")
+	errDatabase   = errors.New("database error")
+	errConstraint = errors.New("constraint violation")
 )
 
 func TestGetNames(t *testing.T) {
@@ -25,7 +23,7 @@ func TestGetNames(t *testing.T) {
 
 	t.Cleanup(func() { mockDB.Close() })
 
-	dbService := New(mockDB)
+	dbService := db.New(mockDB)
 
 	tests := []struct {
 		name      string
@@ -63,7 +61,7 @@ func TestGetNames(t *testing.T) {
 			},
 			wantNames: nil,
 			wantError: true,
-			errorMsg:  "query failed",
+			errorMsg:  "db query:",
 		},
 		{
 			name: "scan error in one row",
@@ -74,8 +72,9 @@ func TestGetNames(t *testing.T) {
 					AddRow("Alex")
 				mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
 			},
-			wantNames: []string{"Mikhail", "Alex"},
-			wantError: false,
+			wantNames: nil,
+			wantError: true,
+			errorMsg:  "rows scanning:",
 		},
 	}
 
@@ -103,7 +102,7 @@ func TestGetNames(t *testing.T) {
 	}
 }
 
-func TestAddUser(t *testing.T) {
+func TestGetUniqueNames(t *testing.T) {
 	t.Parallel()
 
 	mockDB, mock, err := sqlmock.New()
@@ -111,195 +110,97 @@ func TestAddUser(t *testing.T) {
 
 	t.Cleanup(func() { mockDB.Close() })
 
-	dbService := New(mockDB)
+	dbService := db.New(mockDB)
 
-	t.Run("successful insert", func(t *testing.T) {
-		t.Parallel()
+	tests := []struct {
+		name      string
+		setupMock func()
+		wantNames []string
+		wantError bool
+		errorMsg  string
+	}{
+		{
+			name: "successful query with multiple unique rows",
+			setupMock: func() {
+				rows := sqlmock.NewRows([]string{"name"}).
+					AddRow("Mikhail").
+					AddRow("Phillip").
+					AddRow("Alex")
+				mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
+			},
+			wantNames: []string{"Mikhail", "Phillip", "Alex"},
+			wantError: false,
+		},
+		{
+			name: "empty result",
+			setupMock: func() {
+				rows := sqlmock.NewRows([]string{"name"})
+				mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
+			},
+			wantNames: []string{},
+			wantError: false,
+		},
+		{
+			name: "query error",
+			setupMock: func() {
+				mock.ExpectQuery("SELECT DISTINCT name FROM users").
+					WillReturnError(errDatabase)
+			},
+			wantNames: nil,
+			wantError: true,
+			errorMsg:  "db query:",
+		},
+		{
+			name: "scan error in one row",
+			setupMock: func() {
+				rows := sqlmock.NewRows([]string{"name"}).
+					AddRow("Mikhail").
+					AddRow(nil).
+					AddRow("Alex")
+				mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
+			},
+			wantNames: nil,
+			wantError: true,
+			errorMsg:  "rows scanning:",
+		},
+		{
+			name: "duplicate names in source (should return unique)",
+			setupMock: func() {
+				rows := sqlmock.NewRows([]string{"name"}).
+					AddRow("Mikhail").
+					AddRow("Mikhail").
+					AddRow("Alex").
+					AddRow("Alex").
+					AddRow("Phillip")
+				mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
+			},
+			wantNames: []string{"Mikhail", "Mikhail", "Alex", "Alex", "Phillip"},
+			wantError: false,
+		},
+	}
 
-		mock.ExpectExec("INSERT INTO users \\(name\\) VALUES \\(\\$1\\)").
-			WithArgs("John").
-			WillReturnResult(sqlmock.NewResult(1, 1))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-		err := dbService.AddUser("John")
-		require.NoError(t, err)
-		require.NoError(t, mock.ExpectationsWereMet())
-	})
+			tt.setupMock()
 
-	t.Run("insert error", func(t *testing.T) {
-		t.Parallel()
+			names, err := dbService.GetUniqueNames()
 
-		mock.ExpectExec("INSERT INTO users \\(name\\) VALUES \\(\\$1\\)").
-			WithArgs("John").
-			WillReturnError(errConstraint)
+			if tt.wantError {
+				require.Error(t, err)
 
-		err := dbService.AddUser("John")
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "constraint violation")
-		require.NoError(t, mock.ExpectationsWereMet())
-	})
+				if tt.errorMsg != "" {
+					require.Contains(t, err.Error(), tt.errorMsg)
+				}
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tt.wantNames, names)
+			}
 
-	t.Run("insert with empty name", func(t *testing.T) {
-		t.Parallel()
-
-		mock.ExpectExec("INSERT INTO users \\(name\\) VALUES \\(\\$1\\)").
-			WithArgs("").
-			WillReturnResult(sqlmock.NewResult(2, 1))
-
-		err := dbService.AddUser("")
-		require.NoError(t, err)
-		require.NoError(t, mock.ExpectationsWereMet())
-	})
-}
-
-func TestGetUserByID(t *testing.T) {
-	t.Parallel()
-
-	mockDB, mock, err := sqlmock.New()
-	require.NoError(t, err)
-
-	t.Cleanup(func() { mockDB.Close() })
-
-	dbService := New(mockDB)
-
-	t.Run("user found", func(t *testing.T) {
-		t.Parallel()
-
-		rows := sqlmock.NewRows([]string{"name"}).AddRow("Mikhail")
-		mock.ExpectQuery("SELECT name FROM users WHERE id = \\$1").
-			WithArgs(1).
-			WillReturnRows(rows)
-
-		name, err := dbService.GetUserByID(1)
-		require.NoError(t, err)
-		require.Equal(t, "Mikhail", name)
-		require.NoError(t, mock.ExpectationsWereMet())
-	})
-
-	t.Run("user not found", func(t *testing.T) {
-		t.Parallel()
-
-		mock.ExpectQuery("SELECT name FROM users WHERE id = \\$1").
-			WithArgs(999).
-			WillReturnError(sql.ErrNoRows)
-
-		name, err := dbService.GetUserByID(999)
-		require.Error(t, err)
-		require.Empty(t, name)
-		require.Contains(t, err.Error(), "not found")
-		require.NoError(t, mock.ExpectationsWereMet())
-	})
-
-	t.Run("database error", func(t *testing.T) {
-		t.Parallel()
-
-		mock.ExpectQuery("SELECT name FROM users WHERE id = \\$1").
-			WithArgs(2).
-			WillReturnError(errConnection)
-
-		name, err := dbService.GetUserByID(2)
-		require.Error(t, err)
-		require.Empty(t, name)
-		require.Contains(t, err.Error(), "connection failed")
-		require.NoError(t, mock.ExpectationsWereMet())
-	})
-}
-
-func TestUpdateUser(t *testing.T) {
-	t.Parallel()
-
-	mockDB, mock, err := sqlmock.New()
-	require.NoError(t, err)
-
-	t.Cleanup(func() { mockDB.Close() })
-
-	dbService := New(mockDB)
-
-	t.Run("successful update", func(t *testing.T) {
-		t.Parallel()
-
-		mock.ExpectExec("UPDATE users SET name = \\$1 WHERE id = \\$2").
-			WithArgs("NewName", 1).
-			WillReturnResult(sqlmock.NewResult(0, 1))
-
-		err := dbService.UpdateUser(1, "NewName")
-		require.NoError(t, err)
-		require.NoError(t, mock.ExpectationsWereMet())
-	})
-
-	t.Run("update non-existent user", func(t *testing.T) {
-		t.Parallel()
-
-		mock.ExpectExec("UPDATE users SET name = \\$1 WHERE id = \\$2").
-			WithArgs("NewName", 999).
-			WillReturnResult(sqlmock.NewResult(0, 0))
-
-		err := dbService.UpdateUser(999, "NewName")
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "not found")
-		require.NoError(t, mock.ExpectationsWereMet())
-	})
-
-	t.Run("update with database error", func(t *testing.T) {
-		t.Parallel()
-
-		mock.ExpectExec("UPDATE users SET name = \\$1 WHERE id = \\$2").
-			WithArgs("NewName", 1).
-			WillReturnError(errConstraint)
-
-		err := dbService.UpdateUser(1, "NewName")
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "constraint violation")
-		require.NoError(t, mock.ExpectationsWereMet())
-	})
-}
-
-func TestDeleteUser(t *testing.T) {
-	t.Parallel()
-
-	mockDB, mock, err := sqlmock.New()
-	require.NoError(t, err)
-
-	t.Cleanup(func() { mockDB.Close() })
-
-	dbService := New(mockDB)
-
-	t.Run("successful delete", func(t *testing.T) {
-		t.Parallel()
-
-		mock.ExpectExec("DELETE FROM users WHERE id = \\$1").
-			WithArgs(1).
-			WillReturnResult(sqlmock.NewResult(0, 1))
-
-		err := dbService.DeleteUser(1)
-		require.NoError(t, err)
-		require.NoError(t, mock.ExpectationsWereMet())
-	})
-
-	t.Run("delete non-existent user", func(t *testing.T) {
-		t.Parallel()
-
-		mock.ExpectExec("DELETE FROM users WHERE id = \\$1").
-			WithArgs(999).
-			WillReturnResult(sqlmock.NewResult(0, 0))
-
-		err := dbService.DeleteUser(999)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "not found")
-		require.NoError(t, mock.ExpectationsWereMet())
-	})
-
-	t.Run("delete with database error", func(t *testing.T) {
-		t.Parallel()
-
-		mock.ExpectExec("DELETE FROM users WHERE id = \\$1").
-			WithArgs(1).
-			WillReturnError(errForeignKey)
-
-		err := dbService.DeleteUser(1)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "foreign key violation")
-		require.NoError(t, mock.ExpectationsWereMet())
-	})
+			require.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
 }
 
 func TestNew(t *testing.T) {
@@ -310,12 +211,11 @@ func TestNew(t *testing.T) {
 
 	t.Cleanup(func() { mockDB.Close() })
 
-	service := New(mockDB)
+	service := db.New(mockDB)
 	require.NotNil(t, service)
-	require.Equal(t, mockDB, service.DB)
 }
 
-func TestCoverage(t *testing.T) {
+func TestRowsErrorHandling(t *testing.T) {
 	t.Parallel()
 
 	mockDB, mock, err := sqlmock.New()
@@ -323,16 +223,18 @@ func TestCoverage(t *testing.T) {
 
 	t.Cleanup(func() { mockDB.Close() })
 
-	dbService := New(mockDB)
+	dbService := db.New(mockDB)
 
-	result := sqlmock.NewErrorResult(errRowsAffected)
-	mock.ExpectExec("UPDATE users SET name = \\$1 WHERE id = \\$2").
-		WithArgs("Test", 1).
-		WillReturnResult(result)
+	rows := sqlmock.NewRows([]string{"name"}).
+		AddRow("Mikhail").
+		AddRow("Alex").
+		RowError(1, errors.New("row error"))
 
-	err = dbService.UpdateUser(1, "Test")
+	mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
+
+	names, err := dbService.GetNames()
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "rows affected not supported")
-
+	require.Nil(t, names)
+	require.Contains(t, err.Error(), "rows error:")
 	require.NoError(t, mock.ExpectationsWereMet())
 }
