@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"mikhail.spiridonov/task-8/internal/config"
+	"github.com/mordw1n/task-8/internal/config"
 )
 
 func validateConfig(cfg config.Config) error {
