@@ -10,6 +10,7 @@ import (
 )
 
 var (
+	errRow      = errors.New("row error")
 	errDatabase = errors.New("database error")
 )
 
@@ -85,7 +86,7 @@ func TestGetNames(t *testing.T) {
 		rows := sqlmock.NewRows([]string{"name"}).
 			AddRow("Mikhail").
 			AddRow("Alex").
-			RowError(1, errors.New("row error"))
+			RowError(1, errRow)
 		mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
 
 		names, err := dbService.GetNames()
@@ -99,7 +100,7 @@ func TestGetNames(t *testing.T) {
 		t.Parallel()
 
 		rows := sqlmock.NewRows([]string{"name"}).
-			AddRow(123) // Not a string
+			AddRow(123)
 		mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
 
 		names, err := dbService.GetNames()
@@ -182,7 +183,7 @@ func TestGetUniqueNames(t *testing.T) {
 		rows := sqlmock.NewRows([]string{"name"}).
 			AddRow("Mikhail").
 			AddRow("Alex").
-			RowError(1, errors.New("row error"))
+			RowError(1, errRow)
 		mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
 
 		names, err := dbService.GetUniqueNames()
