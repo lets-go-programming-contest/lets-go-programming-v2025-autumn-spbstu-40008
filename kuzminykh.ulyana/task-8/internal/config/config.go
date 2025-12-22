@@ -12,5 +12,6 @@ type Config struct {
 func Get(data []byte) Config {
 	var cfg Config
 	_ = yaml.Unmarshal(data, &cfg)
+
 	return cfg
 }
