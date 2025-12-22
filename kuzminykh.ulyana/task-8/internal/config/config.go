@@ -9,12 +9,8 @@ type Config struct {
 	LogLevel    string `yaml:"log_level"`
 }
 
-var cfg Config
-
-func Get() Config {
+func Get(data []byte) Config {
+	var cfg Config
+	_ = yaml.Unmarshal(data, &cfg)
 	return cfg
-}
-
-func initConfig(data []byte) {
-	yaml.Unmarshal(data, &cfg)
 }

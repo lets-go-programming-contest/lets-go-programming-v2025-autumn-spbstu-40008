@@ -9,6 +9,6 @@ import (
 //go:embed prod.yaml
 var prodData []byte
 
-func init() {
-	initConfig(prodData)
+func Load() Config {
+	return Get(prodData)
 }

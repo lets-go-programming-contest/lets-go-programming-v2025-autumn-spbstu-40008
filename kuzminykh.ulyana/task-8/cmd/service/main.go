@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	cfg := config.Get()
+	cfg := config.Load()
 
 	fmt.Print(cfg.Environment + " " + cfg.LogLevel)
 }
