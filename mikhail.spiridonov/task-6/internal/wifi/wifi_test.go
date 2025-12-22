@@ -161,6 +161,7 @@ func TestGetAddresses(t *testing.T) {
 				require.Nil(t, addrs)
 			} else {
 				require.NoError(t, err)
+
 				expectedMACs := parseMACs(tt.expectedAddrs)
 
 				require.Equal(t, expectedMACs, addrs)
