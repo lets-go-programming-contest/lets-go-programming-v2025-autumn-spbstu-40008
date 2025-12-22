@@ -108,7 +108,7 @@ func (service DBService) UpdateUser(id int, newName string) error {
 
 func (service DBService) DeleteUser(id int) error {
 	query := "DELETE FROM users WHERE id = $1"
-	
+
 	result, err := service.DB.Exec(query, id)
 	if err != nil {
 		return fmt.Errorf("delete user: %w", err)
