@@ -4,7 +4,6 @@ package config
 
 import (
 	_ "embed"
-	"gopkg.in/yaml.v3"
 )
 
 //go:embed dev.yaml
