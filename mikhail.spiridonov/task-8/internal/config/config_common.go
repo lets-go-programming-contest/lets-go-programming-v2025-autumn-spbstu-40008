@@ -5,7 +5,8 @@ type Config struct {
     LogLevel    string `yaml:"log_level"`
 }
 
+var cfg Config
+
 func GetConfig() Config {
-    var cfg Config
     return cfg
 }
