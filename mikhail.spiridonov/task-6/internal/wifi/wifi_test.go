@@ -1,16 +1,21 @@
 package wifi_test
 
 import (
-	"errors"
 	"fmt"
 	"net"
 	"testing"
 
 	extwifi "github.com/mdlayher/wifi"
 	mywifi "github.com/mordw1n/task-6/internal/wifi"
-
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+)
+
+var (
+	errTypeAssertionInterfaces = errors.New("type assertion failed for interfaces")
+	errTypeAssertionStation    = errors.New("type assertion failed for station info")
+	errPermissionDenied        = errors.New("permission denied")
+	errIoctlFailed             = errors.New("ioctl failed")
 )
 
 type mockWiFiHandle struct {
@@ -26,7 +31,7 @@ func (m *mockWiFiHandle) Interfaces() ([]*extwifi.Interface, error) {
 
 	ifaces, ok := args.Get(0).([]*extwifi.Interface)
 	if !ok {
-		return nil, errors.New("type assertion failed for Interfaces")
+		return nil, fmt.Errorf("%w", errTypeAssertionInterfaces)
 	}
 
 	return ifaces, args.Error(1)
@@ -41,7 +46,7 @@ func (m *mockWiFiHandle) StationInfo(ifi *extwifi.Interface) (*extwifi.StationIn
 
 	info, ok := args.Get(0).(*extwifi.StationInfo)
 	if !ok {
-		return nil, errors.New("type assertion failed for StationInfo")
+		return nil, fmt.Errorf("%w", errTypeAssertionStation)
 	}
 
 	return info, args.Error(1)
@@ -117,7 +122,7 @@ func TestGetAddresses(t *testing.T) {
 		{
 			name: "error getting interfaces",
 			setupMock: func(m *mockWiFiHandle) {
-				m.On("Interfaces").Return(nil, errors.New("permission denied"))
+				m.On("Interfaces").Return(nil, errPermissionDenied)
 			},
 			expectedAddrs: nil,
 			wantError:     true,
@@ -126,7 +131,6 @@ func TestGetAddresses(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -138,6 +142,7 @@ func TestGetAddresses(t *testing.T) {
 
 			if tt.wantError {
 				require.Error(t, err)
+
 				if tt.errorMsg != "" {
 					require.Contains(t, err.Error(), tt.errorMsg)
 				}
@@ -181,7 +186,7 @@ func TestGetInterfaceNames(t *testing.T) {
 		t.Parallel()
 
 		mockWiFi := &mockWiFiHandle{}
-		mockWiFi.On("Interfaces").Return(nil, errors.New("ioctl failed"))
+		mockWiFi.On("Interfaces").Return(nil, errIoctlFailed)
 
 		wifiService := mywifi.New(mockWiFi)
 		names, err := wifiService.GetInterfaceNames()

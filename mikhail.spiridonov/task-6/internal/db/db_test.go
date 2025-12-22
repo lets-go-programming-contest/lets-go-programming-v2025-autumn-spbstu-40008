@@ -1,4 +1,4 @@
-package db
+package db_test
 
 import (
 	"database/sql"
@@ -6,15 +6,27 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/mordw1n/task-6/internal/db"
 	"github.com/stretchr/testify/require"
 )
 
+var (
+	errDatabase     = errors.New("database error")
+	errConstraint   = errors.New("constraint violation")
+	errConnection   = errors.New("connection failed")
+	errForeignKey   = errors.New("foreign key violation")
+	errRowsAffected = errors.New("rows affected not supported")
+)
+
 func TestGetNames(t *testing.T) {
+	t.Parallel()
+
 	mockDB, mock, err := sqlmock.New()
 	require.NoError(t, err)
+
 	defer mockDB.Close()
 
-	dbService := New(mockDB)
+	dbService := db.New(mockDB)
 
 	tests := []struct {
 		name      string
@@ -48,7 +60,7 @@ func TestGetNames(t *testing.T) {
 			name: "query error",
 			setupMock: func() {
 				mock.ExpectQuery("SELECT name FROM users").
-					WillReturnError(errors.New("database"))
+					WillReturnError(errDatabase)
 			},
 			wantNames: nil,
 			wantError: true,
@@ -69,13 +81,18 @@ func TestGetNames(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			tt.setupMock()
 
 			names, err := dbService.GetNames()
 
 			if tt.wantError {
 				require.Error(t, err)
+
 				if tt.errorMsg != "" {
 					require.Contains(t, err.Error(), tt.errorMsg)
 				}
@@ -90,13 +107,18 @@ func TestGetNames(t *testing.T) {
 }
 
 func TestAddUser(t *testing.T) {
+	t.Parallel()
+
 	mockDB, mock, err := sqlmock.New()
 	require.NoError(t, err)
+
 	defer mockDB.Close()
 
-	dbService := New(mockDB)
+	dbService := db.New(mockDB)
 
 	t.Run("successful insert", func(t *testing.T) {
+		t.Parallel()
+
 		mock.ExpectExec("INSERT INTO users \\(name\\) VALUES \\(\\$1\\)").
 			WithArgs("John").
 			WillReturnResult(sqlmock.NewResult(1, 1))
@@ -107,9 +129,11 @@ func TestAddUser(t *testing.T) {
 	})
 
 	t.Run("insert error", func(t *testing.T) {
+		t.Parallel()
+
 		mock.ExpectExec("INSERT INTO users \\(name\\) VALUES \\(\\$1\\)").
 			WithArgs("John").
-			WillReturnError(errors.New("constraint violation"))
+			WillReturnError(errConstraint)
 
 		err := dbService.AddUser("John")
 		require.Error(t, err)
@@ -118,6 +142,8 @@ func TestAddUser(t *testing.T) {
 	})
 
 	t.Run("insert with empty name", func(t *testing.T) {
+		t.Parallel()
+
 		mock.ExpectExec("INSERT INTO users \\(name\\) VALUES \\(\\$1\\)").
 			WithArgs("").
 			WillReturnResult(sqlmock.NewResult(2, 1))
@@ -129,13 +155,18 @@ func TestAddUser(t *testing.T) {
 }
 
 func TestGetUserByID(t *testing.T) {
+	t.Parallel()
+
 	mockDB, mock, err := sqlmock.New()
 	require.NoError(t, err)
+
 	defer mockDB.Close()
 
-	dbService := New(mockDB)
+	dbService := db.New(mockDB)
 
 	t.Run("user found", func(t *testing.T) {
+		t.Parallel()
+
 		rows := sqlmock.NewRows([]string{"name"}).AddRow("Mikhail")
 		mock.ExpectQuery("SELECT name FROM users WHERE id = \\$1").
 			WithArgs(1).
@@ -148,6 +179,8 @@ func TestGetUserByID(t *testing.T) {
 	})
 
 	t.Run("user not found", func(t *testing.T) {
+		t.Parallel()
+
 		mock.ExpectQuery("SELECT name FROM users WHERE id = \\$1").
 			WithArgs(999).
 			WillReturnError(sql.ErrNoRows)
@@ -160,26 +193,33 @@ func TestGetUserByID(t *testing.T) {
 	})
 
 	t.Run("database error", func(t *testing.T) {
+		t.Parallel()
+
 		mock.ExpectQuery("SELECT name FROM users WHERE id = \\$1").
 			WithArgs(2).
-			WillReturnError(errors.New("connection"))
+			WillReturnError(errConnection)
 
 		name, err := dbService.GetUserByID(2)
 		require.Error(t, err)
 		require.Empty(t, name)
-		require.Contains(t, err.Error(), "connection")
+		require.Contains(t, err.Error(), "connection failed")
 		require.NoError(t, mock.ExpectationsWereMet())
 	})
 }
 
 func TestUpdateUser(t *testing.T) {
+	t.Parallel()
+
 	mockDB, mock, err := sqlmock.New()
 	require.NoError(t, err)
+
 	defer mockDB.Close()
 
-	dbService := New(mockDB)
+	dbService := db.New(mockDB)
 
 	t.Run("successful update", func(t *testing.T) {
+		t.Parallel()
+
 		mock.ExpectExec("UPDATE users SET name = \\$1 WHERE id = \\$2").
 			WithArgs("NewName", 1).
 			WillReturnResult(sqlmock.NewResult(0, 1))
@@ -190,6 +230,8 @@ func TestUpdateUser(t *testing.T) {
 	})
 
 	t.Run("update non-existent user", func(t *testing.T) {
+		t.Parallel()
+
 		mock.ExpectExec("UPDATE users SET name = \\$1 WHERE id = \\$2").
 			WithArgs("NewName", 999).
 			WillReturnResult(sqlmock.NewResult(0, 0))
@@ -200,10 +242,12 @@ func TestUpdateUser(t *testing.T) {
 		require.NoError(t, mock.ExpectationsWereMet())
 	})
 
-	t.Run("update with database", func(t *testing.T) {
+	t.Run("update with database error", func(t *testing.T) {
+		t.Parallel()
+
 		mock.ExpectExec("UPDATE users SET name = \\$1 WHERE id = \\$2").
 			WithArgs("NewName", 1).
-			WillReturnError(errors.New("constraint violation"))
+			WillReturnError(errConstraint)
 
 		err := dbService.UpdateUser(1, "NewName")
 		require.Error(t, err)
@@ -213,13 +257,18 @@ func TestUpdateUser(t *testing.T) {
 }
 
 func TestDeleteUser(t *testing.T) {
+	t.Parallel()
+
 	mockDB, mock, err := sqlmock.New()
 	require.NoError(t, err)
+
 	defer mockDB.Close()
 
-	dbService := New(mockDB)
+	dbService := db.New(mockDB)
 
 	t.Run("successful delete", func(t *testing.T) {
+		t.Parallel()
+
 		mock.ExpectExec("DELETE FROM users WHERE id = \\$1").
 			WithArgs(1).
 			WillReturnResult(sqlmock.NewResult(0, 1))
@@ -230,6 +279,8 @@ func TestDeleteUser(t *testing.T) {
 	})
 
 	t.Run("delete non-existent user", func(t *testing.T) {
+		t.Parallel()
+
 		mock.ExpectExec("DELETE FROM users WHERE id = \\$1").
 			WithArgs(999).
 			WillReturnResult(sqlmock.NewResult(0, 0))
@@ -240,10 +291,12 @@ func TestDeleteUser(t *testing.T) {
 		require.NoError(t, mock.ExpectationsWereMet())
 	})
 
-	t.Run("delete with database", func(t *testing.T) {
+	t.Run("delete with database error", func(t *testing.T) {
+		t.Parallel()
+
 		mock.ExpectExec("DELETE FROM users WHERE id = \\$1").
 			WithArgs(1).
-			WillReturnError(errors.New("foreign key violation"))
+			WillReturnError(errForeignKey)
 
 		err := dbService.DeleteUser(1)
 		require.Error(t, err)
@@ -253,23 +306,29 @@ func TestDeleteUser(t *testing.T) {
 }
 
 func TestNew(t *testing.T) {
+	t.Parallel()
+
 	mockDB, _, err := sqlmock.New()
 	require.NoError(t, err)
+
 	defer mockDB.Close()
 
-	service := New(mockDB)
+	service := db.New(mockDB)
 	require.NotNil(t, service)
 	require.Equal(t, mockDB, service.DB)
 }
 
 func TestCoverage(t *testing.T) {
+	t.Parallel()
+
 	mockDB, mock, err := sqlmock.New()
 	require.NoError(t, err)
+
 	defer mockDB.Close()
 
-	dbService := New(mockDB)
+	dbService := db.New(mockDB)
 
-	result := sqlmock.NewErrorResult(errors.New("rows affected not supported"))
+	result := sqlmock.NewErrorResult(errRowsAffected)
 	mock.ExpectExec("UPDATE users SET name = \\$1 WHERE id = \\$2").
 		WithArgs("Test", 1).
 		WillReturnResult(result)
