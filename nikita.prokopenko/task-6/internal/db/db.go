@@ -76,7 +76,7 @@ func (h DataHandler) GetUniqueNames() ([]string, error) {
 
 		if _, exists := unique[name]; !exists {
 			unique[name] = struct{}{}
-			
+
 			result = append(result, name)
 		}
 	}
