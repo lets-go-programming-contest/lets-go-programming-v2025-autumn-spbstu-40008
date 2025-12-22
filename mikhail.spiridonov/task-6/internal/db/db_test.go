@@ -1,4 +1,4 @@
-package db_test
+package db
 
 import (
 	"database/sql"
@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/mordw1n/task-6/internal/db"
 	"github.com/stretchr/testify/require"
 )
 
@@ -26,7 +25,7 @@ func TestGetNames(t *testing.T) {
 
 	t.Cleanup(func() { mockDB.Close() })
 
-	dbService := db.New(mockDB)
+	dbService := New(mockDB)
 
 	tests := []struct {
 		name      string
@@ -112,7 +111,7 @@ func TestAddUser(t *testing.T) {
 
 	t.Cleanup(func() { mockDB.Close() })
 
-	dbService := db.New(mockDB)
+	dbService := New(mockDB)
 
 	t.Run("successful insert", func(t *testing.T) {
 		t.Parallel()
@@ -160,7 +159,7 @@ func TestGetUserByID(t *testing.T) {
 
 	t.Cleanup(func() { mockDB.Close() })
 
-	dbService := db.New(mockDB)
+	dbService := New(mockDB)
 
 	t.Run("user found", func(t *testing.T) {
 		t.Parallel()
@@ -213,7 +212,7 @@ func TestUpdateUser(t *testing.T) {
 
 	t.Cleanup(func() { mockDB.Close() })
 
-	dbService := db.New(mockDB)
+	dbService := New(mockDB)
 
 	t.Run("successful update", func(t *testing.T) {
 		t.Parallel()
@@ -262,7 +261,7 @@ func TestDeleteUser(t *testing.T) {
 
 	t.Cleanup(func() { mockDB.Close() })
 
-	dbService := db.New(mockDB)
+	dbService := New(mockDB)
 
 	t.Run("successful delete", func(t *testing.T) {
 		t.Parallel()
@@ -311,7 +310,7 @@ func TestNew(t *testing.T) {
 
 	t.Cleanup(func() { mockDB.Close() })
 
-	service := db.New(mockDB)
+	service := New(mockDB)
 	require.NotNil(t, service)
 	require.Equal(t, mockDB, service.DB)
 }
@@ -324,7 +323,7 @@ func TestCoverage(t *testing.T) {
 
 	t.Cleanup(func() { mockDB.Close() })
 
-	dbService := db.New(mockDB)
+	dbService := New(mockDB)
 
 	result := sqlmock.NewErrorResult(errRowsAffected)
 	mock.ExpectExec("UPDATE users SET name = \\$1 WHERE id = \\$2").
