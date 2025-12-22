@@ -127,7 +127,7 @@ func TestGetNames(t *testing.T) {
 	t.Run("connection closed before query", func(t *testing.T) {
 		t.Parallel()
 
-		mockDB2, mock2, err := sqlmock.New()
+		mockDB2, err := sqlmock.New()
 		require.NoError(t, err)
 		mockDB2.Close()
 
@@ -268,7 +268,7 @@ func TestGetUniqueNames(t *testing.T) {
 	t.Run("connection closed before query", func(t *testing.T) {
 		t.Parallel()
 
-		mockDB2, mock2, err := sqlmock.New()
+		mockDB2, err := sqlmock.New()
 		require.NoError(t, err)
 		mockDB2.Close()
 
