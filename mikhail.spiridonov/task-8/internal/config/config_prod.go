@@ -11,8 +11,14 @@ import (
 //go:embed prod.yaml
 var prodConfig []byte
 
-func init() {
+func loadConfig() Config {
+	var cfg Config
 	if err := yaml.Unmarshal(prodConfig, &cfg); err != nil {
 		panic(err)
 	}
+	return cfg
+}
+
+func init() {
+	cfg = loadConfig()
 }
