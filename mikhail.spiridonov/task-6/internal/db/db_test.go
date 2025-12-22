@@ -1,7 +1,6 @@
 package db_test
 
 import (
-	"database/sql"
 	"errors"
 	"testing"
 
