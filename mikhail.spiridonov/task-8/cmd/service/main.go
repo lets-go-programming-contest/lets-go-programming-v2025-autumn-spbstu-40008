@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/mordw1n/task-8/internal/config"
 	"os"
 	"strings"
+	"config"
 )
 
 func validateConfig(cfg config.Config) error {
