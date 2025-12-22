@@ -238,6 +238,7 @@ func TestDataHandler_New(t *testing.T) {
 			return nil, errDatabase
 		},
 	}
+
 	handler := db.New(mockDB)
 	assert.NotNil(t, handler)
 	assert.Equal(t, mockDB, handler.DB)
