@@ -3,7 +3,7 @@ package db_test
 import (
 	"errors"
 	"testing"
-
+	
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/mordw1n/task-6/internal/db"
 	"github.com/stretchr/testify/require"
