@@ -65,6 +65,7 @@ func (h DataHandler) GetUniqueNames() ([]string, error) {
 	defer rows.Close()
 
 	unique := make(map[string]struct{})
+
 	var result []string
 
 	for rows.Next() {
@@ -75,6 +76,7 @@ func (h DataHandler) GetUniqueNames() ([]string, error) {
 
 		if _, exists := unique[name]; !exists {
 			unique[name] = struct{}{}
+			
 			result = append(result, name)
 		}
 	}
