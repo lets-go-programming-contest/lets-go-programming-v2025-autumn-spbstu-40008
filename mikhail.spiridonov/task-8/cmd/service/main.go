@@ -2,13 +2,12 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"strings"
-	"config"
+
+	"github.com/mordw1n/task-8/internal/config"
 )
 
 func validateConfig(cfg config.Config) error {
-
 	validEnvironments := map[string]bool{
 		"dev":  true,
 		"prod": true,
@@ -31,31 +30,37 @@ func validateConfig(cfg config.Config) error {
 	return nil
 }
 
+func handleError(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
 func main() {
 	cfg := config.GetConfig()
 
 	if err := validateConfig(cfg); err != nil {
-		fmt.Fprintf(os.Stderr, "Configuration error: %v\n", err)
-		os.Exit(1)
+		fmt.Printf("Configuration error: %v\n", err)
+		panic("Configuration validation failed")
 	}
 
 	if strings.TrimSpace(cfg.Environment) == "" {
-		fmt.Fprintln(os.Stderr, "Error: environment is empty")
-		os.Exit(1)
+		fmt.Println("Error: environment is empty")
+		panic("Empty environment")
 	}
 
 	if strings.TrimSpace(cfg.LogLevel) == "" {
-		fmt.Fprintln(os.Stderr, "Error: log_level is empty")
-		os.Exit(1)
+		fmt.Println("Error: log_level is empty")
+		panic("Empty log_level")
 	}
 
 	fmt.Printf("%s %s\n", cfg.Environment, cfg.LogLevel)
 
 	if cfg.Environment == "dev" && cfg.LogLevel != "debug" {
-		fmt.Fprintf(os.Stderr, "Warning: dev environment usually uses debug log level, got %s\n", cfg.LogLevel)
+		fmt.Printf("Warning: dev environment usually uses debug log level, got %s\n", cfg.LogLevel)
 	}
 
 	if cfg.Environment == "prod" && cfg.LogLevel == "debug" {
-		fmt.Fprintln(os.Stderr, "Warning: prod environment should not use debug log level for security reasons")
+		fmt.Println("Warning: prod environment should not use debug log level for security reasons")
 	}
 }
