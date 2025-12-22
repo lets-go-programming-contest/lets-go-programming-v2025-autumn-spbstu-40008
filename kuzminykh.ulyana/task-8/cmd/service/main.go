@@ -7,10 +7,6 @@ import (
 )
 
 func main() {
-	if config.CurrentErr != nil {
-		fmt.Printf("Config error: %v\n", config.CurrentErr)
-		return
-	}
-
-	fmt.Println(config.Current.Environment, config.Current.LogLevel)
+	cfg := config.Get()
+	fmt.Println(cfg.Environment + " " + cfg.LogLevel)
 }

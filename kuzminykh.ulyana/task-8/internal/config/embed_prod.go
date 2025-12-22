@@ -7,6 +7,10 @@ import (
 )
 
 //go:embed prod.yaml
-var ConfigData []byte
+var configData []byte
 
-var Current, CurrentErr = New(ConfigData)
+var current, currentErr = New(configData)
+
+func Get() Config {
+	return current
+}

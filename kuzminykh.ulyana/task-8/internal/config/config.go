@@ -9,8 +9,10 @@ type Config struct {
 
 func New(data []byte) (Config, error) {
 	var cfg Config
+
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return Config{}, err
 	}
+
 	return cfg, nil
 }
