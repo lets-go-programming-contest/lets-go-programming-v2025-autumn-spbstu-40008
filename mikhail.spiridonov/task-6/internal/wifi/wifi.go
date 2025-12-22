@@ -1,6 +1,7 @@
 package wifi
 
 import (
+	"errors"
 	"fmt"
 	"net"
 
