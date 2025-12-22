@@ -60,6 +60,7 @@ func (service DBService) GetNames() ([]string, error) {
 
 func (service DBService) AddUser(name string) error {
 	query := "INSERT INTO users (name) VALUES ($1)"
+
 	_, err := service.DB.Exec(query, name)
 	if err != nil {
 		return fmt.Errorf("add user: %w", err)
@@ -87,6 +88,7 @@ func (service DBService) GetUserByID(id int) (string, error) {
 
 func (service DBService) UpdateUser(id int, newName string) error {
 	query := "UPDATE users SET name = $1 WHERE id = $2"
+
 	result, err := service.DB.Exec(query, newName, id)
 	if err != nil {
 		return fmt.Errorf("update user: %w", err)
@@ -106,6 +108,7 @@ func (service DBService) UpdateUser(id int, newName string) error {
 
 func (service DBService) DeleteUser(id int) error {
 	query := "DELETE FROM users WHERE id = $1"
+	
 	result, err := service.DB.Exec(query, id)
 	if err != nil {
 		return fmt.Errorf("delete user: %w", err)
