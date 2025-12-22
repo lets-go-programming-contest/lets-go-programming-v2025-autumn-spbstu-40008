@@ -7,10 +7,8 @@ import (
 )
 
 //go:embed dev.yaml
-var configData []byte
+var devData []byte
 
-var current, currentErr = New(configData)
-
-func Get() Config {
-	return current
+func init() {
+	initConfig(devData)
 }

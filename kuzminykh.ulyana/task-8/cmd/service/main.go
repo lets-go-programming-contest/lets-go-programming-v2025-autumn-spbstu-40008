@@ -8,5 +8,6 @@ import (
 
 func main() {
 	cfg := config.Get()
-	fmt.Println(cfg.Environment + " " + cfg.LogLevel)
+
+	fmt.Print(cfg.Environment + " " + cfg.LogLevel)
 }

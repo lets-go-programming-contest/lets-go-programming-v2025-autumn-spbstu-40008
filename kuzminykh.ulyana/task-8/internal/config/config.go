@@ -1,18 +1,20 @@
 package config
 
-import "gopkg.in/yaml.v3"
+import (
+	"gopkg.in/yaml.v3"
+)
 
 type Config struct {
 	Environment string `yaml:"environment"`
 	LogLevel    string `yaml:"log_level"`
 }
 
-func New(data []byte) (Config, error) {
-	var cfg Config
+var cfg Config
 
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return Config{}, err
-	}
+func Get() Config {
+	return cfg
+}
 
-	return cfg, nil
+func initConfig(data []byte) {
+	yaml.Unmarshal(data, &cfg)
 }
