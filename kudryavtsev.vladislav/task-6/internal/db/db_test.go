@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"example_mock/internal/db"
+	"kudryavtsev.vladislav/task-6/internal/db"
 )
 
 var errStub = errors.New("stub error")
