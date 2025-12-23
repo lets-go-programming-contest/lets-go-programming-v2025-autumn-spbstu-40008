@@ -7,7 +7,6 @@ import (
 	"github.com/mdlayher/wifi"
 )
 
-// WiFiHandle - интерфейс для работы с wifi клиентом.
 type WiFiHandle interface {
 	Interfaces() ([]*wifi.Interface, error)
 }
@@ -20,33 +19,28 @@ func New(w WiFiHandle) WiFiService {
 	return WiFiService{Client: w}
 }
 
-// GetAddresses возвращает список MAC-адресов интерфейсов.
 func (s WiFiService) GetAddresses() ([]net.HardwareAddr, error) {
 	ifaces, err := s.Client.Interfaces()
 	if err != nil {
-		return nil, fmt.Errorf("interface retrieval failed: %w", err)
+		return nil, fmt.Errorf("fetch interfaces: %w", err)
 	}
 
-	// Аллоцируем слайс сразу нужной длины для производительности
-	addrs := make([]net.HardwareAddr, 0, len(ifaces))
-	for _, iface := range ifaces {
-		addrs = append(addrs, iface.HardwareAddr)
+	result := make([]net.HardwareAddr, 0, len(ifaces))
+	for _, i := range ifaces {
+		result = append(result, i.HardwareAddr)
 	}
-
-	return addrs, nil
+	return result, nil
 }
 
-// GetNames возвращает список имен интерфейсов (добавлено для полноты покрытия).
 func (s WiFiService) GetNames() ([]string, error) {
 	ifaces, err := s.Client.Interfaces()
 	if err != nil {
-		return nil, fmt.Errorf("interface retrieval failed: %w", err)
+		return nil, fmt.Errorf("fetch interfaces: %w", err)
 	}
 
-	names := make([]string, 0, len(ifaces))
-	for _, iface := range ifaces {
-		names = append(names, iface.Name)
+	result := make([]string, 0, len(ifaces))
+	for _, i := range ifaces {
+		result = append(result, i.Name)
 	}
-
-	return names, nil
+	return result, nil
 }

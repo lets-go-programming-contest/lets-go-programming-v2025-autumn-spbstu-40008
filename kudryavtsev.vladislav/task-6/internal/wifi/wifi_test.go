@@ -11,72 +11,72 @@ import (
 )
 
 var (
-	errFetch  = errors.New("failed to fetch")
-	errAccess = errors.New("access denied")
+	errFetch    = errors.New("fetch error")
+	errAuth     = errors.New("auth error")
+	errExpected = "fetch interfaces"
 )
 
 func TestWiFiService_GetAddresses(t *testing.T) {
 	t.Parallel()
 
-	// Хелпер для создания тестовых данных
-	makeIfaces := func(macs []string) []*wifi.Interface {
-		list := make([]*wifi.Interface, 0, len(macs))
+	genIfaces := func(macs []string) []*wifi.Interface {
+		res := make([]*wifi.Interface, 0, len(macs))
 		for i, m := range macs {
-			hw, _ := net.ParseMAC(m)
-			list = append(list, &wifi.Interface{
+			addr, _ := net.ParseMAC(m)
+			res = append(res, &wifi.Interface{
 				Index:        i,
-				Name:         "wlan_test",
-				HardwareAddr: hw,
+				Name:         "test0",
+				HardwareAddr: addr,
 			})
 		}
-		return list
+		return res
 	}
 
-	tests := []struct {
+	cases := []struct {
 		name      string
-		mockSetup func(*MockWiFiHandle)
-		expected  []net.HardwareAddr
-		wantErr   string
+		setup     func(*MockWiFiHandle)
+		want      []net.HardwareAddr
+		wantError string
 	}{
 		{
-			name: "Success case",
-			mockSetup: func(m *MockWiFiHandle) {
-				data := makeIfaces([]string{"00:11:22:33:44:55"})
-				m.On("Interfaces").Return(data, nil).Once()
+			name: "Success",
+			setup: func(m *MockWiFiHandle) {
+				m.On("Interfaces").
+					Return(genIfaces([]string{"00:11:22:33:44:55"}), nil).
+					Once()
 			},
-			expected: []net.HardwareAddr{
+			want: []net.HardwareAddr{
 				{0x00, 0x11, 0x22, 0x33, 0x44, 0x55},
 			},
 		},
 		{
-			name: "Error case",
-			mockSetup: func(m *MockWiFiHandle) {
-				m.On("Interfaces").Return(nil, errFetch).Once()
+			name: "Error",
+			setup: func(m *MockWiFiHandle) {
+				m.On("Interfaces").
+					Return(nil, errFetch).
+					Once()
 			},
-			wantErr: "interface retrieval failed",
+			wantError: errExpected,
 		},
 	}
 
-	for _, tc := range tests {
+	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-
 			m := &MockWiFiHandle{}
 			svc := New(m)
+			tc.setup(m)
 
-			tc.mockSetup(m)
+			got, err := svc.GetAddresses()
 
-			result, err := svc.GetAddresses()
-
-			if tc.wantErr != "" {
+			if tc.wantError != "" {
 				require.Error(t, err)
-				assert.Contains(t, err.Error(), tc.wantErr)
-				assert.Nil(t, result)
+				assert.Contains(t, err.Error(), tc.wantError)
+				assert.Nil(t, got)
 			} else {
 				require.NoError(t, err)
-				assert.Equal(t, tc.expected, result)
+				assert.Equal(t, tc.want, got)
 			}
-
 			m.AssertExpectations(t)
 		})
 	}
@@ -85,52 +85,49 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 func TestWiFiService_GetNames(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
+	cases := []struct {
 		name      string
-		mockSetup func(*MockWiFiHandle)
-		expected  []string
-		wantErr   string
+		setup     func(*MockWiFiHandle)
+		want      []string
+		wantError string
 	}{
 		{
-			name: "Success case",
-			mockSetup: func(m *MockWiFiHandle) {
+			name: "Success",
+			setup: func(m *MockWiFiHandle) {
 				data := []*wifi.Interface{
 					{Name: "wlan0"},
 					{Name: "eth0"},
 				}
 				m.On("Interfaces").Return(data, nil).Once()
 			},
-			expected: []string{"wlan0", "eth0"},
+			want: []string{"wlan0", "eth0"},
 		},
 		{
-			name: "Error case",
-			mockSetup: func(m *MockWiFiHandle) {
-				m.On("Interfaces").Return(nil, errAccess).Once()
+			name: "Error",
+			setup: func(m *MockWiFiHandle) {
+				m.On("Interfaces").Return(nil, errAuth).Once()
 			},
-			wantErr: "interface retrieval failed",
+			wantError: errExpected,
 		},
 	}
 
-	for _, tc := range tests {
+	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-
 			m := &MockWiFiHandle{}
 			svc := New(m)
+			tc.setup(m)
 
-			tc.mockSetup(m)
+			got, err := svc.GetNames()
 
-			result, err := svc.GetNames()
-
-			if tc.wantErr != "" {
+			if tc.wantError != "" {
 				require.Error(t, err)
-				assert.Contains(t, err.Error(), tc.wantErr)
-				assert.Nil(t, result)
+				assert.Contains(t, err.Error(), tc.wantError)
+				assert.Nil(t, got)
 			} else {
 				require.NoError(t, err)
-				assert.Equal(t, tc.expected, result)
+				assert.Equal(t, tc.want, got)
 			}
-
 			m.AssertExpectations(t)
 		})
 	}
