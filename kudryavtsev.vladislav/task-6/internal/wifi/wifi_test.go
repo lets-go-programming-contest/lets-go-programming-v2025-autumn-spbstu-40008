@@ -6,11 +6,12 @@ import (
 	"net"
 	"testing"
 
-	myWifi "example_mock/internal/wifi"
-
 	"github.com/mdlayher/wifi"
 	"github.com/stretchr/testify/require"
+	
+	myWifi "github.com/task-6/internal/wifi"
 )
+
 
 type rowTestSysInfo struct {
 	addrs       []string
@@ -31,33 +32,28 @@ func TestGetAddresses(t *testing.T) {
 	wifiService := myWifi.New(mockWifi)
 
 	for i, row := range testTable {
-		mockWifi.On("Interfaces").Return(mockIfaces(row.addrs), row.errExpected).Once()
+		mockWifi.On("Interfaces").Unset()
+		mockWifi.On("Interfaces").Return(mockIfaces(row.addrs), row.errExpected)
 
 		actualAddrs, err := wifiService.GetAddresses()
 
 		if row.errExpected != nil {
-			require.ErrorIs(t, err, row.errExpected, "row: %d", i)
+			require.ErrorIs(t, err, row.errExpected, "row: %d, expected error: %w, actual error: %w", i, row.errExpected, err)
 			continue
 		}
 
 		require.NoError(t, err, "row: %d, error must be nil", i)
-
-		expectedAddrs := parseMACs(row.addrs)
-		require.Equal(t, expectedAddrs, actualAddrs, "row: %d", i)
+		require.Equal(t, parseMACs(row.addrs), actualAddrs, "row: %d, expected addrs: %s, actual addrs: %s", i, parseMACs(row.addrs), actualAddrs)
 	}
 }
 
 func mockIfaces(addrs []string) []*wifi.Interface {
-	if addrs == nil {
-		return nil
-	}
 	var interfaces []*wifi.Interface
 	for i, addrStr := range addrs {
 		hwAddr := parseMAC(addrStr)
 		if hwAddr == nil {
 			continue
 		}
-
 		iface := &wifi.Interface{
 			Index:        i + 1,
 			Name:         fmt.Sprintf("eth%d", i+1),
@@ -72,12 +68,10 @@ func mockIfaces(addrs []string) []*wifi.Interface {
 	return interfaces
 }
 
-func parseMACs(macStrs []string) []net.HardwareAddr {
+func parseMACs(macStr []string) []net.HardwareAddr {
 	var addrs []net.HardwareAddr
-	for _, addr := range macStrs {
-		if res := parseMAC(addr); res != nil {
-			addrs = append(addrs, res)
-		}
+	for _, addr := range macStr {
+		addrs = append(addrs, parseMAC(addr))
 	}
 	return addrs
 }
