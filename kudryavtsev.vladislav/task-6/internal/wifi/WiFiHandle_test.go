@@ -8,8 +8,9 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-var errBadTypeAssertion = errors.New("mock: type assertion failed")
+var errInvalidMockType = errors.New("mock: return value has invalid type")
 
+// MockWiFiHandle мок-реализация интерфейса WiFiHandle.
 type MockWiFiHandle struct {
 	mock.Mock
 }
@@ -17,22 +18,25 @@ type MockWiFiHandle struct {
 func (m *MockWiFiHandle) Interfaces() ([]*wifi.Interface, error) {
 	args := m.Called()
 
+	// Обработка ошибки (второй аргумент)
 	var err error
 	if e := args.Error(1); e != nil {
 		err = fmt.Errorf("mock error: %w", e)
 	}
 
-	result := args.Get(0)
-	if result == nil {
+	// Если первый аргумент nil, возвращаем ошибку сразу
+	if args.Get(0) == nil {
 		return nil, err
 	}
 
-	ifaces, ok := result.([]*wifi.Interface)
+	// Безопасное приведение типа
+	ifaces, ok := args.Get(0).([]*wifi.Interface)
 	if !ok {
+		// Если приведение не удалось, возвращаем спец. ошибку
 		if err != nil {
-			return nil, fmt.Errorf("%w: %w", errBadTypeAssertion, err)
+			return nil, fmt.Errorf("%w: original error: %v", errInvalidMockType, err)
 		}
-		return nil, errBadTypeAssertion
+		return nil, errInvalidMockType
 	}
 
 	return ifaces, err
