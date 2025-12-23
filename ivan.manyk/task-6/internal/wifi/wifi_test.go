@@ -33,7 +33,7 @@ func (m *MockWiFiHandle) Interfaces() ([]*wifi.Interface, error) {
 			return nil, fmt.Errorf("mock error: %w", err)
 		}
 
-		return nil, err
+		return nil, nil
 	}
 
 	ifaces, ok := args.Get(0).([]*wifi.Interface)
@@ -51,7 +51,7 @@ func (m *MockWiFiHandle) Interfaces() ([]*wifi.Interface, error) {
 		return ifaces, fmt.Errorf("mock result error: %w", err)
 	}
 
-	return ifaces, err
+	return ifaces, nil
 }
 
 func mockIfaces(macAddrs []string) []*wifi.Interface {
