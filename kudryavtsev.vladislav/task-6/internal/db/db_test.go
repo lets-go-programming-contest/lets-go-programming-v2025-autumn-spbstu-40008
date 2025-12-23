@@ -22,10 +22,21 @@ func TestGetNames(t *testing.T) {
 		{
 			name: "Success",
 			mockBehavior: func(m sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"name"}).AddRow("Ivan").AddRow("Gena228")
+				rows := sqlmock.NewRows([]string{"name"}).
+					AddRow("Ivan").
+					AddRow("Gena228")
 				m.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
 			},
 			expected:  []string{"Ivan", "Gena228"},
+			expectErr: false,
+		},
+		{
+			name: "Success Empty",
+			mockBehavior: func(m sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{"name"})
+				m.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
+			},
+			expected:  []string{},
 			expectErr: false,
 		},
 		{
