@@ -11,8 +11,9 @@ import (
 )
 
 var (
-	errQuery = errors.New("query failed")
-	errScan  = errors.New("scan failed")
+	errQueryFailed = errors.New("query failed")
+	errRowsError   = errors.New("rows error")
+	errCloseError  = errors.New("close error")
 )
 
 func TestDBService_GetNames(t *testing.T) {
@@ -25,7 +26,7 @@ func TestDBService_GetNames(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "success",
+			name: "success with data",
 			setup: func(m sqlmock.Sqlmock) {
 				rows := sqlmock.NewRows([]string{"name"}).AddRow("Alice").AddRow("Bob")
 				m.ExpectQuery(regexp.QuoteMeta("SELECT name FROM users")).WillReturnRows(rows)
@@ -35,7 +36,31 @@ func TestDBService_GetNames(t *testing.T) {
 		{
 			name: "query error",
 			setup: func(m sqlmock.Sqlmock) {
-				m.ExpectQuery(regexp.QuoteMeta("SELECT name FROM users")).WillReturnError(errQuery)
+				m.ExpectQuery(regexp.QuoteMeta("SELECT name FROM users")).WillReturnError(errQueryFailed)
+			},
+			wantErr: true,
+		},
+		{
+			name: "scan error",
+			setup: func(m sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{"name"}).AddRow(nil)
+				m.ExpectQuery(regexp.QuoteMeta("SELECT name FROM users")).WillReturnRows(rows)
+			},
+			wantErr: true,
+		},
+		{
+			name: "rows error after iteration",
+			setup: func(m sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{"name"}).AddRow("Alice").RowError(0, errRowsError)
+				m.ExpectQuery(regexp.QuoteMeta("SELECT name FROM users")).WillReturnRows(rows)
+			},
+			wantErr: true,
+		},
+		{
+			name: "rows close error",
+			setup: func(m sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{"name"}).AddRow("Alice").CloseError(errCloseError)
+				m.ExpectQuery(regexp.QuoteMeta("SELECT name FROM users")).WillReturnRows(rows)
 			},
 			wantErr: true,
 		},
@@ -43,10 +68,11 @@ func TestDBService_GetNames(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			dbConn, mock, _ := sqlmock.New()
-			defer dbConn.Close()
-			
-			svc := db.New(dbConn)
+			conn, mock, err := sqlmock.New()
+			require.NoError(t, err)
+			defer conn.Close()
+
+			svc := db.New(conn)
 			tt.setup(mock)
 
 			got, err := svc.GetNames()
@@ -56,6 +82,78 @@ func TestDBService_GetNames(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, tt.want, got)
 			}
+			require.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
+func TestDBService_GetUniqueNames(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		setup   func(m sqlmock.Sqlmock)
+		want    []string
+		wantErr bool
+	}{
+		{
+			name: "success",
+			setup: func(m sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{"name"}).AddRow("Alice").AddRow("Bob")
+				m.ExpectQuery(regexp.QuoteMeta("SELECT DISTINCT name FROM users")).WillReturnRows(rows)
+			},
+			want: []string{"Alice", "Bob"},
+		},
+		{
+			name: "query error",
+			setup: func(m sqlmock.Sqlmock) {
+				m.ExpectQuery(regexp.QuoteMeta("SELECT DISTINCT name FROM users")).WillReturnError(errQueryFailed)
+			},
+			wantErr: true,
+		},
+		{
+			name: "rows close error",
+			setup: func(m sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{"name"}).AddRow("Alice").CloseError(errCloseError)
+				m.ExpectQuery(regexp.QuoteMeta("SELECT DISTINCT name FROM users")).WillReturnRows(rows)
+			},
+			wantErr: true,
+		},
+		{
+			name: "scan error",
+			setup: func(m sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{"name"}).AddRow(nil)
+				m.ExpectQuery(regexp.QuoteMeta("SELECT DISTINCT name FROM users")).WillReturnRows(rows)
+			},
+			wantErr: true,
+		},
+		{
+			name: "rows error",
+			setup: func(m sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{"name"}).AddRow("Alice").RowError(0, errRowsError)
+				m.ExpectQuery(regexp.QuoteMeta("SELECT DISTINCT name FROM users")).WillReturnRows(rows)
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			conn, mock, err := sqlmock.New()
+			require.NoError(t, err)
+			defer conn.Close()
+
+			svc := db.New(conn)
+			tt.setup(mock)
+
+			got, err := svc.GetUniqueNames()
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tt.want, got)
+			}
+			require.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
 }

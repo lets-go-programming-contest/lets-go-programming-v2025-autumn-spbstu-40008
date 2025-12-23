@@ -2,69 +2,73 @@ package db
 
 import (
 	"database/sql"
+	"fmt"
 )
 
-type Service struct {
-	db *sql.DB
+type Database interface {
+	Query(query string, args ...any) (*sql.Rows, error)
 }
 
-func New(db *sql.DB) *Service {
-	return &Service{db: db}
+type DBService struct {
+	DB Database
 }
 
-func (s *Service) GetNames() ([]string, error) {
-	rows, err := s.db.Query("SELECT name FROM users")
+func New(db Database) DBService {
+	return DBService{DB: db}
+}
+
+func (service DBService) GetNames() (names []string, err error) {
+	query := "SELECT name FROM users"
+	rows, err := service.DB.Query(query)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("db query: %w", err)
 	}
-	defer rows.Close()
 
-	var result []string
+	defer func() {
+		if cerr := rows.Close(); cerr != nil && err == nil {
+			err = fmt.Errorf("rows close: %w", cerr)
+		}
+	}()
 
 	for rows.Next() {
 		var name string
 		if err := rows.Scan(&name); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("rows scanning: %w", err)
 		}
-		result = append(result, name)
+		names = append(names, name)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("rows error: %w", err)
 	}
 
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-
-	return result, nil
+	return names, nil
 }
 
-func (s *Service) GetUniqueNames() ([]string, error) {
-	rows, err := s.db.Query("SELECT DISTINCT name FROM users")
+func (service DBService) GetUniqueNames() (values []string, err error) {
+	query := "SELECT DISTINCT name FROM users"
+	rows, err := service.DB.Query(query)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("db query: %w", err)
 	}
-	defer rows.Close()
 
-	var result []string
+	defer func() {
+		if cerr := rows.Close(); cerr != nil && err == nil {
+			err = fmt.Errorf("rows close: %w", cerr)
+		}
+	}()
 
 	for rows.Next() {
-		var name string
-		if err := rows.Scan(&name); err != nil {
-			return nil, err
+		var value string
+		if err := rows.Scan(&value); err != nil {
+			return nil, fmt.Errorf("rows scanning: %w", err)
 		}
-		result = append(result, name)
+		values = append(values, value)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("rows error: %w", err)
 	}
 
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-
-	return result, nil
+	return values, nil
 }
-
