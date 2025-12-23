@@ -8,3 +8,7 @@ import (
 
 //go:embed prod.yaml
 var prodConfig []byte
+
+func getEmbeddedConfig() []byte {
+	return prodConfig
+}
