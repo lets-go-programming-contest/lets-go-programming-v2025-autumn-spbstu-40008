@@ -10,83 +10,107 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDBService(t *testing.T) {
+func TestDBService_Coverage100(t *testing.T) {
 	t.Parallel()
 
-	commonTests := []struct {
+	
+	queryNames := regexp.QuoteMeta("SELECT name FROM users")
+	queryUnique := regexp.QuoteMeta("SELECT DISTINCT name FROM users")
+
+	tests := []struct {
 		name       string
-		method     func(db.DBService) ([]string, error)
+		method     func(s db.DBService) ([]string, error)
 		query      string
 		setupMock  func(m sqlmock.Sqlmock, q string)
 		want       []string
 		wantErrMsg string
 	}{
+
 		{
 			name:   "GetNames success",
 			method: func(s db.DBService) ([]string, error) { return s.GetNames() },
-			query:  regexp.QuoteMeta("SELECT name FROM users"),
+			query:  queryNames,
 			setupMock: func(m sqlmock.Sqlmock, q string) {
 				m.ExpectQuery(q).WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("User1"))
 			},
 			want: []string{"User1"},
 		},
 		{
-			name:   "GetUniqueNames success",
-			method: func(s db.DBService) ([]string, error) { return s.GetUniqueNames() },
-			query:  regexp.QuoteMeta("SELECT DISTINCT name FROM users"),
-			setupMock: func(m sqlmock.Sqlmock, q string) {
-				m.ExpectQuery(q).WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("Admin"))
-			},
-			want: []string{"Admin"},
-		},
-		{
-			name:   "Query error",
+			name:   "GetNames query error",
 			method: func(s db.DBService) ([]string, error) { return s.GetNames() },
-			query:  regexp.QuoteMeta("SELECT name FROM users"),
+			query:  queryNames,
 			setupMock: func(m sqlmock.Sqlmock, q string) {
 				m.ExpectQuery(q).WillReturnError(errors.New("fail"))
 			},
 			wantErrMsg: "query error",
 		},
 		{
-			name:   "Scan error",
+			name:   "GetNames scan error",
 			method: func(s db.DBService) ([]string, error) { return s.GetNames() },
-			query:  regexp.QuoteMeta("SELECT name FROM users"),
+			query:  queryNames,
 			setupMock: func(m sqlmock.Sqlmock, q string) {
 				m.ExpectQuery(q).WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow(nil))
 			},
 			wantErrMsg: "scan error",
 		},
 		{
-			name:   "Rows iteration error",
+			name:   "GetNames rows error",
 			method: func(s db.DBService) ([]string, error) { return s.GetNames() },
-			query:  regexp.QuoteMeta("SELECT name FROM users"),
+			query:  queryNames,
 			setupMock: func(m sqlmock.Sqlmock, q string) {
-				rows := sqlmock.NewRows([]string{"name"}).AddRow("U1").RowError(0, errors.New("iter fail"))
+				rows := sqlmock.NewRows([]string{"name"}).AddRow("U1").RowError(0, errors.New("err"))
 				m.ExpectQuery(q).WillReturnRows(rows)
 			},
 			wantErrMsg: "rows iteration error",
 		},
 		{
-			name:   "Close error",
+			name:   "GetNames close error",
 			method: func(s db.DBService) ([]string, error) { return s.GetNames() },
-			query:  regexp.QuoteMeta("SELECT name FROM users"),
+			query:  queryNames,
 			setupMock: func(m sqlmock.Sqlmock, q string) {
 				rows := sqlmock.NewRows([]string{"name"}).AddRow("U1").CloseError(errors.New("close fail"))
 				m.ExpectQuery(q).WillReturnRows(rows)
 			},
 			wantErrMsg: "close error",
 		},
+
+		{
+			name:   "GetUniqueNames success",
+			method: func(s db.DBService) ([]string, error) { return s.GetUniqueNames() },
+			query:  queryUnique,
+			setupMock: func(m sqlmock.Sqlmock, q string) {
+				m.ExpectQuery(q).WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("UniqueUser"))
+			},
+			want: []string{"UniqueUser"},
+		},
+		{
+			name:   "GetUniqueNames query error",
+			method: func(s db.DBService) ([]string, error) { return s.GetUniqueNames() },
+			query:  queryUnique,
+			setupMock: func(m sqlmock.Sqlmock, q string) {
+				m.ExpectQuery(q).WillReturnError(errors.New("fail"))
+			},
+			wantErrMsg: "query error",
+		},
+		{
+			name:   "GetUniqueNames scan error",
+			method: func(s db.DBService) ([]string, error) { return s.GetUniqueNames() },
+			query:  queryUnique,
+			setupMock: func(m sqlmock.Sqlmock, q string) {
+				m.ExpectQuery(q).WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow(nil))
+			},
+			wantErrMsg: "scan error",
+		},
 	}
 
-	for _, tt := range commonTests {
+	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			sqlDB, mock, _ := sqlmock.New()
-			defer sqlDB.Close()
-			
-			service := db.New(sqlDB)
+			dbConn, mock, _ := sqlmock.New()
+			defer dbConn.Close()
+
+			service := db.New(dbConn)
 			tt.setupMock(mock, tt.query)
 
 			res, err := tt.method(service)
