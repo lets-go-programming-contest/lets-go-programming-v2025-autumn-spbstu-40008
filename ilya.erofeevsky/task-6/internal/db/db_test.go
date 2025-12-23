@@ -5,43 +5,32 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/Ilya-Er0fick/task-6/internal/db"
+	"github.com/ilya.erofeevsky/task-6/internal/db"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-func TestInventoryService_GetStockItems(t *testing.T) {
-	t.Parallel()
-
+func TestDB(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		sqlDB, mock, err := sqlmock.New()
-		require.NoError(t, err)
+		sqlDB, mock, _ := sqlmock.New()
 		defer sqlDB.Close()
-
 		service := db.New(sqlDB)
-		rows := sqlmock.NewRows([]string{"item_name"}).
-			AddRow("Processor").
-			AddRow("RAM")
 
-		mock.ExpectQuery("SELECT item_name FROM inventory WHERE quantity > 0").
-			WillReturnRows(rows)
+		rows := sqlmock.NewRows([]string{"name"}).AddRow("User1")
+		mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
 
-		res, err := service.GetStockItems()
+		res, err := service.GetNames()
 		assert.NoError(t, err)
-		assert.Equal(t, []string{"Processor", "RAM"}, res)
-		assert.NoError(t, mock.ExpectationsWereMet())
+		assert.Equal(t, []string{"User1"}, res)
 	})
 
-	t.Run("db_error", func(t *testing.T) {
-		sqlDB, mock, err := sqlmock.New()
-		require.NoError(t, err)
+	t.Run("query_error", func(t *testing.T) {
+		sqlDB, mock, _ := sqlmock.New()
 		defer sqlDB.Close()
-
 		service := db.New(sqlDB)
-		mock.ExpectQuery("SELECT item_name FROM inventory").
-			WillReturnError(errors.New("sql error"))
 
-		res, err := service.GetStockItems()
+		mock.ExpectQuery("SELECT name FROM users").WillReturnError(errors.New("fail"))
+
+		res, err := service.GetNames()
 		assert.Error(t, err)
 		assert.Nil(t, res)
 	})

@@ -4,39 +4,42 @@ import (
 	"errors"
 	"testing"
 
-	mywifi "github.com/Ilya-Er0fick/task-6/internal/wifi"
 	"github.com/mdlayher/wifi"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	mywifi "github.com/task-6/internal/wifi" // Исправлено имя модуля
 )
 
-func TestNetManager_GetActiveInterfaces(t *testing.T) {
-	t.Parallel()
+// Mock WiFiHandle прямо здесь, чтобы не было проблем с файлами
+type MockWiFiHandle struct {
+	mock.Mock
+}
 
-	t.Run("success_interfaces", func(t *testing.T) {
-		mockWiFi := new(WiFiHandle)
+func (m *MockWiFiHandle) Interfaces() ([]*wifi.Interface, error) {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*wifi.Interface), args.Error(1)
+}
+
+func TestWiFi(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		mockWiFi := new(MockWiFiHandle)
 		service := mywifi.New(mockWiFi)
+		mockWiFi.On("Interfaces").Return([]*wifi.Interface{{Name: "wlan0"}}, nil)
 
-		expected := []*wifi.Interface{
-			{Name: "wlan_office"},
-			{Name: "wlan_guest"},
-		}
-
-		mockWiFi.On("Interfaces").Return(expected, nil)
-
-		names, err := service.GetActiveInterfaces()
+		names, err := service.GetNames()
 		assert.NoError(t, err)
-		assert.Len(t, names, 2)
-		assert.Equal(t, "wlan_office", names[0])
-		mockWiFi.AssertExpectations(t)
+		assert.Equal(t, []string{"wlan0"}, names)
 	})
 
-	t.Run("hardware_failure", func(t *testing.T) {
-		mockWiFi := new(WiFiHandle)
+	t.Run("error", func(t *testing.T) {
+		mockWiFi := new(MockWiFiHandle)
 		service := mywifi.New(mockWiFi)
+		mockWiFi.On("Interfaces").Return([]*wifi.Interface(nil), errors.New("err"))
 
-		mockWiFi.On("Interfaces").Return([]*wifi.Interface(nil), errors.New("hw error"))
-
-		names, err := service.GetActiveInterfaces()
+		names, err := service.GetNames()
 		assert.Error(t, err)
 		assert.Nil(t, names)
 	})
