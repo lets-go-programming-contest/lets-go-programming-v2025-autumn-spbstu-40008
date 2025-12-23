@@ -15,7 +15,9 @@ func TestDBService_GetNames(t *testing.T) {
 		defer sqlDB.Close()
 		service := db.New(sqlDB)
 
-		rows := sqlmock.NewRows([]string{"name"}).AddRow("User1").AddRow("User2")
+		rows := sqlmock.NewRows([]string{"name"}).
+			AddRow("User1").
+			AddRow("User2")
 		mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
 
 		res, err := service.GetNames()
@@ -28,11 +30,13 @@ func TestDBService_GetNames(t *testing.T) {
 		defer sqlDB.Close()
 		service := db.New(sqlDB)
 
-		mock.ExpectQuery("SELECT name FROM users").WillReturnError(errors.New("fail"))
+		mock.ExpectQuery("SELECT name FROM users").
+			WillReturnError(errors.New("query failed"))
 
 		res, err := service.GetNames()
 		assert.Error(t, err)
 		assert.Nil(t, res)
+		assert.Contains(t, err.Error(), "query error")
 	})
 
 	t.Run("scan_error", func(t *testing.T) {
@@ -40,11 +44,14 @@ func TestDBService_GetNames(t *testing.T) {
 		defer sqlDB.Close()
 		service := db.New(sqlDB)
 
-		rows := sqlmock.NewRows([]string{"name"}).AddRow(123)
+		rows := sqlmock.NewRows([]string{"name"}).
+			AddRow("User1").
+			RowError(0, errors.New("scan failed"))
 		mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
 
 		res, err := service.GetNames()
 		assert.Error(t, err)
 		assert.Nil(t, res)
+		assert.Contains(t, err.Error(), "scan error")
 	})
 }
