@@ -15,8 +15,9 @@ import (
 )
 
 var (
-	errDriver     = errors.New("driver error")
-	errPermission = errors.New("permission denied")
+	errDriver            = errors.New("driver error")
+	errPermission        = errors.New("permission denied")
+	errTypeAssertion     = errors.New("type assertion failed")
 )
 
 type MockWiFiHandle struct {
@@ -24,24 +25,26 @@ type MockWiFiHandle struct {
 }
 
 func (m *MockWiFiHandle) Interfaces() ([]*wifi.Interface, error) {
-    args := m.Called()
+	args := m.Called()
 
-    if args.Get(0) == nil {
-        if args.Error(1) != nil {
-            return nil, fmt.Errorf("mock error: %w", args.Error(1))
-        }
-        return nil, args.Error(1)
-    }
+	if args.Get(0) == nil {
+		if args.Error(1) != nil {
+			return nil, fmt.Errorf("mock error: %w", args.Error(1))
+		}
 
-    ifaces, ok := args.Get(0).([]*wifi.Interface)
-    if !ok {
-        if args.Error(1) != nil {
-            return nil, fmt.Errorf("type assertion failed: %w", args.Error(1))
-        }
-        return nil, fmt.Errorf("type assertion failed")
-    }
+		return nil, args.Error(1)
+	}
 
-    return ifaces, args.Error(1)
+	ifaces, ok := args.Get(0).([]*wifi.Interface)
+	if !ok {
+		if args.Error(1) != nil {
+			return nil, fmt.Errorf("type assertion failed: %w", args.Error(1))
+		}
+
+		return nil, errTypeAssertion
+	}
+
+	return ifaces, args.Error(1)
 }
 
 func mockIfaces(macAddrs []string) []*wifi.Interface {
