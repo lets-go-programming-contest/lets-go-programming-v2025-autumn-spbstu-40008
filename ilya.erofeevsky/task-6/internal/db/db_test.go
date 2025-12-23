@@ -12,7 +12,6 @@ import (
 
 var (
 	errTestQuery = errors.New("query failed")
-	errTestScan  = errors.New("scan failed")
 	errTestRows  = errors.New("rows error")
 	errTestClose = errors.New("close error")
 )
@@ -20,12 +19,14 @@ var (
 func TestDBService_AllScenarios(t *testing.T) {
 	t.Parallel()
 
-	// Табличные тесты для GetNames и GetUniqueNames
 	methods := []string{"GetNames", "GetUniqueNames"}
 
 	for _, method := range methods {
+		method := method
+
 		t.Run(method, func(t *testing.T) {
-			
+			t.Parallel()
+
 			queryRegex := regexp.QuoteMeta("SELECT name FROM users")
 			if method == "GetUniqueNames" {
 				queryRegex = regexp.QuoteMeta("SELECT DISTINCT name FROM users")
@@ -54,7 +55,6 @@ func TestDBService_AllScenarios(t *testing.T) {
 				{
 					name: "scan_error",
 					setup: func(m sqlmock.Sqlmock) {
-						// Передаем nil там, где ожидается строка
 						rows := sqlmock.NewRows([]string{"name"}).AddRow(nil)
 						m.ExpectQuery(queryRegex).WillReturnRows(rows)
 					},
@@ -79,7 +79,9 @@ func TestDBService_AllScenarios(t *testing.T) {
 			}
 
 			for _, tt := range tests {
+				tt := tt
 				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
 					dbConn, mock, _ := sqlmock.New()
 					defer dbConn.Close()
 
@@ -98,6 +100,7 @@ func TestDBService_AllScenarios(t *testing.T) {
 					} else {
 						require.NoError(t, err)
 					}
+
 					require.NoError(t, mock.ExpectationsWereMet())
 				})
 			}

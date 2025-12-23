@@ -17,8 +17,9 @@ func New(db Database) DBService {
 	return DBService{DB: db}
 }
 
-func (service DBService) GetNames() (names []string, err error) {
+func (service DBService) GetNames() ([]string, error) {
 	query := "SELECT name FROM users"
+
 	rows, err := service.DB.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("db query: %w", err)
@@ -30,11 +31,15 @@ func (service DBService) GetNames() (names []string, err error) {
 		}
 	}()
 
+	var names []string
+
 	for rows.Next() {
 		var name string
+
 		if err := rows.Scan(&name); err != nil {
 			return nil, fmt.Errorf("rows scanning: %w", err)
 		}
+
 		names = append(names, name)
 	}
 
@@ -42,11 +47,12 @@ func (service DBService) GetNames() (names []string, err error) {
 		return nil, fmt.Errorf("rows error: %w", err)
 	}
 
-	return names, nil
+	return names, err
 }
 
-func (service DBService) GetUniqueNames() (values []string, err error) {
+func (service DBService) GetUniqueNames() ([]string, error) {
 	query := "SELECT DISTINCT name FROM users"
+
 	rows, err := service.DB.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("db query: %w", err)
@@ -58,11 +64,15 @@ func (service DBService) GetUniqueNames() (values []string, err error) {
 		}
 	}()
 
+	var values []string
+
 	for rows.Next() {
 		var value string
+
 		if err := rows.Scan(&value); err != nil {
 			return nil, fmt.Errorf("rows scanning: %w", err)
 		}
+
 		values = append(values, value)
 	}
 
@@ -70,5 +80,5 @@ func (service DBService) GetUniqueNames() (values []string, err error) {
 		return nil, fmt.Errorf("rows error: %w", err)
 	}
 
-	return values, nil
+	return values, err
 }
