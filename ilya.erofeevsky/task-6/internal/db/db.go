@@ -17,47 +17,29 @@ func New(db Database) DBService {
 	return DBService{DB: db}
 }
 
-func (s DBService) GetNames() ([]string, error) {
-	rows, err := s.DB.Query("SELECT name FROM users")
-	if err != nil {
-		return nil, fmt.Errorf("query error: %w", err)
+func (s DBService) GetNames() (names []string, err error) {
+	rows, queryErr := s.DB.Query("SELECT name FROM users")
+	if queryErr != nil {
+		return nil, fmt.Errorf("query error: %w", queryErr)
 	}
-	defer rows.Close()
 
-	var names []string
+	// Доработка: безопасное закрытие с захватом ошибки 
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("close error: %w", closeErr)
+		}
+	}()
+
 	for rows.Next() {
 		var name string
-		if err := rows.Scan(&name); err != nil {
-			return nil, fmt.Errorf("scan error: %w", err)
+		if scanErr := rows.Scan(&name); scanErr != nil {
+			return nil, fmt.Errorf("scan error: %w", scanErr)
 		}
 		names = append(names, name)
 	}
 
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("rows iteration error: %w", err)
-	}
-
-	return names, nil
-}
-
-func (s DBService) GetUniqueNames() ([]string, error) {
-	rows, err := s.DB.Query("SELECT DISTINCT name FROM users")
-	if err != nil {
-		return nil, fmt.Errorf("query error: %w", err)
-	}
-	defer rows.Close()
-
-	var names []string
-	for rows.Next() {
-		var name string
-		if err := rows.Scan(&name); err != nil {
-			return nil, fmt.Errorf("scan error: %w", err)
-		}
-		names = append(names, name)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("rows iteration error: %w", err)
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, fmt.Errorf("rows iteration error: %w", rowsErr)
 	}
 
 	return names, nil
