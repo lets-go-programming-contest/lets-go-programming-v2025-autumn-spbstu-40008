@@ -208,7 +208,8 @@ func TestGetUniqueNames_EmptyResult(t *testing.T) {
 	}
 	defer dbConn.Close()
 
-	rows := sqlmock.NewRows([]string{"name"})\n	mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
+	rows := sqlmock.NewRows([]string{"name"})
+	mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
 
 	service := db.New(dbConn)
 	names, err := service.GetUniqueNames()
