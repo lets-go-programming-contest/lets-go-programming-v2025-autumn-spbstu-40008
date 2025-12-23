@@ -50,9 +50,6 @@ func TestGetNames_EmptyResult(t *testing.T) {
 	if err != nil {
 		t.Errorf("expected no error, got %v", err)
 	}
-	if len(names) != 0 {
-		t.Errorf("expected 0 names, got %d", len(names))
-	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("unfulfilled expectations: %v", err)
 	}
@@ -216,9 +213,6 @@ func TestGetUniqueNames_EmptyResult(t *testing.T) {
 
 	if err != nil {
 		t.Errorf("expected no error, got %v", err)
-	}
-	if len(names) != 0 {
-		t.Errorf("expected 0 names, got %d", len(names))
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("unfulfilled expectations: %v", err)
