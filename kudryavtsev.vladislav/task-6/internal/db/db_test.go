@@ -4,10 +4,11 @@ import (
 	"errors"
 	"testing"
 
-	"example_mock/internal/db"
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"example_mock/internal/db"
 )
 
 var errStub = errors.New("stub error")
