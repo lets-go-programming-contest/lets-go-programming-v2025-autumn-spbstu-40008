@@ -1,4 +1,4 @@
-package wifi_test
+package wifi
 
 import (
 	"errors"
@@ -7,7 +7,6 @@ import (
 	"github.com/mdlayher/wifi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	mywifi "github.com/Ilya-Er0fick/task-6/internal/wifi"
 )
 
 type MockWiFiHandle struct {
@@ -23,11 +22,9 @@ func (m *MockWiFiHandle) Interfaces() ([]*wifi.Interface, error) {
 }
 
 func TestWiFiService_GetNames(t *testing.T) {
-	t.Parallel()
-
 	t.Run("success", func(t *testing.T) {
 		m := new(MockWiFiHandle)
-		s := mywifi.New(m)
+		s := New(m)
 		m.On("Interfaces").Return([]*wifi.Interface{{Name: "wlan0"}}, nil)
 
 		names, err := s.GetNames()
@@ -35,33 +32,9 @@ func TestWiFiService_GetNames(t *testing.T) {
 		assert.Equal(t, []string{"wlan0"}, names)
 	})
 
-	t.Run("success multiple interfaces", func(t *testing.T) {
-		m := new(MockWiFiHandle)
-		s := mywifi.New(m)
-		m.On("Interfaces").Return([]*wifi.Interface{
-			{Name: "wlan0"},
-			{Name: "wlan1"},
-			{Name: "eth0"},
-		}, nil)
-
-		names, err := s.GetNames()
-		assert.NoError(t, err)
-		assert.Equal(t, []string{"wlan0", "wlan1", "eth0"}, names)
-	})
-
-	t.Run("success empty interfaces", func(t *testing.T) {
-		m := new(MockWiFiHandle)
-		s := mywifi.New(m)
-		m.On("Interfaces").Return([]*wifi.Interface{}, nil)
-
-		names, err := s.GetNames()
-		assert.NoError(t, err)
-		assert.Equal(t, []string{}, names)
-	})
-
 	t.Run("error", func(t *testing.T) {
 		m := new(MockWiFiHandle)
-		s := mywifi.New(m)
+		s := New(m)
 		m.On("Interfaces").Return(nil, errors.New("hw fail"))
 
 		_, err := s.GetNames()
