@@ -167,14 +167,18 @@ func TestGetNames_CloseError(t *testing.T) {
 
 	rows := sqlmock.NewRows([]string{"name"}).
 		AddRow("Alice").
+		AddRow("Bob").
 		CloseError(errors.New("close error"))
 	mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
 
 	service := db.New(dbConn)
-	_, err = service.GetNames()
+	names, err := service.GetNames()
 
 	if err == nil {
 		t.Error("expected error, got nil")
+	}
+	if len(names) > 0 {
+		t.Logf("got names before close error: %v", names)
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("unfulfilled expectations: %v", err)
@@ -340,14 +344,18 @@ func TestGetUniqueNames_CloseError(t *testing.T) {
 
 	rows := sqlmock.NewRows([]string{"name"}).
 		AddRow("Alice").
+		AddRow("Bob").
 		CloseError(errors.New("close error"))
 	mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
 
 	service := db.New(dbConn)
-	_, err = service.GetUniqueNames()
+	names, err := service.GetUniqueNames()
 
 	if err == nil {
 		t.Error("expected error, got nil")
+	}
+	if len(names) > 0 {
+		t.Logf("got names before close error: %v", names)
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("unfulfilled expectations: %v", err)
