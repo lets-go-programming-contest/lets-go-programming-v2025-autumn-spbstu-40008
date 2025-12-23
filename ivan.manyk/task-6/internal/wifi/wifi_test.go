@@ -2,14 +2,21 @@ package wifi_test
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"testing"
 
 	"github.com/mdlayher/wifi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 
 	wifiPkg "task-6/internal/wifi"
+)
+
+var (
+	errDriver      = errors.New("driver error")
+	errPermission  = errors.New("permission denied")
 )
 
 type MockWiFiHandle struct {
@@ -19,13 +26,19 @@ type MockWiFiHandle struct {
 func (m *MockWiFiHandle) Interfaces() ([]*wifi.Interface, error) {
 	args := m.Called()
 	if args.Get(0) == nil {
-		return nil, args.Error(1)
+		return nil, fmt.Errorf("mock error: %w", args.Error(1))
 	}
-	return args.Get(0).([]*wifi.Interface), args.Error(1)
+
+	ifaces, ok := args.Get(0).([]*wifi.Interface)
+	if !ok {
+		return nil, fmt.Errorf("type assertion failed: %w", args.Error(1))
+	}
+	return ifaces, args.Error(1)
 }
 
 func mockIfaces(macAddrs []string) []*wifi.Interface {
-	var interfaces []*wifi.Interface
+	interfaces := make([]*wifi.Interface, 0, len(macAddrs))
+
 	for i, mac := range macAddrs {
 		hwAddr, err := net.ParseMAC(mac)
 		if err != nil {
@@ -39,10 +52,13 @@ func mockIfaces(macAddrs []string) []*wifi.Interface {
 		}
 		interfaces = append(interfaces, iface)
 	}
+
 	return interfaces
 }
 
 func TestWiFiService_GetAddresses(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name        string
 		macAddrs    []string
@@ -64,7 +80,7 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 		{
 			name:        "interface error",
 			macAddrs:    nil,
-			mockError:   errors.New("driver error"),
+			mockError:   errDriver,
 			expectError: true,
 		},
 		{
@@ -76,7 +92,10 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			mockWiFi := &MockWiFiHandle{}
 
 			var interfaces []*wifi.Interface
@@ -91,10 +110,10 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 			addrs, err := service.GetAddresses()
 
 			if tt.expectError {
-				assert.Error(t, err)
+				require.Error(t, err)
 				assert.Nil(t, addrs)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 
 				expectedCount := 0
 				for _, mac := range tt.macAddrs {
@@ -120,6 +139,8 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 }
 
 func TestWiFiService_GetNames(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name        string
 		ifaceNames  []string
@@ -135,7 +156,7 @@ func TestWiFiService_GetNames(t *testing.T) {
 		{
 			name:        "interface error",
 			ifaceNames:  nil,
-			mockError:   errors.New("permission denied"),
+			mockError:   errPermission,
 			expectError: true,
 		},
 		{
@@ -147,7 +168,10 @@ func TestWiFiService_GetNames(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			mockWiFi := &MockWiFiHandle{}
 
 			var interfaces []*wifi.Interface
@@ -166,10 +190,10 @@ func TestWiFiService_GetNames(t *testing.T) {
 			names, err := service.GetNames()
 
 			if tt.expectError {
-				assert.Error(t, err)
+				require.Error(t, err)
 				assert.Nil(t, names)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.ifaceNames, names)
 			}
 
@@ -188,7 +212,7 @@ func BenchmarkGetAddresses(b *testing.B) {
 	service := wifiPkg.New(mockWiFi)
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, _ = service.GetAddresses()
 	}
 }
@@ -197,7 +221,7 @@ func BenchmarkGetNames(b *testing.B) {
 	mockWiFi := &MockWiFiHandle{}
 	ifaceNames := []string{"wlan0", "wlan1", "eth0"}
 
-	var interfaces []*wifi.Interface
+	interfaces := make([]*wifi.Interface, 0, len(ifaceNames))
 	for i, name := range ifaceNames {
 		iface := &wifi.Interface{
 			Index: i,
@@ -211,7 +235,7 @@ func BenchmarkGetNames(b *testing.B) {
 	service := wifiPkg.New(mockWiFi)
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, _ = service.GetNames()
 	}
 }
