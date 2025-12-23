@@ -1,13 +1,13 @@
 package wifi_test
 
 import (
-	"errors"
-	"testing"
+    "errors"
+    "testing"
 
-	"github.com/mdlayher/wifi"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	mywifi "github.com/task-6/internal/wifi"
+    "github.com/mdlayher/wifi"
+    "github.com/stretchr/testify/assert"
+    "github.com/stretchr/testify/mock"
+    mywifi "github.com/Ilya-Er0fick/task-6/internal/wifi"
 )
 
 type MockWiFiHandle struct {
