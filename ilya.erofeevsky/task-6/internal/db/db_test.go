@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/Ilya-Er0fick/task-6/internal/db"
 	"github.com/stretchr/testify/assert"
-	"github.com/task-6/internal/db"
 )
 
 func TestDBService_GetNames(t *testing.T) {
@@ -70,16 +70,14 @@ func TestDBService_GetNames(t *testing.T) {
 		defer sqlDB.Close()
 		service := db.New(sqlDB)
 
-
 		rows := sqlmock.NewRows([]string{"name"}).
 			AddRow("User1").
 			CloseError(errors.New("close error"))
 		mock.ExpectQuery(query).WillReturnRows(rows)
 
 		_, err := service.GetNames()
-
 		if err == nil {
-			t.Log("WARNING: Implementation swallowed the close error, but code path was executed.")
+			t.Log("WARNING: Implementation swallowed the close error")
 		} else {
 			assert.Error(t, err)
 		}
@@ -154,7 +152,7 @@ func TestDBService_GetUniqueNames(t *testing.T) {
 
 		_, err := service.GetUniqueNames()
 		if err == nil {
-			t.Log("WARNING: Implementation swallowed the close error, but code path was executed.")
+			t.Log("WARNING: Implementation swallowed the close error")
 		} else {
 			assert.Error(t, err)
 		}
