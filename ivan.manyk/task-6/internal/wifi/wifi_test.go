@@ -24,17 +24,24 @@ type MockWiFiHandle struct {
 }
 
 func (m *MockWiFiHandle) Interfaces() ([]*wifi.Interface, error) {
-	args := m.Called()
-	if args.Get(0) == nil {
-		return nil, fmt.Errorf("mock error: %w", args.Error(1))
-	}
+    args := m.Called()
 
-	ifaces, ok := args.Get(0).([]*wifi.Interface)
-	if !ok {
-		return nil, fmt.Errorf("type assertion failed: %w", args.Error(1))
-	}
+    if args.Get(0) == nil {
+        if args.Error(1) != nil {
+            return nil, fmt.Errorf("mock error: %w", args.Error(1))
+        }
+        return nil, args.Error(1)
+    }
 
-	return ifaces, args.Error(1)
+    ifaces, ok := args.Get(0).([]*wifi.Interface)
+    if !ok {
+        if args.Error(1) != nil {
+            return nil, fmt.Errorf("type assertion failed: %w", args.Error(1))
+        }
+        return nil, fmt.Errorf("type assertion failed")
+    }
+
+    return ifaces, args.Error(1)
 }
 
 func mockIfaces(macAddrs []string) []*wifi.Interface {
@@ -116,6 +123,7 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 				require.NoError(t, err)
 
 				expectedCount := 0
+
 				for _, mac := range tt.macAddrs {
 					if _, err := net.ParseMAC(mac); err == nil {
 						expectedCount++
@@ -174,6 +182,7 @@ func TestWiFiService_GetNames(t *testing.T) {
 			mockWiFi := &MockWiFiHandle{}
 
 			var interfaces []*wifi.Interface
+
 			for i, name := range tt.ifaceNames {
 				iface := &wifi.Interface{
 					Index: i,
