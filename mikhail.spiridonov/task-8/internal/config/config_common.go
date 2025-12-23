@@ -2,7 +2,7 @@ package config
 
 import (
 	"fmt"
-    "sync"
+	"sync"
 
 	"gopkg.in/yaml.v3"
 )
@@ -26,6 +26,7 @@ func GetConfig() (Config, error) {
 	if configErr != nil {
 		return Config{}, configErr
 	}
+    
 	return config, nil
 }
 
@@ -34,6 +35,7 @@ func GetConfigOrPanic() Config {
 	if err != nil {
 		panic(err)
 	}
+
 	return cfg
 }
 
@@ -50,5 +52,6 @@ func parseConfig(data []byte) (Config, error) {
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return Config{}, fmt.Errorf("unmarshal YAML config: %w", err)
 	}
+
 	return cfg, nil
 }
