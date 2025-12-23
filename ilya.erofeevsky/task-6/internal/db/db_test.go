@@ -134,6 +134,30 @@ func TestGetNames_RowsError(t *testing.T) {
 	}
 }
 
+func TestGetNames_RowsErrorAfterIteration(t *testing.T) {
+	dbConn, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("failed to create mock: %v", err)
+	}
+	defer dbConn.Close()
+
+	rows := sqlmock.NewRows([]string{"name"}).
+		AddRow("Alice").
+		AddRow("Bob").
+		RowError(1, errors.New("row error after iteration"))
+	mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
+
+	service := db.New(dbConn)
+	names, err := service.GetNames()
+
+	if err == nil {
+		t.Error("expected error, got nil")
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("unfulfilled expectations: %v", err)
+	}
+}
+
 func TestGetNames_CloseError(t *testing.T) {
 	dbConn, mock, err := sqlmock.New()
 	if err != nil {
@@ -277,6 +301,30 @@ func TestGetUniqueNames_RowsError(t *testing.T) {
 	}
 	if names != nil {
 		t.Errorf("expected nil names, got %v", names)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("unfulfilled expectations: %v", err)
+	}
+}
+
+func TestGetUniqueNames_RowsErrorAfterIteration(t *testing.T) {
+	dbConn, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("failed to create mock: %v", err)
+	}
+	defer dbConn.Close()
+
+	rows := sqlmock.NewRows([]string{"name"}).
+		AddRow("Alice").
+		AddRow("Bob").
+		RowError(1, errors.New("row error after iteration"))
+	mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
+
+	service := db.New(dbConn)
+	names, err := service.GetUniqueNames()
+
+	if err == nil {
+		t.Error("expected error, got nil")
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("unfulfilled expectations: %v", err)
