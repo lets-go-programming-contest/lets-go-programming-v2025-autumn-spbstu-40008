@@ -4,9 +4,9 @@ import (
 	"errors"
 	"testing"
 
-	mywifi "github.com/ilya.erofeevsky/task-6/internal/wifi"
 	"github.com/mdlayher/wifi"
 	"github.com/stretchr/testify/assert"
+	mywifi "github.com/task-6/internal/wifi"
 )
 
 func TestWiFi(t *testing.T) {

@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/ilya.erofeevsky/task-6/internal/db"
 	"github.com/stretchr/testify/assert"
+	"github.com/task-6/internal/db"
 )
 
 func TestDB(t *testing.T) {

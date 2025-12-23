@@ -7,10 +7,9 @@ import (
 	"github.com/mdlayher/wifi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	mywifi "github.com/task-6/internal/wifi" // Исправлено имя модуля
+	mywifi "github.com/task-6/internal/wifi"
 )
 
-// Mock WiFiHandle прямо здесь, чтобы не было проблем с файлами
 type MockWiFiHandle struct {
 	mock.Mock
 }
