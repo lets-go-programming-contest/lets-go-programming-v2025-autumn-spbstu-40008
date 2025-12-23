@@ -22,18 +22,29 @@ func (s DBService) GetNames() ([]string, error) {
     if err != nil {
         return nil, fmt.Errorf("query error: %w", err)
     }
-    defer rows.Close()
-
+    
+   
     var names []string
+    defer func() {
+        closeErr := rows.Close()
+        if closeErr != nil {
+
+            if err != nil {
+                err = fmt.Errorf("%v; close error: %w", err, closeErr)
+            } else {
+                err = closeErr
+            }
+        }
+    }()
+    
     for rows.Next() {
         var name string
-        if err := rows.Scan(&name); err != nil {
-            return nil, fmt.Errorf("scan error: %w", err)
+        if scanErr := rows.Scan(&name); scanErr != nil {
+            return nil, fmt.Errorf("scan error: %w", scanErr)
         }
         names = append(names, name)
     }
     
-
     if err := rows.Err(); err != nil {
         return nil, fmt.Errorf("rows iteration error: %w", err)
     }
@@ -46,13 +57,24 @@ func (s DBService) GetUniqueNames() ([]string, error) {
     if err != nil {
         return nil, fmt.Errorf("query error: %w", err)
     }
-    defer rows.Close()
-
+    
     var names []string
+    defer func() {
+        closeErr := rows.Close()
+        if closeErr != nil {
+
+            if err != nil {
+                err = fmt.Errorf("%v; close error: %w", err, closeErr)
+            } else {
+                err = closeErr
+            }
+        }
+    }()
+    
     for rows.Next() {
         var name string
-        if err := rows.Scan(&name); err != nil {
-            return nil, fmt.Errorf("scan error: %w", err)
+        if scanErr := rows.Scan(&name); scanErr != nil {
+            return nil, fmt.Errorf("scan error: %w", scanErr)
         }
         names = append(names, name)
     }
