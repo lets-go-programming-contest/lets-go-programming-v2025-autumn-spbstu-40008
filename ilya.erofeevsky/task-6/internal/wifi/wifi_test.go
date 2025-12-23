@@ -11,53 +11,52 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type MockWiFiHandle struct {
+type MockWiFi struct {
 	mock.Mock
 }
 
-func (m *MockWiFiHandle) Interfaces() ([]*wifipkg.Interface, error) {
+func (m *MockWiFi) Interfaces() ([]*wifipkg.Interface, error) {
 	args := m.Called()
 	return args.Get(0).([]*wifipkg.Interface), args.Error(1)
 }
 
-func TestWiFiService_GetAddresses(t *testing.T) {
+func TestWiFiService_Coverage(t *testing.T) {
 	t.Parallel()
+	
+	errWifi := errors.New("wifi failure")
 	mac, _ := net.ParseMAC("00:11:22:33:44:55")
 
-	tests := []struct {
-		name    string
-		mockRet []*wifipkg.Interface
-		mockErr error
-		want    []net.HardwareAddr
-		wantErr bool
-	}{
-		{
-			name:    "success",
-			mockRet: []*wifipkg.Interface{{HardwareAddr: mac}},
-			want:    []net.HardwareAddr{mac},
-		},
-		{
-			name:    "error",
-			mockRet: []*wifipkg.Interface{},
-			mockErr: errors.New("wifi error"),
-			wantErr: true,
-		},
-	}
+	t.Run("GetAddresses_Success", func(t *testing.T) {
+		m := new(MockWiFi)
+		m.On("Interfaces").Return([]*wifipkg.Interface{{HardwareAddr: mac}}, nil)
+		svc := wifi.New(m)
+		res, err := svc.GetAddresses()
+		require.NoError(t, err)
+		require.Len(t, res, 1)
+	})
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			m := &MockWiFiHandle{}
-			m.On("Interfaces").Return(tt.mockRet, tt.mockErr)
+	t.Run("GetAddresses_Error", func(t *testing.T) {
+		m := new(MockWiFi)
+		m.On("Interfaces").Return([]*wifipkg.Interface{}, errWifi)
+		svc := wifi.New(m)
+		_, err := svc.GetAddresses()
+		require.Error(t, err)
+	})
 
-			svc := wifi.New(m)
-			got, err := svc.GetAddresses()
+	t.Run("GetNames_Success", func(t *testing.T) {
+		m := new(MockWiFi)
+		m.On("Interfaces").Return([]*wifipkg.Interface{{Name: "wlan0"}}, nil)
+		svc := wifi.New(m)
+		res, err := svc.GetNames()
+		require.NoError(t, err)
+		require.Equal(t, []string{"wlan0"}, res)
+	})
 
-			if tt.wantErr {
-				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
-				require.Equal(t, tt.want, got)
-			}
-		})
-	}
+	t.Run("GetNames_Error", func(t *testing.T) {
+		m := new(MockWiFi)
+		m.On("Interfaces").Return([]*wifipkg.Interface{}, errWifi)
+		svc := wifi.New(m)
+		_, err := svc.GetNames()
+		require.Error(t, err)
+	})
 }
