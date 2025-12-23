@@ -35,6 +35,30 @@ func TestWiFiService_GetNames(t *testing.T) {
 		assert.Equal(t, []string{"wlan0"}, names)
 	})
 
+	t.Run("success multiple interfaces", func(t *testing.T) {
+		m := new(MockWiFiHandle)
+		s := mywifi.New(m)
+		m.On("Interfaces").Return([]*wifi.Interface{
+			{Name: "wlan0"},
+			{Name: "wlan1"},
+			{Name: "eth0"},
+		}, nil)
+
+		names, err := s.GetNames()
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"wlan0", "wlan1", "eth0"}, names)
+	})
+
+	t.Run("success empty interfaces", func(t *testing.T) {
+		m := new(MockWiFiHandle)
+		s := mywifi.New(m)
+		m.On("Interfaces").Return([]*wifi.Interface{}, nil)
+
+		names, err := s.GetNames()
+		assert.NoError(t, err)
+		assert.Equal(t, []string{}, names)
+	})
+
 	t.Run("error", func(t *testing.T) {
 		m := new(MockWiFiHandle)
 		s := mywifi.New(m)
