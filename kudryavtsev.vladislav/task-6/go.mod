@@ -1,6 +1,6 @@
-module example_mock
+module github.com/task-6
 
-go 1.21
+go 1.22.7
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
