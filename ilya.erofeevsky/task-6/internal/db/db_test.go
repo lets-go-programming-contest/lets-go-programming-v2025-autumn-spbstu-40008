@@ -61,6 +61,30 @@ func TestGetNames_EmptyResult(t *testing.T) {
 	}
 }
 
+func TestGetNames_EmptyResultWithCloseError(t *testing.T) {
+	dbConn, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("failed to create mock: %v", err)
+	}
+	defer dbConn.Close()
+
+	rows := sqlmock.NewRows([]string{"name"}).CloseError(errors.New("close error"))
+	mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
+
+	service := db.New(dbConn)
+	names, err := service.GetNames()
+
+	if err == nil {
+		t.Error("expected close error, got nil")
+	}
+	if names != nil && len(names) != 0 {
+		t.Errorf("expected empty names, got %v", names)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("unfulfilled expectations: %v", err)
+	}
+}
+
 func TestGetNames_QueryError(t *testing.T) {
 	dbConn, mock, err := sqlmock.New()
 	if err != nil {
@@ -145,7 +169,7 @@ func TestGetNames_RowsErrorAfterSuccessfulIterations(t *testing.T) {
 	rows := sqlmock.NewRows([]string{"name"}).
 		AddRow("Alice").
 		AddRow("Bob")
-
+	
 	rows.RowError(1, errors.New("rows error"))
 	
 	mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
@@ -238,6 +262,30 @@ func TestGetUniqueNames_EmptyResult(t *testing.T) {
 	}
 	if names != nil && len(names) != 0 {
 		t.Errorf("expected empty result, got %v", names)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("unfulfilled expectations: %v", err)
+	}
+}
+
+func TestGetUniqueNames_EmptyResultWithCloseError(t *testing.T) {
+	dbConn, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("failed to create mock: %v", err)
+	}
+	defer dbConn.Close()
+
+	rows := sqlmock.NewRows([]string{"name"}).CloseError(errors.New("close error"))
+	mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
+
+	service := db.New(dbConn)
+	names, err := service.GetUniqueNames()
+
+	if err == nil {
+		t.Error("expected close error, got nil")
+	}
+	if names != nil && len(names) != 0 {
+		t.Errorf("expected empty names, got %v", names)
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("unfulfilled expectations: %v", err)
