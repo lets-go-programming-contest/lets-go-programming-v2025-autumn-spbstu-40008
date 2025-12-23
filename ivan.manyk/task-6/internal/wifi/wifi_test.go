@@ -15,8 +15,8 @@ import (
 )
 
 var (
-	errDriver      = errors.New("driver error")
-	errPermission  = errors.New("permission denied")
+	errDriver     = errors.New("driver error")
+	errPermission = errors.New("permission denied")
 )
 
 type MockWiFiHandle struct {
@@ -33,6 +33,7 @@ func (m *MockWiFiHandle) Interfaces() ([]*wifi.Interface, error) {
 	if !ok {
 		return nil, fmt.Errorf("type assertion failed: %w", args.Error(1))
 	}
+
 	return ifaces, args.Error(1)
 }
 
@@ -92,7 +93,6 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -168,7 +168,6 @@ func TestWiFiService_GetNames(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -212,6 +211,7 @@ func BenchmarkGetAddresses(b *testing.B) {
 	service := wifiPkg.New(mockWiFi)
 
 	b.ResetTimer()
+
 	for range b.N {
 		_, _ = service.GetAddresses()
 	}
@@ -222,6 +222,7 @@ func BenchmarkGetNames(b *testing.B) {
 	ifaceNames := []string{"wlan0", "wlan1", "eth0"}
 
 	interfaces := make([]*wifi.Interface, 0, len(ifaceNames))
+
 	for i, name := range ifaceNames {
 		iface := &wifi.Interface{
 			Index: i,
@@ -235,6 +236,7 @@ func BenchmarkGetNames(b *testing.B) {
 	service := wifiPkg.New(mockWiFi)
 
 	b.ResetTimer()
+
 	for range b.N {
 		_, _ = service.GetNames()
 	}
