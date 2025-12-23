@@ -50,6 +50,9 @@ func TestGetNames_EmptyResult(t *testing.T) {
 	if err != nil {
 		t.Errorf("expected no error, got %v", err)
 	}
+	if len(names) != 0 {
+		t.Errorf("expected 0 names, got %d", len(names))
+	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("unfulfilled expectations: %v", err)
 	}
@@ -205,14 +208,16 @@ func TestGetUniqueNames_EmptyResult(t *testing.T) {
 	}
 	defer dbConn.Close()
 
-	rows := sqlmock.NewRows([]string{"name"})
-	mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
+	rows := sqlmock.NewRows([]string{"name"})\n	mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
 
 	service := db.New(dbConn)
 	names, err := service.GetUniqueNames()
 
 	if err != nil {
 		t.Errorf("expected no error, got %v", err)
+	}
+	if len(names) != 0 {
+		t.Errorf("expected 0 names, got %d", len(names))
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("unfulfilled expectations: %v", err)
