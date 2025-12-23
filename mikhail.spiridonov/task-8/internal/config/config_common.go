@@ -16,6 +16,5 @@ func parseConfig(data []byte) (Config, error) {
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return Config{}, fmt.Errorf("unmarshal YAML config: %w", err)
 	}
-    
 	return cfg, nil
 }
