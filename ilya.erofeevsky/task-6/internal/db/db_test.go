@@ -11,10 +11,10 @@ import (
 
 func TestDBService_GetNames(t *testing.T) {
 	tests := []struct {
-		name       string
-		setupMock  func(sqlmock.Sqlmock)
-		wantNames  []string
-		wantErr    bool
+		name        string
+		setupMock   func(sqlmock.Sqlmock)
+		wantNames   []string
+		wantErr     bool
 		errContains string
 	}{
 		{
@@ -34,7 +34,7 @@ func TestDBService_GetNames(t *testing.T) {
 				rows := sqlmock.NewRows([]string{"name"})
 				m.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
 			},
-			wantNames: []string{},
+			wantNames: nil,
 			wantErr:   false,
 		},
 		{
@@ -42,6 +42,7 @@ func TestDBService_GetNames(t *testing.T) {
 			setupMock: func(m sqlmock.Sqlmock) {
 				m.ExpectQuery("SELECT name FROM users").WillReturnError(errors.New("db error"))
 			},
+			wantNames:   nil,
 			wantErr:     true,
 			errContains: "query error",
 		},
@@ -51,6 +52,7 @@ func TestDBService_GetNames(t *testing.T) {
 				rows := sqlmock.NewRows([]string{"name"}).AddRow(123)
 				m.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
 			},
+			wantNames:   nil,
 			wantErr:     true,
 			errContains: "scan error",
 		},
@@ -62,6 +64,7 @@ func TestDBService_GetNames(t *testing.T) {
 					RowError(0, errors.New("row error"))
 				m.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
 			},
+			wantNames:   nil,
 			wantErr:     true,
 			errContains: "rows iteration error",
 		},
@@ -73,6 +76,7 @@ func TestDBService_GetNames(t *testing.T) {
 					CloseError(errors.New("close error"))
 				m.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
 			},
+			wantNames:   nil,
 			wantErr:     true,
 			errContains: "close error",
 		},
@@ -96,22 +100,29 @@ func TestDBService_GetNames(t *testing.T) {
 				if tt.errContains != "" {
 					assert.Contains(t, err.Error(), tt.errContains)
 				}
+				assert.Nil(t, names)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.wantNames, names)
+				if tt.wantNames == nil {
+					assert.Nil(t, names)
+				} else {
+					assert.Equal(t, tt.wantNames, names)
+				}
 			}
 
-			assert.NoError(t, mock.ExpectationsWereMet())
+			if err := mock.ExpectationsWereMet(); err != nil {
+				t.Errorf("unfulfilled expectations: %v", err)
+			}
 		})
 	}
 }
 
 func TestDBService_GetUniqueNames(t *testing.T) {
 	tests := []struct {
-		name       string
-		setupMock  func(sqlmock.Sqlmock)
-		wantNames  []string
-		wantErr    bool
+		name        string
+		setupMock   func(sqlmock.Sqlmock)
+		wantNames   []string
+		wantErr     bool
 		errContains string
 	}{
 		{
@@ -131,7 +142,7 @@ func TestDBService_GetUniqueNames(t *testing.T) {
 				rows := sqlmock.NewRows([]string{"name"})
 				m.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
 			},
-			wantNames: []string{},
+			wantNames: nil,
 			wantErr:   false,
 		},
 		{
@@ -139,6 +150,7 @@ func TestDBService_GetUniqueNames(t *testing.T) {
 			setupMock: func(m sqlmock.Sqlmock) {
 				m.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnError(errors.New("db error"))
 			},
+			wantNames:   nil,
 			wantErr:     true,
 			errContains: "query error",
 		},
@@ -148,6 +160,7 @@ func TestDBService_GetUniqueNames(t *testing.T) {
 				rows := sqlmock.NewRows([]string{"name"}).AddRow(123)
 				m.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
 			},
+			wantNames:   nil,
 			wantErr:     true,
 			errContains: "scan error",
 		},
@@ -159,6 +172,7 @@ func TestDBService_GetUniqueNames(t *testing.T) {
 					RowError(0, errors.New("row error"))
 				m.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
 			},
+			wantNames:   nil,
 			wantErr:     true,
 			errContains: "rows iteration error",
 		},
@@ -170,6 +184,7 @@ func TestDBService_GetUniqueNames(t *testing.T) {
 					CloseError(errors.New("close error"))
 				m.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
 			},
+			wantNames:   nil,
 			wantErr:     true,
 			errContains: "close error",
 		},
@@ -193,12 +208,19 @@ func TestDBService_GetUniqueNames(t *testing.T) {
 				if tt.errContains != "" {
 					assert.Contains(t, err.Error(), tt.errContains)
 				}
+				assert.Nil(t, names)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.wantNames, names)
+				if tt.wantNames == nil {
+					assert.Nil(t, names)
+				} else {
+					assert.Equal(t, tt.wantNames, names)
+				}
 			}
 
-			assert.NoError(t, mock.ExpectationsWereMet())
+			if err := mock.ExpectationsWereMet(); err != nil {
+				t.Errorf("unfulfilled expectations: %v", err)
+			}
 		})
 	}
 }
