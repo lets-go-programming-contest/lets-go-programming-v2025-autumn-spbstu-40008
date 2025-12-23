@@ -72,7 +72,7 @@ func TestDBService_FullCoverage(t *testing.T) {
 			},
 			wantErrMsg: "close error",
 		},
-		
+
 		{
 			name:   "GetUniqueNames success",
 			method: func(s db.DBService) ([]string, error) { return s.GetUniqueNames() },
