@@ -84,7 +84,7 @@ func TestWiFiService_Coverage(t *testing.T) {
 		m.On("Interfaces").Return([]*wifipkg.Interface{}, errWifiStatic)
 
 		svc := wifi.New(m)
-		_, err := svc.GetNames()
+		_, err := svc.GetNames(
 
 		require.Error(t, err)
 	})
