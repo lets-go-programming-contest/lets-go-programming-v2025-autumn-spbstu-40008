@@ -5,11 +5,11 @@ import (
 	"net"
 	"testing"
 
-	"example_mock/internal/wifi"
-
 	mdwifi "github.com/mdlayher/wifi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"example_mock/internal/wifi"
 )
 
 var (
