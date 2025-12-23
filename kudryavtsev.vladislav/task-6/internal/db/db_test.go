@@ -9,11 +9,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestDBService_GetNames тестирует первую функцию GetNames
 func TestDBService_GetNames(t *testing.T) {
+	// Создаем мок БД
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
 	defer db.Close()
 
+	// Инициализируем сервис
 	service := New(db)
 
 	tests := []struct {
@@ -47,8 +50,13 @@ func TestDBService_GetNames(t *testing.T) {
 		{
 			name: "Rows Scan Error",
 			mockBehavior: func() {
-				rows := sqlmock.NewRows([]string{"name", "age"}).
-					AddRow("Alice", 25)
+				// Создаем ситуацию ошибки сканирования: возвращаем число вместо строки или NULL, если драйвер строгий,
+				// но надежнее вернуть несовместимые типы колонок, если sqlmock позволяет.
+				// Проще всего: вернуть NULL для NotNull поля или просто ошибку на уровне Scan
+				// В sqlmock для Scan error проще всего передать меньше колонок или несовместимые типы.
+				// Однако, sqlmock хранит значения как Driver.Value.
+				// Эмулируем ошибку добавлением NULL для string scan (если библиотека требует string).
+				rows := sqlmock.NewRows([]string{"name"}).AddRow(nil)
 				mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
 			},
 			expectedNames: nil,
@@ -77,7 +85,9 @@ func TestDBService_GetNames(t *testing.T) {
 
 			if tc.expectError {
 				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tc.errorContains)
+				if tc.errorContains != "" {
+					assert.Contains(t, err.Error(), tc.errorContains)
+				}
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tc.expectedNames, names)
@@ -87,6 +97,7 @@ func TestDBService_GetNames(t *testing.T) {
 	}
 }
 
+// TestDBService_GetUniqueNames тестирует вторую функцию GetUniqueNames
 func TestDBService_GetUniqueNames(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
@@ -105,6 +116,7 @@ func TestDBService_GetUniqueNames(t *testing.T) {
 			name: "Success",
 			mockBehavior: func() {
 				rows := sqlmock.NewRows([]string{"name"}).AddRow("Alice")
+				// Важно: sqlmock использует регулярные выражения. DISTINCT нужно экранировать или писать точно.
 				mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
 			},
 			expectedNames: []string{"Alice"},
@@ -123,7 +135,8 @@ func TestDBService_GetUniqueNames(t *testing.T) {
 		{
 			name: "Rows Scan Error",
 			mockBehavior: func() {
-				rows := sqlmock.NewRows([]string{"name", "extra"}).AddRow("Alice", "Extra")
+				// Передаем nil, чтобы вызвать ошибку сканирования в string
+				rows := sqlmock.NewRows([]string{"name"}).AddRow(nil)
 				mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
 			},
 			expectedNames: nil,
@@ -148,9 +161,12 @@ func TestDBService_GetUniqueNames(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.mockBehavior()
 			names, err := service.GetUniqueNames()
+
 			if tc.expectError {
 				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tc.errorContains)
+				if tc.errorContains != "" {
+					assert.Contains(t, err.Error(), tc.errorContains)
+				}
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tc.expectedNames, names)
