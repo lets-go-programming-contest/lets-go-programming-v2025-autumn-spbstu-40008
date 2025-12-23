@@ -2,6 +2,7 @@ package wifi_test
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"testing"
 
@@ -20,8 +21,13 @@ type MockWiFi struct {
 func (m *MockWiFi) Interfaces() ([]*wifipkg.Interface, error) {
 	args := m.Called()
 	res, _ := args.Get(0).([]*wifipkg.Interface)
+	err := args.Error(1)
 
-	return res, args.Error(1)
+	if err != nil {
+		return res, fmt.Errorf("mock error: %w", err)
+	}
+
+	return res, nil
 }
 
 func TestWiFiService_Coverage(t *testing.T) {
@@ -31,7 +37,9 @@ func TestWiFiService_Coverage(t *testing.T) {
 
 	t.Run("GetAddresses_Success", func(t *testing.T) {
 		t.Parallel()
+
 		m := new(MockWiFi)
+
 		m.On("Interfaces").Return([]*wifipkg.Interface{{HardwareAddr: mac}}, nil)
 
 		svc := wifi.New(m)
@@ -43,7 +51,9 @@ func TestWiFiService_Coverage(t *testing.T) {
 
 	t.Run("GetAddresses_Error", func(t *testing.T) {
 		t.Parallel()
+
 		m := new(MockWiFi)
+
 		m.On("Interfaces").Return([]*wifipkg.Interface{}, errWifiStatic)
 
 		svc := wifi.New(m)
@@ -54,7 +64,9 @@ func TestWiFiService_Coverage(t *testing.T) {
 
 	t.Run("GetNames_Success", func(t *testing.T) {
 		t.Parallel()
+
 		m := new(MockWiFi)
+
 		m.On("Interfaces").Return([]*wifipkg.Interface{{Name: "wlan0"}}, nil)
 
 		svc := wifi.New(m)
@@ -66,7 +78,9 @@ func TestWiFiService_Coverage(t *testing.T) {
 
 	t.Run("GetNames_Error", func(t *testing.T) {
 		t.Parallel()
+
 		m := new(MockWiFi)
+
 		m.On("Interfaces").Return([]*wifipkg.Interface{}, errWifiStatic)
 
 		svc := wifi.New(m)

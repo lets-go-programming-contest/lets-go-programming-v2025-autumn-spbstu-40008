@@ -22,12 +22,11 @@ func TestDBService_AllScenarios(t *testing.T) {
 	methods := []string{"GetNames", "GetUniqueNames"}
 
 	for _, method := range methods {
-		method := method
-
 		t.Run(method, func(t *testing.T) {
 			t.Parallel()
 
 			queryRegex := regexp.QuoteMeta("SELECT name FROM users")
+
 			if method == "GetUniqueNames" {
 				queryRegex = regexp.QuoteMeta("SELECT DISTINCT name FROM users")
 			}
@@ -79,16 +78,19 @@ func TestDBService_AllScenarios(t *testing.T) {
 			}
 
 			for _, tt := range tests {
-				tt := tt
 				t.Run(tt.name, func(t *testing.T) {
 					t.Parallel()
+
 					dbConn, mock, _ := sqlmock.New()
+
 					defer dbConn.Close()
 
 					service := db.New(dbConn)
+
 					tt.setup(mock)
 
 					var err error
+
 					if method == "GetNames" {
 						_, err = service.GetNames()
 					} else {
