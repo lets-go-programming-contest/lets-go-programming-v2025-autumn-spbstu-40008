@@ -9,7 +9,7 @@ import (
 //go:embed prod.yaml
 var prodConfig []byte
 
-var cfg, _ = parseConfig(prodConfig)
+var cfg, _ = parseConfig(prodConfig) //nolint:varcheck
 
 func GetConfig() Config {
 	return cfg
