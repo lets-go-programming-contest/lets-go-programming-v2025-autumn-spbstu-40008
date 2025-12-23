@@ -24,8 +24,13 @@ func (s DBService) GetNames() (names []string, err error) {
 	}
 
 	defer func() {
-		if closeErr := rows.Close(); closeErr != nil && err == nil {
-			err = fmt.Errorf("close error: %w", closeErr)
+		closeErr := rows.Close()
+		if closeErr != nil {
+			if err != nil {
+				err = fmt.Errorf("%v; close error: %w", err, closeErr)
+			} else {
+				err = fmt.Errorf("close error: %w", closeErr)
+			}
 		}
 	}()
 
@@ -51,8 +56,13 @@ func (s DBService) GetUniqueNames() (names []string, err error) {
 	}
 
 	defer func() {
-		if closeErr := rows.Close(); closeErr != nil && err == nil {
-			err = fmt.Errorf("close error: %w", closeErr)
+		closeErr := rows.Close()
+		if closeErr != nil {
+			if err != nil {
+				err = fmt.Errorf("%v; close error: %w", err, closeErr)
+			} else {
+				err = fmt.Errorf("close error: %w", closeErr)
+			}
 		}
 	}()
 
