@@ -111,7 +111,7 @@ func TestDBService_GetNames_CloseError(t *testing.T) {
 
 	mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
 
-	names, err := service.GetNames()
+	_, err = service.GetNames()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "close error")
 	assert.NoError(t, mock.ExpectationsWereMet())
@@ -218,7 +218,7 @@ func TestDBService_GetUniqueNames_CloseError(t *testing.T) {
 
 	mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
 
-	names, err := service.GetUniqueNames()
+	_, err = service.GetUniqueNames()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "close error")
 	assert.NoError(t, mock.ExpectationsWereMet())
