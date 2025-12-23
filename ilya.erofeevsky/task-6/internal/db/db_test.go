@@ -30,16 +30,17 @@ func TestDBService_FullCoverage(t *testing.T) {
 			method: func(s db.DBService) ([]string, error) { return s.GetNames() },
 			query:  queryNames,
 			setupMock: func(m sqlmock.Sqlmock, q string) {
-				m.ExpectQuery(q).WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("User1"))
+				rows := sqlmock.NewRows([]string{"name"}).AddRow("User1").AddRow("User2")
+				m.ExpectQuery(q).WillReturnRows(rows)
 			},
-			want: []string{"User1"},
+			want: []string{"User1", "User2"},
 		},
 		{
 			name:   "GetNames query error",
 			method: func(s db.DBService) ([]string, error) { return s.GetNames() },
 			query:  queryNames,
 			setupMock: func(m sqlmock.Sqlmock, q string) {
-				m.ExpectQuery(q).WillReturnError(errors.New("fail"))
+				m.ExpectQuery(q).WillReturnError(errors.New("db fail"))
 			},
 			wantErrMsg: "query error",
 		},
@@ -48,16 +49,17 @@ func TestDBService_FullCoverage(t *testing.T) {
 			method: func(s db.DBService) ([]string, error) { return s.GetNames() },
 			query:  queryNames,
 			setupMock: func(m sqlmock.Sqlmock, q string) {
-				m.ExpectQuery(q).WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow(nil))
+				rows := sqlmock.NewRows([]string{"name"}).AddRow(nil)
+				m.ExpectQuery(q).WillReturnRows(rows)
 			},
 			wantErrMsg: "scan error",
 		},
 		{
-			name:   "GetNames iteration error",
+			name:   "GetNames rows iteration error",
 			method: func(s db.DBService) ([]string, error) { return s.GetNames() },
 			query:  queryNames,
 			setupMock: func(m sqlmock.Sqlmock, q string) {
-				rows := sqlmock.NewRows([]string{"name"}).AddRow("U1").RowError(0, errors.New("err"))
+				rows := sqlmock.NewRows([]string{"name"}).AddRow("U1").RowError(0, errors.New("iter fail"))
 				m.ExpectQuery(q).WillReturnRows(rows)
 			},
 			wantErrMsg: "rows iteration error",
@@ -72,6 +74,7 @@ func TestDBService_FullCoverage(t *testing.T) {
 			},
 			wantErrMsg: "close error",
 		},
+
 		
 		{
 			name:   "GetUniqueNames success",
@@ -83,14 +86,22 @@ func TestDBService_FullCoverage(t *testing.T) {
 			want: []string{"UniqueUser"},
 		},
 		{
-			name:   "GetUniqueNames close error",
+			name:   "GetUniqueNames query error",
 			method: func(s db.DBService) ([]string, error) { return s.GetUniqueNames() },
 			query:  queryUnique,
 			setupMock: func(m sqlmock.Sqlmock, q string) {
-				rows := sqlmock.NewRows([]string{"name"}).AddRow("U1").CloseError(errors.New("close fail"))
-				m.ExpectQuery(q).WillReturnRows(rows)
+				m.ExpectQuery(q).WillReturnError(errors.New("fail"))
 			},
-			wantErrMsg: "close error",
+			wantErrMsg: "query error",
+		},
+		{
+			name:   "GetUniqueNames scan error",
+			method: func(s db.DBService) ([]string, error) { return s.GetUniqueNames() },
+			query:  queryUnique,
+			setupMock: func(m sqlmock.Sqlmock, q string) {
+				m.ExpectQuery(q).WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow(nil))
+			},
+			wantErrMsg: "scan error",
 		},
 	}
 
@@ -98,7 +109,10 @@ func TestDBService_FullCoverage(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			dbConn, mock, _ := sqlmock.New()
+			dbConn, mock, err := sqlmock.New()
+			if err != nil {
+				t.Fatalf("failed to open sqlmock: %s", err)
+			}
 			defer dbConn.Close()
 
 			service := db.New(dbConn)
