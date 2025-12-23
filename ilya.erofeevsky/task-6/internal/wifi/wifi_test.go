@@ -23,10 +23,10 @@ func (m *MockWiFi) Interfaces() ([]*wifipkg.Interface, error) {
 
 	res, _ := args.Get(0).([]*wifipkg.Interface)
 	err := args.Error(1)
-	
+
 	if err != nil {
 		return res, fmt.Errorf("mock error: %w", err)
-	}
+	
 
 	return res, nil
 }
