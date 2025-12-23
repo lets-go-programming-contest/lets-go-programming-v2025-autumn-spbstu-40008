@@ -2,71 +2,69 @@ package db
 
 import (
 	"database/sql"
-	"fmt"
 )
 
-type Database interface {
-	Query(query string, args ...any) (*sql.Rows, error)
+type Service struct {
+	db *sql.DB
 }
 
-type DBService struct {
-	DB Database
+func New(db *sql.DB) *Service {
+	return &Service{db: db}
 }
 
-func New(db Database) DBService {
-	return DBService{DB: db}
-}
-
-func (s DBService) GetNames() (names []string, err error) {
-	rows, queryErr := s.DB.Query("SELECT name FROM users")
-	if queryErr != nil {
-		return nil, fmt.Errorf("query error: %w", queryErr)
+func (s *Service) GetNames() ([]string, error) {
+	rows, err := s.db.Query("SELECT name FROM users")
+	if err != nil {
+		return nil, err
 	}
+	defer rows.Close()
 
-	defer func() {
-		if closeErr := rows.Close(); closeErr != nil && err == nil {
-			err = fmt.Errorf("close error: %w", closeErr)
-		}
-	}()
+	var result []string
 
 	for rows.Next() {
 		var name string
-		if scanErr := rows.Scan(&name); scanErr != nil {
-			return nil, fmt.Errorf("scan error: %w", scanErr)
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
 		}
-		names = append(names, name)
+		result = append(result, name)
 	}
 
-	if rowsErr := rows.Err(); rowsErr != nil {
-		return nil, fmt.Errorf("rows iteration error: %w", rowsErr)
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
-	return names, nil
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
 
-func (s DBService) GetUniqueNames() (names []string, err error) {
-	rows, queryErr := s.DB.Query("SELECT DISTINCT name FROM users")
-	if queryErr != nil {
-		return nil, fmt.Errorf("query error: %w", queryErr)
+func (s *Service) GetUniqueNames() ([]string, error) {
+	rows, err := s.db.Query("SELECT DISTINCT name FROM users")
+	if err != nil {
+		return nil, err
 	}
+	defer rows.Close()
 
-	defer func() {
-		if closeErr := rows.Close(); closeErr != nil && err == nil {
-			err = fmt.Errorf("close error: %w", closeErr)
-		}
-	}()
+	var result []string
 
 	for rows.Next() {
 		var name string
-		if scanErr := rows.Scan(&name); scanErr != nil {
-			return nil, fmt.Errorf("scan error: %w", scanErr)
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
 		}
-		names = append(names, name)
+		result = append(result, name)
 	}
 
-	if rowsErr := rows.Err(); rowsErr != nil {
-		return nil, fmt.Errorf("rows iteration error: %w", rowsErr)
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
-	return names, nil
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
+
