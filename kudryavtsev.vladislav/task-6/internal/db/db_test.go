@@ -7,88 +7,109 @@ import (
 	"example_mock/internal/db"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestGetNames(t *testing.T) {
-	type behavior func(m sqlmock.Sqlmock)
+var (
+	errQuery    = errors.New("query error")
+	errRow      = errors.New("row error")
+)
 
-	testTable := []struct {
-		name         string
-		mockBehavior behavior
-		expected     []string
-		expectErr    bool
+func TestDBService_GetNames(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name        string
+		setupMock   func(sqlmock.Sqlmock)
+		expected    []string
+		expectedErr error
 	}{
 		{
-			name: "Success",
-			mockBehavior: func(m sqlmock.Sqlmock) {
+			name: "success - return names",
+			setupMock: func(mock sqlmock.Sqlmock) {
 				rows := sqlmock.NewRows([]string{"name"}).
 					AddRow("Ivan").
 					AddRow("Gena228")
-				m.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
+				mock.ExpectQuery("SELECT name FROM users").
+					WillReturnRows(rows)
 			},
-			expected:  []string{"Ivan", "Gena228"},
-			expectErr: false,
+			expected: []string{"Ivan", "Gena228"},
 		},
 		{
-			name: "Success Empty",
-			mockBehavior: func(m sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"name"})
-				m.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
+			name: "error - query error",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT name FROM users").
+					WillReturnError(errQuery)
 			},
-			expected:  []string{},
-			expectErr: false,
+			expectedErr: errQuery,
 		},
 		{
-			name: "Query Error",
-			mockBehavior: func(m sqlmock.Sqlmock) {
-				m.ExpectQuery("SELECT name FROM users").WillReturnError(errors.New("db error"))
+			name: "error - scan error",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{"name"}).
+					AddRow(nil)
+				mock.ExpectQuery("SELECT name FROM users").
+					WillReturnRows(rows)
 			},
-			expected:  nil,
-			expectErr: true,
+			expectedErr: errors.New("sql: Scan error"), 
 		},
 		{
-			name: "Scan Error",
-			mockBehavior: func(m sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"name"}).AddRow(nil)
-				m.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
-			},
-			expected:  nil,
-			expectErr: true,
-		},
-		{
-			name: "Rows Iteration Error",
-			mockBehavior: func(m sqlmock.Sqlmock) {
+			name: "error - rows iteration error",
+			setupMock: func(mock sqlmock.Sqlmock) {
 				rows := sqlmock.NewRows([]string{"name"}).
 					AddRow("Ivan").
-					RowError(0, errors.New("iteration error"))
-				m.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
+					RowError(1, errRow)
+				mock.ExpectQuery("SELECT name FROM users").
+					WillReturnRows(rows)
 			},
-			expected:  nil,
-			expectErr: true,
+			expectedErr: errRow,
 		},
 	}
 
-	for _, tc := range testTable {
+	for _, tc := range testCases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			mockDB, mock, err := sqlmock.New()
 			require.NoError(t, err)
 			defer mockDB.Close()
 
-			tc.mockBehavior(mock)
+			service := db.New(mockDB)
 
-			dbService := db.New(mockDB)
-			names, err := dbService.GetNames()
+			tc.setupMock(mock)
 
-			if tc.expectErr {
+			result, err := service.GetNames()
+
+			if tc.expectedErr != nil {
 				require.Error(t, err)
-				require.Nil(t, names)
+				
+				if tc.name == "error - scan error" {
+					assert.Contains(t, err.Error(), "converting NULL to string is unsupported")
+				} else {
+					assert.ErrorIs(t, err, tc.expectedErr)
+				}
+				assert.Nil(t, result)
 			} else {
 				require.NoError(t, err)
-				require.Equal(t, tc.expected, names)
+				assert.Equal(t, tc.expected, result)
 			}
 
-			require.NoError(t, mock.ExpectationsWereMet())
+			assert.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
+}
+
+func TestNew(t *testing.T) {
+	t.Parallel()
+
+	mockDB, _, err := sqlmock.New()
+	require.NoError(t, err)
+	defer mockDB.Close()
+
+	service := db.New(mockDB)
+
+	assert.NotNil(t, service)
+	assert.Equal(t, mockDB, service.DB)
 }
