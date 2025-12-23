@@ -11,7 +11,7 @@ github.com/mdlayher/genetlink v1.0.0/go.mod h1:2yD965/u47YgXgOQ1i8O652O/F43Qad9c
 github.com/mdlayher/netlink v1.1.0 h1:iXF9uHlYeqq37g05fIk2M0s9sHz5O/E543n81lM29zI=
 github.com/mdlayher/netlink v1.1.0/go.mod h1:nK4e/1o0X4jC429/Fbz2ZfXQJ3v/u6C5x454+d3w3Yw=
 github.com/mdlayher/wifi v0.1.0 h1:ghXPltFKsFMNX6OXv0okIXF4OAJVGZUNWKOXsF29pXs=
-github.com/mdlayher/wifi v0.1.0/go.mod h1:Pp85QWv0q2w5HO8w/tVz6V8cgu069wS6Mmn67KkU/4I=
+github.com/mdlayher/wifi v0.1.0/go.mod h1:+gBYnZAMcUKHSFzMJXwlz7tLsEHgwDJ9DJCefhJM+gI=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHb8rRMdsEfuutrAkuyllcx9b5QjY/g=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/stretchr/objx v0.5.0 h1:1zr/n21fSYpJjkn1BhXp8vJQu371cZSRh6ondl0cYs0=
