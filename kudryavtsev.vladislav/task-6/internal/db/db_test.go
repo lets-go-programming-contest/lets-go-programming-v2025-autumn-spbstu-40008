@@ -1,4 +1,4 @@
-package db_test
+package db
 
 import (
 	"errors"
@@ -7,24 +7,28 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/task-6/internal/db"
 )
 
-var errMock = errors.New("mock error")
-
+// TestDBService_GetNames тестирует первую функцию GetNames
 func TestDBService_GetNames(t *testing.T) {
-	t.Parallel()
+	// Создаем мок БД
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	// Инициализируем сервис
+	service := New(db)
 
 	tests := []struct {
 		name          string
-		mockBehavior  func(mock sqlmock.Sqlmock)
+		mockBehavior  func()
 		expectedNames []string
 		expectError   bool
 		errorContains string
 	}{
 		{
 			name: "Success",
-			mockBehavior: func(mock sqlmock.Sqlmock) {
+			mockBehavior: func() {
 				rows := sqlmock.NewRows([]string{"name"}).
 					AddRow("Alice").
 					AddRow("Bob")
@@ -35,9 +39,9 @@ func TestDBService_GetNames(t *testing.T) {
 		},
 		{
 			name: "Query Error",
-			mockBehavior: func(mock sqlmock.Sqlmock) {
+			mockBehavior: func() {
 				mock.ExpectQuery("SELECT name FROM users").
-					WillReturnError(errMock)
+					WillReturnError(errors.New("connection refused"))
 			},
 			expectedNames: nil,
 			expectError:   true,
@@ -45,9 +49,14 @@ func TestDBService_GetNames(t *testing.T) {
 		},
 		{
 			name: "Rows Scan Error",
-			mockBehavior: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"name", "age"}).
-					AddRow("Alice", 25)
+			mockBehavior: func() {
+				// Создаем ситуацию ошибки сканирования: возвращаем число вместо строки или NULL, если драйвер строгий,
+				// но надежнее вернуть несовместимые типы колонок, если sqlmock позволяет.
+				// Проще всего: вернуть NULL для NotNull поля или просто ошибку на уровне Scan
+				// В sqlmock для Scan error проще всего передать меньше колонок или несовместимые типы.
+				// Однако, sqlmock хранит значения как Driver.Value.
+				// Эмулируем ошибку добавлением NULL для string scan (если библиотека требует string).
+				rows := sqlmock.NewRows([]string{"name"}).AddRow(nil)
 				mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
 			},
 			expectedNames: nil,
@@ -56,10 +65,10 @@ func TestDBService_GetNames(t *testing.T) {
 		},
 		{
 			name: "Rows Iteration Error",
-			mockBehavior: func(mock sqlmock.Sqlmock) {
+			mockBehavior: func() {
 				rows := sqlmock.NewRows([]string{"name"}).
 					AddRow("Alice").
-					RowError(0, errMock)
+					RowError(0, errors.New("row corrupted"))
 				mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
 			},
 			expectedNames: nil,
@@ -70,45 +79,44 @@ func TestDBService_GetNames(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
-			mockDB, mock, err := sqlmock.New()
-			require.NoError(t, err)
-			defer mockDB.Close()
-
-			service := db.New(mockDB)
-
-			tc.mockBehavior(mock)
+			tc.mockBehavior()
 
 			names, err := service.GetNames()
 
 			if tc.expectError {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), tc.errorContains)
+				assert.Error(t, err)
+				if tc.errorContains != "" {
+					assert.Contains(t, err.Error(), tc.errorContains)
+				}
 			} else {
-				require.NoError(t, err)
+				assert.NoError(t, err)
 				assert.Equal(t, tc.expectedNames, names)
 			}
-
-			require.NoError(t, mock.ExpectationsWereMet())
+			assert.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
 }
 
+// TestDBService_GetUniqueNames тестирует вторую функцию GetUniqueNames
 func TestDBService_GetUniqueNames(t *testing.T) {
-	t.Parallel()
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	service := New(db)
 
 	tests := []struct {
 		name          string
-		mockBehavior  func(mock sqlmock.Sqlmock)
+		mockBehavior  func()
 		expectedNames []string
 		expectError   bool
 		errorContains string
 	}{
 		{
 			name: "Success",
-			mockBehavior: func(mock sqlmock.Sqlmock) {
+			mockBehavior: func() {
 				rows := sqlmock.NewRows([]string{"name"}).AddRow("Alice")
+				// Важно: sqlmock использует регулярные выражения. DISTINCT нужно экранировать или писать точно.
 				mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
 			},
 			expectedNames: []string{"Alice"},
@@ -116,9 +124,9 @@ func TestDBService_GetUniqueNames(t *testing.T) {
 		},
 		{
 			name: "Query Error",
-			mockBehavior: func(mock sqlmock.Sqlmock) {
+			mockBehavior: func() {
 				mock.ExpectQuery("SELECT DISTINCT name FROM users").
-					WillReturnError(errMock)
+					WillReturnError(errors.New("fail"))
 			},
 			expectedNames: nil,
 			expectError:   true,
@@ -126,8 +134,9 @@ func TestDBService_GetUniqueNames(t *testing.T) {
 		},
 		{
 			name: "Rows Scan Error",
-			mockBehavior: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"name", "extra"}).AddRow("Alice", "Extra")
+			mockBehavior: func() {
+				// Передаем nil, чтобы вызвать ошибку сканирования в string
+				rows := sqlmock.NewRows([]string{"name"}).AddRow(nil)
 				mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
 			},
 			expectedNames: nil,
@@ -136,10 +145,10 @@ func TestDBService_GetUniqueNames(t *testing.T) {
 		},
 		{
 			name: "Rows Iteration Error",
-			mockBehavior: func(mock sqlmock.Sqlmock) {
+			mockBehavior: func() {
 				rows := sqlmock.NewRows([]string{"name"}).
 					AddRow("Alice").
-					RowError(0, errMock)
+					RowError(0, errors.New("iteration error"))
 				mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
 			},
 			expectedNames: nil,
@@ -150,27 +159,19 @@ func TestDBService_GetUniqueNames(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
-			mockDB, mock, err := sqlmock.New()
-			require.NoError(t, err)
-			defer mockDB.Close()
-
-			service := db.New(mockDB)
-
-			tc.mockBehavior(mock)
-
+			tc.mockBehavior()
 			names, err := service.GetUniqueNames()
 
 			if tc.expectError {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), tc.errorContains)
+				assert.Error(t, err)
+				if tc.errorContains != "" {
+					assert.Contains(t, err.Error(), tc.errorContains)
+				}
 			} else {
-				require.NoError(t, err)
+				assert.NoError(t, err)
 				assert.Equal(t, tc.expectedNames, names)
 			}
-
-			require.NoError(t, mock.ExpectationsWereMet())
+			assert.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
 }

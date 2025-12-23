@@ -1,32 +1,43 @@
 package wifi_test
 
 import (
+	"errors"
+	"fmt"
+
 	"github.com/mdlayher/wifi"
 	"github.com/stretchr/testify/mock"
 )
 
-type MockWiFiHandle struct {
+var errBadTypeAssertion = errors.New("mock: type assertion failed")
+
+type MockWiFi struct {
 	mock.Mock
 }
 
-func (_m *MockWiFiHandle) Interfaces() ([]*wifi.Interface, error) {
-	ret := _m.Called()
+func (m *MockWiFi) Interfaces() ([]*wifi.Interface, error) {
+	args := m.Called()
 
-	var r0 []*wifi.Interface
-	if rf, ok := ret.Get(0).(func() []*wifi.Interface); ok {
-		r0 = rf()
-	} else if ret.Get(0) != nil {
-		if val, ok := ret.Get(0).([]*wifi.Interface); ok {
-			r0 = val
+	var err error
+	if e := args.Error(1); e != nil {
+		err = fmt.Errorf("mock error: %w", e)
+	}
+
+	result := args.Get(0)
+	if result == nil {
+		return nil, err
+	}
+
+	ifaces, ok := result.([]*wifi.Interface)
+	if !ok {
+		if err != nil {
+			return nil, fmt.Errorf("%w: %w", errBadTypeAssertion, err)
 		}
+		return nil, errBadTypeAssertion
 	}
 
-	var r1 error
-	if rf, ok := ret.Get(1).(func() error); ok {
-		r1 = rf()
-	} else {
-		r1 = ret.Error(1)
-	}
+	return ifaces, err
+}
 
-	return r0, r1 //nolint:wrapcheck
+func (m *MockWiFi) AssertExpectations(t mock.TestingT) bool {
+	return m.Mock.AssertExpectations(t)
 }
