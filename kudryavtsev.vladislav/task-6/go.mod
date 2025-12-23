@@ -1,4 +1,4 @@
-module github.com/task-6
+module example_mock
 
 go 1.22.7
 

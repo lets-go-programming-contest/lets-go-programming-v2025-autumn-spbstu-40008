@@ -7,15 +7,15 @@ import (
 	"github.com/mdlayher/wifi"
 )
 
-type WiFi interface {
+type WiFiHandle interface {
 	Interfaces() ([]*wifi.Interface, error)
 }
 
 type WiFiService struct {
-	Client WiFi
+	Client WiFiHandle
 }
 
-func New(w WiFi) WiFiService {
+func New(w WiFiHandle) WiFiService {
 	return WiFiService{Client: w}
 }
 

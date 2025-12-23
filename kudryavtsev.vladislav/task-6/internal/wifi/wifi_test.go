@@ -1,11 +1,9 @@
-package wifi_test
+package wifi
 
 import (
 	"errors"
 	"net"
 	"testing"
-
-	localWifi "example_mock/internal/wifi"
 
 	"github.com/mdlayher/wifi"
 	"github.com/stretchr/testify/assert"
@@ -36,13 +34,13 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		mockSetup func(*MockWiFi)
+		mockSetup func(*MockWiFiHandle)
 		want      []net.HardwareAddr
 		wantErr   string
 	}{
 		{
 			name: "Success",
-			mockSetup: func(m *MockWiFi) {
+			mockSetup: func(m *MockWiFiHandle) {
 				data := mockGen([]string{"00:11:22:33:44:55"})
 				m.On("Interfaces").Return(data, nil).Once()
 			},
@@ -52,7 +50,7 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 		},
 		{
 			name: "Error",
-			mockSetup: func(m *MockWiFi) {
+			mockSetup: func(m *MockWiFiHandle) {
 				m.On("Interfaces").Return(nil, errFetch).Once()
 			},
 			wantErr: errExpected,
@@ -64,8 +62,8 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			m := &MockWiFi{}
-			svc := localWifi.New(m)
+			m := &MockWiFiHandle{}
+			svc := New(m)
 
 			tt.mockSetup(m)
 
@@ -90,13 +88,13 @@ func TestWiFiService_GetNames(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		mockSetup func(*MockWiFi)
+		mockSetup func(*MockWiFiHandle)
 		want      []string
 		wantErr   string
 	}{
 		{
 			name: "Success",
-			mockSetup: func(m *MockWiFi) {
+			mockSetup: func(m *MockWiFiHandle) {
 				data := []*wifi.Interface{
 					{Name: "wlan0"},
 					{Name: "eth1"},
@@ -107,7 +105,7 @@ func TestWiFiService_GetNames(t *testing.T) {
 		},
 		{
 			name: "Error",
-			mockSetup: func(m *MockWiFi) {
+			mockSetup: func(m *MockWiFiHandle) {
 				m.On("Interfaces").Return(nil, errAccess).Once()
 			},
 			wantErr: errExpected,
@@ -119,8 +117,8 @@ func TestWiFiService_GetNames(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			m := &MockWiFi{}
-			svc := localWifi.New(m)
+			m := &MockWiFiHandle{}
+			svc := New(m)
 
 			tt.mockSetup(m)
 

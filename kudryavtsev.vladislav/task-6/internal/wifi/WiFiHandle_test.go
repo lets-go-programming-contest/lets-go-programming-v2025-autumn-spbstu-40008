@@ -1,4 +1,4 @@
-package wifi_test
+package wifi
 
 import (
 	"errors"
@@ -10,11 +10,11 @@ import (
 
 var errBadTypeAssertion = errors.New("mock: type assertion failed")
 
-type MockWiFi struct {
+type MockWiFiHandle struct {
 	mock.Mock
 }
 
-func (m *MockWiFi) Interfaces() ([]*wifi.Interface, error) {
+func (m *MockWiFiHandle) Interfaces() ([]*wifi.Interface, error) {
 	args := m.Called()
 
 	var err error
@@ -38,6 +38,6 @@ func (m *MockWiFi) Interfaces() ([]*wifi.Interface, error) {
 	return ifaces, err
 }
 
-func (m *MockWiFi) AssertExpectations(t mock.TestingT) bool {
+func (m *MockWiFiHandle) AssertExpectations(t mock.TestingT) bool {
 	return m.Mock.AssertExpectations(t)
 }
