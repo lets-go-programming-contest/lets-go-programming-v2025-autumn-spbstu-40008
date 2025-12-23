@@ -31,6 +31,7 @@ func TestWiFi(t *testing.T) {
 		names, err := service.GetNames()
 		assert.NoError(t, err)
 		assert.Equal(t, []string{"wlan0"}, names)
+		mockWiFi.AssertExpectations(t)
 	})
 
 	t.Run("error", func(t *testing.T) {
@@ -41,5 +42,6 @@ func TestWiFi(t *testing.T) {
 		names, err := service.GetNames()
 		assert.Error(t, err)
 		assert.Nil(t, names)
+		mockWiFi.AssertExpectations(t)
 	})
 }
