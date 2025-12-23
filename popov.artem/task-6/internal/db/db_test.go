@@ -10,63 +10,66 @@ import (
 	"github.com/task-6/internal/db"
 )
 
-var simErr = errors.New("simulated database failure")
+var mockDBErr = errors.New("simulated database error")
 
 func TestDBService_GetNames(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		title         string
-		setupMocks    func(sqlmock.Sqlmock)
+		name          string
+		mockSetup     func(sqlmock.Sqlmock)
 		expectedNames []string
-		shouldErr     bool
-		errFragment   string
+		expectError   bool
+		errSubstring  string
 	}{
 		{
-			title: "successful retrieval",
-			setupMocks: func(m sqlmock.Sqlmock) {
-				m.ExpectQuery("SELECT name FROM users").
-					WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("UserA").AddRow("UserB"))
-			},
-			expectedNames: []string{"UserA", "UserB"},
-			shouldErr:     false,
-		},
-		{
-			title: "query error",
-			setupMocks: func(m sqlmock.Sqlmock) {
-				m.ExpectQuery("SELECT name FROM users").
-					WillReturnError(simErr)
-			},
-			expectedNames: nil,
-			shouldErr:     true,
-			errFragment:   "query execution failed",
-		},
-		{
-			title: "scan mismatch",
-			setupMocks: func(m sqlmock.Sqlmock) {
-				m.ExpectQuery("SELECT name FROM users").
-					WillReturnRows(sqlmock.NewRows([]string{"name", "age"}).AddRow("Test", 100))
-			},
-			expectedNames: nil,
-			shouldErr:     true,
-			errFragment:   "failed to read row data",
-		},
-		{
-			title: "row iteration error",
-			setupMocks: func(m sqlmock.Sqlmock) {
+			name: "returns list of names successfully",
+			mockSetup: func(m sqlmock.Sqlmock) {
 				rows := sqlmock.NewRows([]string{"name"}).
 					AddRow("Alice").
-					RowError(0, simErr)
+					AddRow("Bob")
+				m.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
+			},
+			expectedNames: []string{"Alice", "Bob"},
+			expectError:   false,
+		},
+		{
+			name: "query fails",
+			mockSetup: func(m sqlmock.Sqlmock) {
+				m.ExpectQuery("SELECT name FROM users").
+					WillReturnError(mockDBErr)
+			},
+			expectedNames: nil,
+			expectError:   true,
+			errSubstring:  "query execution failed",
+		},
+		{
+			name: "scan fails due to column mismatch",
+			mockSetup: func(m sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{"name", "age"}).
+					AddRow("Carol", 30)
 				m.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
 			},
 			expectedNames: nil,
-			shouldErr:     true,
-			errFragment:   "error occurred during iteration",
+			expectError:   true,
+			errSubstring:  "failed to read row data",
+		},
+		{
+			name: "rows.Next succeeds but rows.Err returns error",
+			mockSetup: func(m sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{"name"}).
+					AddRow("Dave").
+					RowError(0, mockDBErr)
+				m.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
+			},
+			expectedNames: nil,
+			expectError:   true,
+			errSubstring:  "error occurred during iteration",
 		},
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.title, func(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
 			mockDB, mock, err := sqlmock.New()
@@ -74,13 +77,13 @@ func TestDBService_GetNames(t *testing.T) {
 			defer mockDB.Close()
 
 			service := db.New(mockDB)
-			tc.setupMocks(mock)
+			tc.mockSetup(mock)
 
 			names, err := service.GetNames()
 
-			if tc.shouldErr {
+			if tc.expectError {
 				require.Error(t, err)
-				assert.Contains(t, err.Error(), tc.errFragment)
+				assert.Contains(t, err.Error(), tc.errSubstring)
 			} else {
 				require.NoError(t, err)
 				assert.Equal(t, tc.expectedNames, names)
@@ -95,57 +98,57 @@ func TestDBService_GetUniqueNames(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		title         string
-		setupMocks    func(sqlmock.Sqlmock)
+		name          string
+		mockSetup     func(sqlmock.Sqlmock)
 		expectedNames []string
-		shouldErr     bool
-		errFragment   string
+		expectError   bool
+		errSubstring  string
 	}{
 		{
-			title: "distinct success",
-			setupMocks: func(m sqlmock.Sqlmock) {
-				m.ExpectQuery("SELECT DISTINCT name FROM users").
-					WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("OnlyOne"))
+			name: "returns distinct names",
+			mockSetup: func(m sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{"name"}).AddRow("Eve")
+				m.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
 			},
-			expectedNames: []string{"OnlyOne"},
-			shouldErr:     false,
+			expectedNames: []string{"Eve"},
+			expectError:   false,
 		},
 		{
-			title: "distinct query error",
-			setupMocks: func(m sqlmock.Sqlmock) {
+			name: "distinct query fails",
+			mockSetup: func(m sqlmock.Sqlmock) {
 				m.ExpectQuery("SELECT DISTINCT name FROM users").
-					WillReturnError(simErr)
-			},
-			expectedNames: nil,
-			shouldErr:     true,
-			errFragment:   "distinct query failed",
-		},
-		{
-			title: "distinct scan error",
-			setupMocks: func(m sqlmock.Sqlmock) {
-				m.ExpectQuery("SELECT DISTINCT name FROM users").
-					WillReturnRows(sqlmock.NewRows([]string{"name", "extra"}).AddRow("X", "Y"))
+					WillReturnError(mockDBErr)
 			},
 			expectedNames: nil,
-			shouldErr:     true,
-			errFragment:   "distinct row scan error",
+			expectError:   true,
+			errSubstring:  "distinct query failed",
 		},
 		{
-			title: "distinct iteration error",
-			setupMocks: func(m sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"name"}).
-					AddRow("Z").
-					RowError(0, simErr)
+			name: "distinct scan error",
+			mockSetup: func(m sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{"name", "extra"}).AddRow("Frank", "x")
 				m.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
 			},
 			expectedNames: nil,
-			shouldErr:     true,
-			errFragment:   "distinct iteration error",
+			expectError:   true,
+			errSubstring:  "distinct row scan error",
+		},
+		{
+			name: "distinct rows iteration succeeds but rows.Err fails",
+			mockSetup: func(m sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{"name"}).
+					AddRow("Grace").
+					RowError(0, mockDBErr)
+				m.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
+			},
+			expectedNames: nil,
+			expectError:   true,
+			errSubstring:  "distinct iteration error",
 		},
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.title, func(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
 			mockDB, mock, err := sqlmock.New()
@@ -153,13 +156,13 @@ func TestDBService_GetUniqueNames(t *testing.T) {
 			defer mockDB.Close()
 
 			service := db.New(mockDB)
-			tc.setupMocks(mock)
+			tc.mockSetup(mock)
 
 			names, err := service.GetUniqueNames()
 
-			if tc.shouldErr {
+			if tc.expectError {
 				require.Error(t, err)
-				assert.Contains(t, err.Error(), tc.errFragment)
+				assert.Contains(t, err.Error(), tc.errSubstring)
 			} else {
 				require.NoError(t, err)
 				assert.Equal(t, tc.expectedNames, names)
