@@ -5,64 +5,62 @@ import (
 	"fmt"
 )
 
-type Querier interface {
+type Database interface {
 	Query(query string, args ...any) (*sql.Rows, error)
 }
 
-type UserService struct {
-	Conn Querier
+type DBService struct {
+	DB Database
 }
 
-func NewService(conn Querier) UserService {
-	return UserService{Conn: conn}
+func New(db Database) DBService {
+	return DBService{DB: db}
 }
 
-func (svc UserService) FetchUserNames() ([]string, error) {
-	const stmt = "SELECT name FROM users"
-
-	rows, err := svc.Conn.Query(stmt)
+func (s DBService) GetNames() ([]string, error) {
+	const sqlStmt = "SELECT name FROM users"
+	rows, err := s.DB.Query(sqlStmt)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute query: %w", err)
+		return nil, fmt.Errorf("query execution failed: %w", err)
 	}
 	defer rows.Close()
 
-	var result []string
+	var output []string
 	for rows.Next() {
-		var entry string
-		if err := rows.Scan(&entry); err != nil {
-			return nil, fmt.Errorf("failed to scan row: %w", err)
+		var record string
+		if err := rows.Scan(&record); err != nil {
+			return nil, fmt.Errorf("failed to read row data: %w", err)
 		}
-		result = append(result, entry)
+		output = append(output, record)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("error during row iteration: %w", err)
+		return nil, fmt.Errorf("error occurred during iteration: %w", err)
 	}
 
-	return result, nil
+	return output, nil
 }
 
-func (svc UserService) FetchDistinctUserNames() ([]string, error) {
-	const stmt = "SELECT DISTINCT name FROM users"
-
-	rows, err := svc.Conn.Query(stmt)
+func (s DBService) GetUniqueNames() ([]string, error) {
+	const sqlStmt = "SELECT DISTINCT name FROM users"
+	rows, err := s.DB.Query(sqlStmt)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute distinct query: %w", err)
+		return nil, fmt.Errorf("distinct query failed: %w", err)
 	}
 	defer rows.Close()
 
-	var items []string
+	var distinct []string
 	for rows.Next() {
 		var item string
 		if err := rows.Scan(&item); err != nil {
-			return nil, fmt.Errorf("scan failed for distinct name: %w", err)
+			return nil, fmt.Errorf("distinct row scan error: %w", err)
 		}
-		items = append(items, item)
+		distinct = append(distinct, item)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("row error in distinct query: %w", err)
+		return nil, fmt.Errorf("distinct iteration error: %w", err)
 	}
 
-	return items, nil
+	return distinct, nil
 }

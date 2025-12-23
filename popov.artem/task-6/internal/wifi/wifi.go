@@ -7,40 +7,42 @@ import (
 	"github.com/mdlayher/wifi"
 )
 
-type InterfaceProvider interface {
-	FetchInterfaces() ([]*wifi.Interface, error)
+type WiFi interface {
+	Interfaces() ([]*wifi.Interface, error)
 }
 
-type NetworkService struct {
-	Provider InterfaceProvider
+type WiFiService struct {
+	WiFi WiFi
 }
 
-func NewNetworkService(provider InterfaceProvider) NetworkService {
-	return NetworkService{Provider: provider}
+func New(w WiFi) WiFiService {
+	return WiFiService{WiFi: w}
 }
 
-func (ns NetworkService) RetrieveMACAddresses() ([]net.HardwareAddr, error) {
-	devices, err := ns.Provider.FetchInterfaces()
+func (s WiFiService) GetAddresses() ([]net.HardwareAddr, error) {
+	devList, err := s.WiFi.Interfaces()
 	if err != nil {
-		return nil, fmt.Errorf("unable to retrieve interfaces: %w", err)
+		return nil, fmt.Errorf("interface enumeration failed: %w", err)
 	}
 
-	addresses := make([]net.HardwareAddr, 0, len(devices))
-	for _, dev := range devices {
-		addresses = append(addresses, dev.HardwareAddr)
+	hwList := make([]net.HardwareAddr, 0, len(devList))
+	for _, dev := range devList {
+		hwList = append(hwList, dev.HardwareAddr)
 	}
-	return addresses, nil
+
+	return hwList, nil
 }
 
-func (ns NetworkService) RetrieveInterfaceNames() ([]string, error) {
-	devices, err := ns.Provider.FetchInterfaces()
+func (s WiFiService) GetNames() ([]string, error) {
+	devList, err := s.WiFi.Interfaces()
 	if err != nil {
-		return nil, fmt.Errorf("error fetching interface list: %w", err)
+		return nil, fmt.Errorf("failed to list interface names: %w", err)
 	}
 
-	names := make([]string, 0, len(devices))
-	for _, dev := range devices {
-		names = append(names, dev.Name)
+	nameList := make([]string, 0, len(devList))
+	for _, dev := range devList {
+		nameList = append(nameList, dev.Name)
 	}
-	return names, nil
+
+	return nameList, nil
 }
