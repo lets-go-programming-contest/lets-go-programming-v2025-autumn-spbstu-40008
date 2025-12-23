@@ -5,7 +5,6 @@ import (
 	"fmt"
 )
 
-// Database описывает интерфейс для выполнения запросов.
 type Database interface {
 	Query(query string, args ...any) (*sql.Rows, error)
 }
@@ -18,7 +17,6 @@ func New(db Database) DBService {
 	return DBService{DB: db}
 }
 
-// GetNames возвращает список всех имен.
 func (s DBService) GetNames() ([]string, error) {
 	query := "SELECT name FROM users"
 
@@ -46,7 +44,6 @@ func (s DBService) GetNames() ([]string, error) {
 	return names, nil
 }
 
-// GetUniqueNames возвращает список уникальных имен.
 func (s DBService) GetUniqueNames() ([]string, error) {
 	query := "SELECT DISTINCT name FROM users"
 
