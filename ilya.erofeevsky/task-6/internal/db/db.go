@@ -24,7 +24,6 @@ func (s DBService) GetNames() (names []string, err error) {
 	}
 
 	defer func() {
-		
 		if closeErr := rows.Close(); closeErr != nil && err == nil {
 			err = fmt.Errorf("close error: %w", closeErr)
 		}
