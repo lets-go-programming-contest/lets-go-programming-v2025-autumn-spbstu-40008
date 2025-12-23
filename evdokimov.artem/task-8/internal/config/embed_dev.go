@@ -1,0 +1,12 @@
+//go:build dev
+
+package config
+
+import _ "embed"
+
+//go:embed dev.yaml
+var devConfig []byte
+
+func Load() Config {
+	return parse(devConfig)
+}
