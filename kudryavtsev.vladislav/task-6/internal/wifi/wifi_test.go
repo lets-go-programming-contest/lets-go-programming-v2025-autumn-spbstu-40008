@@ -5,7 +5,9 @@ import (
 	"net"
 	"testing"
 
-	"github.com/mdlayher/wifi"
+	"example_mock/internal/wifi"
+
+	mdwifi "github.com/mdlayher/wifi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -20,12 +22,12 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 
 	errExpected := "fetch interfaces"
 
-	genIfaces := func(macs []string) []*wifi.Interface {
-		res := make([]*wifi.Interface, 0, len(macs))
+	genIfaces := func(macs []string) []*mdwifi.Interface {
+		res := make([]*mdwifi.Interface, 0, len(macs))
 
 		for i, m := range macs {
 			addr, _ := net.ParseMAC(m)
-			res = append(res, &wifi.Interface{
+			res = append(res, &mdwifi.Interface{
 				Index:        i,
 				Name:         "test0",
 				HardwareAddr: addr,
@@ -68,7 +70,7 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 			t.Parallel()
 
 			m := &MockWiFiHandle{}
-			svc := New(m)
+			svc := wifi.New(m)
 			tc.setup(m)
 
 			got, err := svc.GetAddresses()
@@ -101,7 +103,7 @@ func TestWiFiService_GetNames(t *testing.T) {
 		{
 			name: "Success",
 			setup: func(m *MockWiFiHandle) {
-				data := []*wifi.Interface{
+				data := []*mdwifi.Interface{
 					{Name: "wlan0"},
 					{Name: "eth0"},
 				}
@@ -123,7 +125,7 @@ func TestWiFiService_GetNames(t *testing.T) {
 			t.Parallel()
 
 			m := &MockWiFiHandle{}
-			svc := New(m)
+			svc := wifi.New(m)
 			tc.setup(m)
 
 			got, err := svc.GetNames()

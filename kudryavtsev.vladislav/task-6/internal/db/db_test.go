@@ -4,6 +4,8 @@ import (
 	"errors"
 	"testing"
 
+	"example_mock/internal/db"
+
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -69,7 +71,7 @@ func TestDBService_GetNames(t *testing.T) {
 			require.NoError(t, err)
 			defer mockDB.Close()
 
-			service := New(mockDB)
+			service := db.New(mockDB)
 
 			tc.setup(mock)
 
@@ -146,7 +148,7 @@ func TestDBService_GetUniqueNames(t *testing.T) {
 			require.NoError(t, err)
 			defer mockDB.Close()
 
-			service := New(mockDB)
+			service := db.New(mockDB)
 
 			tc.setup(mock)
 
