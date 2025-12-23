@@ -9,6 +9,8 @@ import (
 //go:embed prod.yaml
 var prodConfig []byte
 
-func getEmbeddedConfig() []byte {
-	return prodConfig
+var cfg, _ = parseConfig(prodConfig)
+
+func GetConfig() Config {
+	return cfg
 }
