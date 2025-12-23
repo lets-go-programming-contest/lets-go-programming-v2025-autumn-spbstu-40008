@@ -1,12 +1,11 @@
-package db_test
-
 import (
-	"errors"
-	"testing"
+    "errors"
+    "testing"
 
-	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/Ilya-Er0fick/task-6/internal/db"
-	"github.com/stretchr/testify/assert"
+    "github.com/mdlayher/wifi"
+    "github.com/stretchr/testify/assert"
+    "github.com/stretchr/testify/mock"
+    mywifi "github.com/Ilya-Er0fick/task-6/internal/wifi"
 )
 
 func TestDBService_GetNames(t *testing.T) {

@@ -1,36 +1,65 @@
 package db
 
 import (
-	"database/sql"
-	"fmt"
+    "database/sql"
+    "fmt"
 )
 
 type Database interface {
-	Query(query string, args ...any) (*sql.Rows, error)
+    Query(query string, args ...any) (*sql.Rows, error)
 }
 
 type DBService struct {
-	DB Database
+    DB Database
 }
 
 func New(db Database) DBService {
-	return DBService{DB: db}
+    return DBService{DB: db}
 }
 
 func (s DBService) GetNames() ([]string, error) {
-	rows, err := s.DB.Query("SELECT name FROM users")
-	if err != nil {
-		return nil, fmt.Errorf("query error: %w", err)
-	}
-	defer rows.Close()
+    rows, err := s.DB.Query("SELECT name FROM users")
+    if err != nil {
+        return nil, fmt.Errorf("query error: %w", err)
+    }
+    defer rows.Close()
 
-	var names []string
-	for rows.Next() {
-		var name string
-		if err := rows.Scan(&name); err != nil {
-			return nil, fmt.Errorf("scan error: %w", err)
-		}
-		names = append(names, name)
-	}
-	return names, nil
+    var names []string
+    for rows.Next() {
+        var name string
+        if err := rows.Scan(&name); err != nil {
+            return nil, fmt.Errorf("scan error: %w", err)
+        }
+        names = append(names, name)
+    }
+    
+
+    if err := rows.Err(); err != nil {
+        return nil, fmt.Errorf("rows iteration error: %w", err)
+    }
+    
+    return names, nil
+}
+
+func (s DBService) GetUniqueNames() ([]string, error) {
+    rows, err := s.DB.Query("SELECT DISTINCT name FROM users")
+    if err != nil {
+        return nil, fmt.Errorf("query error: %w", err)
+    }
+    defer rows.Close()
+
+    var names []string
+    for rows.Next() {
+        var name string
+        if err := rows.Scan(&name); err != nil {
+            return nil, fmt.Errorf("scan error: %w", err)
+        }
+        names = append(names, name)
+    }
+    
+    if err := rows.Err(); err != nil {
+        return nil, fmt.Errorf("rows iteration error: %w", err)
+    }
+    
+    return names, nil
 }
