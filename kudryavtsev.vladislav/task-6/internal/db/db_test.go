@@ -10,59 +10,76 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type rowTestDb struct {
-	names       []string
-	errExpected error
-}
-
-var testTable = []rowTestDb{
-	{
-		names: []string{"Ivan", "Gena228"},
-	},
-	{
-		names:       nil,
-		errExpected: errors.New("ExpectedError"),
-	},
-}
-
 func TestGetNames(t *testing.T) {
-	mockDB, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	type behavior func(m sqlmock.Sqlmock)
+
+	testTable := []struct {
+		name        string
+		mockBehavior behavior
+		expected    []string
+		expectErr   bool
+	}{
+		{
+			name: "Success",
+			mockBehavior: func(m sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{"name"}).AddRow("Ivan").AddRow("Gena228")
+				m.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
+			},
+			expected:  []string{"Ivan", "Gena228"},
+			expectErr: false,
+		},
+		{
+			name: "Query Error",
+			mockBehavior: func(m sqlmock.Sqlmock) {
+				m.ExpectQuery("SELECT name FROM users").WillReturnError(errors.New("db error"))
+			},
+			expected:  nil,
+			expectErr: true,
+		},
+		{
+			name: "Scan Error",
+			mockBehavior: func(m sqlmock.Sqlmock) {
+				// Передаем nil в колонку типа string, что вызовет ошибку Scan
+				rows := sqlmock.NewRows([]string{"name"}).AddRow(nil)
+				m.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
+			},
+			expected:  nil,
+			expectErr: true,
+		},
+		{
+			name: "Rows Iteration Error",
+			mockBehavior: func(m sqlmock.Sqlmock) {
+				// Имитируем ошибку, возникающую в процессе итерации rows.Next() -> rows.Err()
+				rows := sqlmock.NewRows([]string{"name"}).
+					AddRow("Ivan").
+					RowError(0, errors.New("iteration error"))
+				m.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
+			},
+			expected:  nil,
+			expectErr: true,
+		},
 	}
-	defer mockDB.Close()
 
-	dbService := db.New(mockDB)
+	for _, tc := range testTable {
+		t.Run(tc.name, func(t *testing.T) {
+			mockDB, mock, err := sqlmock.New()
+			require.NoError(t, err)
+			defer mockDB.Close()
 
-	for i, row := range testTable {
-		query := mock.ExpectQuery("SELECT name FROM users")
-		if row.errExpected != nil {
-			query.WillReturnError(row.errExpected)
-		} else {
-			query.WillReturnRows(mockDbRows(row.names))
-		}
+			tc.mockBehavior(mock)
 
-		names, err := dbService.GetNames()
+			dbService := db.New(mockDB)
+			names, err := dbService.GetNames()
 
-		if row.errExpected != nil {
-			require.ErrorIs(t, err, row.errExpected, "row: %d", i)
-			require.Nil(t, names, "row: %d, names must be nil", i)
-			continue
-		}
+			if tc.expectErr {
+				require.Error(t, err)
+				require.Nil(t, names)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tc.expected, names)
+			}
 
-		require.NoError(t, err, "row: %d, error must be nil", i)
-		require.Equal(t, row.names, names, "row: %d", i)
+			require.NoError(t, mock.ExpectationsWereMet())
+		})
 	}
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %s", err)
-	}
-}
-
-func mockDbRows(names []string) *sqlmock.Rows {
-	rows := sqlmock.NewRows([]string{"name"})
-	for _, name := range names {
-		rows.AddRow(name)
-	}
-	return rows
 }
