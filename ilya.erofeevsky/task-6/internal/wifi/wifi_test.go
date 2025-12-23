@@ -6,10 +6,11 @@ import (
 	"net"
 	"testing"
 
-	"ilya.erofeevsky/task-6/internal/wifi"
 	wifipkg "github.com/mdlayher/wifi"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	
+	"ilya.erofeevsky/task-6/internal/wifi"
 )
 
 var errWifiStatic = errors.New("wifi failure")
