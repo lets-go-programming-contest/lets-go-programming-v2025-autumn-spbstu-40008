@@ -143,4 +143,3 @@ func TestWiFiService_GetNames(t *testing.T) {
 		})
 	}
 }
-
