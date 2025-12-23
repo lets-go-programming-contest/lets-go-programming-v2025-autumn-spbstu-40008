@@ -32,6 +32,7 @@ func (m *MockWiFiHandle) Interfaces() ([]*wifi.Interface, error) {
 		if err != nil {
 			return nil, fmt.Errorf("mock error: %w", err)
 		}
+
 		return nil, err
 	}
 
@@ -41,6 +42,7 @@ func (m *MockWiFiHandle) Interfaces() ([]*wifi.Interface, error) {
 		if err != nil {
 			return nil, fmt.Errorf("type assertion failed: %w", err)
 		}
+
 		return nil, errTypeAssertion
 	}
 
@@ -48,6 +50,7 @@ func (m *MockWiFiHandle) Interfaces() ([]*wifi.Interface, error) {
 	if err != nil {
 		return ifaces, fmt.Errorf("mock result error: %w", err)
 	}
+
 	return ifaces, err
 }
 
