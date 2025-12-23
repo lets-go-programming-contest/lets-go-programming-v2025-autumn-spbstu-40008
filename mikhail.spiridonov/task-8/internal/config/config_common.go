@@ -12,22 +12,25 @@ type Config struct {
 	LogLevel    string `yaml:"log_level"`
 }
 
-var (
+type configManager struct {
 	config     Config
 	configOnce sync.Once
 	configErr  error
-)
+}
+
+var manager = &configManager{}
 
 func GetConfig() (Config, error) {
-	configOnce.Do(func() {
-		config, configErr = loadConfig()
+	manager.configOnce.Do(func() {
+		data := getEmbeddedConfig()
+		manager.config, manager.configErr = parseConfig(data)
 	})
 
-	if configErr != nil {
-		return Config{}, configErr
+	if manager.configErr != nil {
+		return Config{}, manager.configErr
 	}
-    
-	return config, nil
+
+	return manager.config, nil
 }
 
 func GetConfigOrPanic() Config {
@@ -39,14 +42,6 @@ func GetConfigOrPanic() Config {
 	return cfg
 }
 
-func loadConfig() (Config, error) {
-	var data []byte
-
-	data = getEmbeddedConfig()
-
-	return parseConfig(data)
-}
-
 func parseConfig(data []byte) (Config, error) {
 	var cfg Config
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
@@ -54,4 +49,8 @@ func parseConfig(data []byte) (Config, error) {
 	}
 
 	return cfg, nil
+}
+
+func getEmbeddedConfig() []byte {
+	return nil
 }
