@@ -29,6 +29,7 @@ func (s WiFiService) GetAddresses() ([]net.HardwareAddr, error) {
 	for _, i := range ifaces {
 		result = append(result, i.HardwareAddr)
 	}
+
 	return result, nil
 }
 
@@ -42,5 +43,6 @@ func (s WiFiService) GetNames() ([]string, error) {
 	for _, i := range ifaces {
 		result = append(result, i.Name)
 	}
+
 	return result, nil
 }

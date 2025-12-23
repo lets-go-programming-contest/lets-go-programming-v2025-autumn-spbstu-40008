@@ -11,16 +11,18 @@ import (
 )
 
 var (
-	errFetch    = errors.New("fetch error")
-	errAuth     = errors.New("auth error")
-	errExpected = "fetch interfaces"
+	errFetch = errors.New("fetch error")
+	errAuth  = errors.New("auth error")
 )
 
 func TestWiFiService_GetAddresses(t *testing.T) {
 	t.Parallel()
 
+	errExpected := "fetch interfaces"
+
 	genIfaces := func(macs []string) []*wifi.Interface {
 		res := make([]*wifi.Interface, 0, len(macs))
+
 		for i, m := range macs {
 			addr, _ := net.ParseMAC(m)
 			res = append(res, &wifi.Interface{
@@ -29,6 +31,7 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 				HardwareAddr: addr,
 			})
 		}
+
 		return res
 	}
 
@@ -63,6 +66,7 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+
 			m := &MockWiFiHandle{}
 			svc := New(m)
 			tc.setup(m)
@@ -77,6 +81,7 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, tc.want, got)
 			}
+
 			m.AssertExpectations(t)
 		})
 	}
@@ -84,6 +89,8 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 
 func TestWiFiService_GetNames(t *testing.T) {
 	t.Parallel()
+
+	errExpected := "fetch interfaces"
 
 	cases := []struct {
 		name      string
@@ -114,6 +121,7 @@ func TestWiFiService_GetNames(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+
 			m := &MockWiFiHandle{}
 			svc := New(m)
 			tc.setup(m)
@@ -128,6 +136,7 @@ func TestWiFiService_GetNames(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, tc.want, got)
 			}
+
 			m.AssertExpectations(t)
 		})
 	}

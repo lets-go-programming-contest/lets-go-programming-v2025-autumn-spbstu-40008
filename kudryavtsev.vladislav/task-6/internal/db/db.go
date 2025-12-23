@@ -29,11 +29,13 @@ func (s DBService) GetNames() ([]string, error) {
 	defer rows.Close()
 
 	var names []string
+
 	for rows.Next() {
 		var name string
 		if err := rows.Scan(&name); err != nil {
 			return nil, fmt.Errorf("scan error: %w", err)
 		}
+
 		names = append(names, name)
 	}
 
@@ -55,11 +57,13 @@ func (s DBService) GetUniqueNames() ([]string, error) {
 	defer rows.Close()
 
 	var result []string
+
 	for rows.Next() {
 		var val string
 		if err := rows.Scan(&val); err != nil {
 			return nil, fmt.Errorf("scan error: %w", err)
 		}
+
 		result = append(result, val)
 	}
 

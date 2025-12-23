@@ -70,6 +70,7 @@ func TestDBService_GetNames(t *testing.T) {
 			defer mockDB.Close()
 
 			service := New(mockDB)
+
 			tc.setup(mock)
 
 			got, err := service.GetNames()
@@ -81,6 +82,7 @@ func TestDBService_GetNames(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, tc.want, got)
 			}
+
 			require.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
@@ -145,6 +147,7 @@ func TestDBService_GetUniqueNames(t *testing.T) {
 			defer mockDB.Close()
 
 			service := New(mockDB)
+
 			tc.setup(mock)
 
 			got, err := service.GetUniqueNames()
@@ -156,6 +159,7 @@ func TestDBService_GetUniqueNames(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, tc.want, got)
 			}
+
 			require.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
