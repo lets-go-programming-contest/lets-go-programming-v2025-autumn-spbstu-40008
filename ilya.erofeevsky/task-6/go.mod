@@ -1,4 +1,4 @@
-module github.com/task-6
+module github.com/Ilya-Er0fick/task-6
 
 go 1.22
 
