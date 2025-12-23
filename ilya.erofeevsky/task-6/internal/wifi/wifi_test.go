@@ -1,4 +1,4 @@
-package wifi
+package wifi_test
 
 import (
 	"errors"
@@ -7,6 +7,7 @@ import (
 	"github.com/mdlayher/wifi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	mywifi "github.com/task-6/internal/wifi"
 )
 
 type MockWiFiHandle struct {
@@ -21,10 +22,10 @@ func (m *MockWiFiHandle) Interfaces() ([]*wifi.Interface, error) {
 	return args.Get(0).([]*wifi.Interface), args.Error(1)
 }
 
-func TestGetNames(t *testing.T) {
+func TestWiFiService_GetNames(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		mockWiFi := new(MockWiFiHandle)
-		service := New(mockWiFi)
+		service := mywifi.New(mockWiFi)
 		mockWiFi.On("Interfaces").Return([]*wifi.Interface{{Name: "wlan0"}}, nil)
 
 		names, err := service.GetNames()
@@ -35,7 +36,7 @@ func TestGetNames(t *testing.T) {
 
 	t.Run("error", func(t *testing.T) {
 		mockWiFi := new(MockWiFiHandle)
-		service := New(mockWiFi)
+		service := mywifi.New(mockWiFi)
 		mockWiFi.On("Interfaces").Return([]*wifi.Interface(nil), errors.New("err"))
 
 		names, err := service.GetNames()
