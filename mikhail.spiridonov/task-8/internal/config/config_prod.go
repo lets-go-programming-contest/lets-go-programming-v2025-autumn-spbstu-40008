@@ -9,11 +9,12 @@ import (
 //go:embed prod.yaml
 var prodConfig []byte
 
-var cfg = func() Config {
+var cfg = func() Config { //nolint:gochecknoglobals
 	c, err := parseConfig(prodConfig)
 	if err != nil {
 		panic(err)
 	}
+
 	return c
 }()
 
