@@ -14,10 +14,10 @@ func TestGetNames(t *testing.T) {
 	type behavior func(m sqlmock.Sqlmock)
 
 	testTable := []struct {
-		name        string
+		name         string
 		mockBehavior behavior
-		expected    []string
-		expectErr   bool
+		expected     []string
+		expectErr    bool
 	}{
 		{
 			name: "Success",
@@ -39,7 +39,6 @@ func TestGetNames(t *testing.T) {
 		{
 			name: "Scan Error",
 			mockBehavior: func(m sqlmock.Sqlmock) {
-				// Передаем nil в колонку типа string, что вызовет ошибку Scan
 				rows := sqlmock.NewRows([]string{"name"}).AddRow(nil)
 				m.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
 			},
@@ -49,7 +48,6 @@ func TestGetNames(t *testing.T) {
 		{
 			name: "Rows Iteration Error",
 			mockBehavior: func(m sqlmock.Sqlmock) {
-				// Имитируем ошибку, возникающую в процессе итерации rows.Next() -> rows.Err()
 				rows := sqlmock.NewRows([]string{"name"}).
 					AddRow("Ivan").
 					RowError(0, errors.New("iteration error"))
