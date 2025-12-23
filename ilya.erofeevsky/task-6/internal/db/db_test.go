@@ -47,11 +47,28 @@ func TestDBService_GetNames(t *testing.T) {
 		rows := sqlmock.NewRows([]string{"name"}).
 			AddRow("User1").
 			RowError(0, errors.New("scan failed"))
+		
 		mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
 
 		res, err := service.GetNames()
 		assert.Error(t, err)
 		assert.Nil(t, res)
 		assert.Contains(t, err.Error(), "scan error")
+	})
+
+	t.Run("rows_err", func(t *testing.T) {
+		sqlDB, mock, _ := sqlmock.New()
+		defer sqlDB.Close()
+		service := db.New(sqlDB)
+
+		rows := sqlmock.NewRows([]string{"name"}).
+			AddRow("User1").
+			CloseError(errors.New("close failed"))
+
+		mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
+
+		res, err := service.GetNames()
+		assert.Error(t, err)
+		assert.Nil(t, res)
 	})
 }
