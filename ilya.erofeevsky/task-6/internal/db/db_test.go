@@ -148,7 +148,7 @@ func TestGetNames_RowsErrorAfterIteration(t *testing.T) {
 	mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
 
 	service := db.New(dbConn)
-	names, err := service.GetNames()
+	_, err = service.GetNames()
 
 	if err == nil {
 		t.Error("expected error, got nil")
@@ -321,7 +321,7 @@ func TestGetUniqueNames_RowsErrorAfterIteration(t *testing.T) {
 	mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
 
 	service := db.New(dbConn)
-	names, err := service.GetUniqueNames()
+	_, err = service.GetUniqueNames()
 
 	if err == nil {
 		t.Error("expected error, got nil")
