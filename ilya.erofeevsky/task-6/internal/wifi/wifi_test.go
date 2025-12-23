@@ -6,7 +6,7 @@ import (
 	"net"
 	"testing"
 
-	"github.com/Ilya-Er0fick/task-6/internal/wifi"
+	"ilya.erofeevsky/task-6/internal/wifi"
 	wifipkg "github.com/mdlayher/wifi"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
