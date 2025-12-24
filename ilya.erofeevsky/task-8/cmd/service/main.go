@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"ilya.erofeevsky/task-8/config"
+	"github.com/Ilya-Er0fick/task-8/config"
 )
 
 func main() {

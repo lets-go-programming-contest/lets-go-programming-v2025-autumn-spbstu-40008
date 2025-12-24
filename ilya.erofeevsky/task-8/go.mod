@@ -1,4 +1,4 @@
-module ilya.erofeevsky/task-8
+module github.com/Ilya-Er0fick/task-8
 
 go 1.22
 
