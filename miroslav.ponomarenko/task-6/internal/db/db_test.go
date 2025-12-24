@@ -11,10 +11,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var (
+	errQueryFail = errors.New("fail")
+	errRowFail   = errors.New("err")
+)
+
 func TestDBService_GetNames(t *testing.T) {
 	t.Parallel()
 
 	t.Run("success", func(t *testing.T) {
+		t.Parallel()
 		dbConn, mock, _ := sqlmock.New()
 		defer dbConn.Close()
 
@@ -28,11 +34,12 @@ func TestDBService_GetNames(t *testing.T) {
 	})
 
 	t.Run("query_fail", func(t *testing.T) {
+		t.Parallel()
 		dbConn, mock, _ := sqlmock.New()
 		defer dbConn.Close()
 
 		svc := db.New(dbConn)
-		mock.ExpectQuery("SELECT name FROM users").WillReturnError(errors.New("fail"))
+		mock.ExpectQuery("SELECT name FROM users").WillReturnError(errQueryFail)
 
 		res, err := svc.GetNames()
 		require.Error(t, err)
@@ -40,6 +47,7 @@ func TestDBService_GetNames(t *testing.T) {
 	})
 
 	t.Run("scan_fail", func(t *testing.T) {
+		t.Parallel()
 		dbConn, mock, _ := sqlmock.New()
 		defer dbConn.Close()
 
@@ -54,11 +62,12 @@ func TestDBService_GetNames(t *testing.T) {
 	})
 
 	t.Run("rows_error", func(t *testing.T) {
+		t.Parallel()
 		dbConn, mock, _ := sqlmock.New()
 		defer dbConn.Close()
 
 		svc := db.New(dbConn)
-		dbRows := sqlmock.NewRows([]string{"name"}).AddRow("User").RowError(0, errors.New("err"))
+		dbRows := sqlmock.NewRows([]string{"name"}).AddRow("User").RowError(0, errRowFail)
 		mock.ExpectQuery("SELECT name FROM users").WillReturnRows(dbRows)
 
 		res, err := svc.GetNames()
@@ -72,6 +81,7 @@ func TestDBService_GetUniqueNames(t *testing.T) {
 	t.Parallel()
 
 	t.Run("success", func(t *testing.T) {
+		t.Parallel()
 		dbConn, mock, _ := sqlmock.New()
 		defer dbConn.Close()
 
@@ -85,11 +95,12 @@ func TestDBService_GetUniqueNames(t *testing.T) {
 	})
 
 	t.Run("query_fail", func(t *testing.T) {
+		t.Parallel()
 		dbConn, mock, _ := sqlmock.New()
 		defer dbConn.Close()
 
 		svc := db.New(dbConn)
-		mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnError(errors.New("fail"))
+		mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnError(errQueryFail)
 
 		res, err := svc.GetUniqueNames()
 		require.Error(t, err)
@@ -97,6 +108,7 @@ func TestDBService_GetUniqueNames(t *testing.T) {
 	})
 
 	t.Run("scan_fail", func(t *testing.T) {
+		t.Parallel()
 		dbConn, mock, _ := sqlmock.New()
 		defer dbConn.Close()
 
@@ -110,11 +122,12 @@ func TestDBService_GetUniqueNames(t *testing.T) {
 	})
 
 	t.Run("rows_error", func(t *testing.T) {
+		t.Parallel()
 		dbConn, mock, _ := sqlmock.New()
 		defer dbConn.Close()
 
 		svc := db.New(dbConn)
-		dbRows := sqlmock.NewRows([]string{"name"}).AddRow("User").RowError(0, errors.New("err"))
+		dbRows := sqlmock.NewRows([]string{"name"}).AddRow("User").RowError(0, errRowFail)
 		mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(dbRows)
 
 		res, err := svc.GetUniqueNames()

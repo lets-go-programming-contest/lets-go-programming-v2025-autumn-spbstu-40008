@@ -13,8 +13,11 @@ func (m *MockWiFiHandle) Interfaces() ([]*wifi.Interface, error) {
 	args := m.Called()
 
 	var ifaces []*wifi.Interface
-	if args.Get(0) != nil {
-		ifaces = args.Get(0).([]*wifi.Interface)
+	if v := args.Get(0); v != nil {
+		if val, ok := v.([]*wifi.Interface); ok {
+			ifaces = val
+		}
 	}
+
 	return ifaces, args.Error(1)
 }

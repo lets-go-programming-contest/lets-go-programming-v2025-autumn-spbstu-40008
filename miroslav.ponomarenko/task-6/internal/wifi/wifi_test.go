@@ -12,10 +12,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var (
+	errHardware = errors.New("hardware error")
+	errDriver   = errors.New("driver error")
+)
+
 func TestWiFiService_GetAddresses(t *testing.T) {
 	t.Parallel()
 
 	t.Run("success", func(t *testing.T) {
+		t.Parallel()
 		m := new(MockWiFiHandle)
 		hw, _ := net.ParseMAC("00:11:22:33:44:55")
 		ifaces := []*wifi.Interface{{HardwareAddr: hw}}
@@ -30,8 +36,9 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 	})
 
 	t.Run("fail", func(t *testing.T) {
+		t.Parallel()
 		m := new(MockWiFiHandle)
-		m.On("Interfaces").Return(nil, errors.New("hardware error"))
+		m.On("Interfaces").Return(nil, errHardware)
 
 		svc := internalwifi.New(m)
 		res, err := svc.GetAddresses()
@@ -47,6 +54,7 @@ func TestWiFiService_GetNames(t *testing.T) {
 	t.Parallel()
 
 	t.Run("success", func(t *testing.T) {
+		t.Parallel()
 		m := new(MockWiFiHandle)
 		ifaces := []*wifi.Interface{{Name: "wlan0"}, {Name: "wlan1"}}
 		m.On("Interfaces").Return(ifaces, nil)
@@ -60,8 +68,9 @@ func TestWiFiService_GetNames(t *testing.T) {
 	})
 
 	t.Run("fail", func(t *testing.T) {
+		t.Parallel()
 		m := new(MockWiFiHandle)
-		m.On("Interfaces").Return(nil, errors.New("driver error"))
+		m.On("Interfaces").Return(nil, errDriver)
 
 		svc := internalwifi.New(m)
 		res, err := svc.GetNames()
