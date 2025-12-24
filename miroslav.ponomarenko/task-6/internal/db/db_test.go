@@ -4,11 +4,11 @@ import (
 	"errors"
 	"testing"
 
+	"rabbitdfs/task-6/internal/db"
+
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"rabbitdfs/task-6/internal/db"
 )
 
 var (
