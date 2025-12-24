@@ -13,6 +13,5 @@ func main() {
 		log.Fatalf("Ошибка загрузки конфигурации: %v", err)
 	}
 
-	
 	fmt.Printf("%s %s", cfg.Environment, cfg.LogLevel)
 }
