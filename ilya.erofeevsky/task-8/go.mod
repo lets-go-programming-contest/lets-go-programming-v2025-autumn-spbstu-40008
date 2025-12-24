@@ -1,4 +1,4 @@
-module ilya.erofeevsky/task-6
+module ilya.erofeevsky/task-8
 
 go 1.22
 
