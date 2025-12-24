@@ -44,7 +44,6 @@ func TestDBService_GetNames(t *testing.T) {
 		defer dbConn.Close()
 
 		svc := db.New(dbConn)
-
 		dbRows := sqlmock.NewRows([]string{"name"}).AddRow(nil)
 		mock.ExpectQuery("SELECT name FROM users").WillReturnRows(dbRows)
 
