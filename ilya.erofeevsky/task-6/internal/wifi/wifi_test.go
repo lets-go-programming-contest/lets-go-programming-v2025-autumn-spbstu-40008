@@ -9,7 +9,7 @@ import (
 	wifipkg "github.com/mdlayher/wifi"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	
+
 	"ilya.erofeevsky/task-6/internal/wifi"
 )
 
