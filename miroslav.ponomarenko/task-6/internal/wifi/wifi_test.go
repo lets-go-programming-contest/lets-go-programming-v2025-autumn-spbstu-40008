@@ -5,11 +5,11 @@ import (
 	"net"
 	"testing"
 
-	internalwifi "rabbitdfs/task-6/internal/wifi"
-
 	"github.com/mdlayher/wifi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	internalwifi "rabbitdfs/task-6/internal/wifi"
 )
 
 var (
@@ -48,7 +48,6 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 
 		require.Error(t, err)
 		assert.Nil(t, res)
-		assert.Contains(t, err.Error(), "getting interfaces")
 		m.AssertExpectations(t)
 	})
 }

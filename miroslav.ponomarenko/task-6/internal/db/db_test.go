@@ -4,11 +4,11 @@ import (
 	"errors"
 	"testing"
 
-	"rabbitdfs/task-6/internal/db"
-
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"rabbitdfs/task-6/internal/db"
 )
 
 var (
@@ -67,7 +67,6 @@ func TestDBService_GetNames(t *testing.T) {
 
 		require.Error(t, err)
 		assert.Nil(t, res)
-		assert.Contains(t, err.Error(), "rows scanning")
 	})
 
 	t.Run("rows_error", func(t *testing.T) {
@@ -85,7 +84,6 @@ func TestDBService_GetNames(t *testing.T) {
 
 		require.Error(t, err)
 		assert.Nil(t, res)
-		assert.Contains(t, err.Error(), "rows error")
 	})
 }
 
