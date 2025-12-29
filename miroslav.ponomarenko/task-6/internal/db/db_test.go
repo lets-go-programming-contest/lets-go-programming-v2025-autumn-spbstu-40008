@@ -2,9 +2,8 @@ package db_test
 
 import (
 	"errors"
-	"testing"
-
 	"rabbitdfs/task-6/internal/db"
+	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
