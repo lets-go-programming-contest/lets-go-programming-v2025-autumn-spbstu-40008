@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	"rabbitdfs/task-8/internal/config"
 )
@@ -9,7 +10,7 @@ import (
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
-		fmt.Println("failed to load config: %v", err)
+		log.Fatalf("failed to load config: %v", err)
 	}
 
 	fmt.Printf("%s %s", cfg.Environment, cfg.LogLevel)
