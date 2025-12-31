@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"rabbitdfs/task-8/internal/config"
-
 	"log"
+
+	"miroslav.ponomarenko/task-8/internal/config"
 )
 
 func main() {

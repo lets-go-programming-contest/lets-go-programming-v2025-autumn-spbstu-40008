@@ -1,4 +1,4 @@
-module rabbitdfs/task-8
+module miroslav.ponomarenko/task-8
 
 go 1.22.7
 
