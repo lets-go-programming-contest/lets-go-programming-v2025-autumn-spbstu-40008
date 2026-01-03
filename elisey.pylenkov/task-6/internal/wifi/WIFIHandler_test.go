@@ -15,9 +15,12 @@ func (m *MockWiFiHandler) Interfaces() ([]*wifi.Interface, error) {
 	args := m.Called()
 
 	var ifaces []*wifi.Interface
-	if args.Get(0) != nil {
+	val := args.Get(0)
+
+	if val != nil {
 		var ok bool
-		ifaces, ok = args.Get(0).([]*wifi.Interface)
+		ifaces, ok = val.([]*wifi.Interface)
+
 		if !ok {
 			return nil, fmt.Errorf("type assertion failed: %w", args.Error(1))
 		}
