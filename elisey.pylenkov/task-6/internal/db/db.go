@@ -24,7 +24,6 @@ func (service DBService) GetNames() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("db query: %w", err)
 	}
-
 	defer func() {
 		_ = rows.Close()
 	}()
@@ -55,7 +54,6 @@ func (service DBService) GetUniqueNames() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("db query: %w", err)
 	}
-
 	defer func() {
 		_ = rows.Close()
 	}()

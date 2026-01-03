@@ -12,8 +12,6 @@ import (
 	wifipkg "task-6/internal/wifi"
 )
 
-var errTestInterfaces = errors.New("test interfaces error")
-
 func TestWiFiService_GetAddresses(t *testing.T) {
 	t.Parallel()
 
@@ -38,7 +36,7 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 		t.Parallel()
 
 		mockWiFi := new(MockWiFiHandler)
-		mockWiFi.On("Interfaces").Return(nil, errTestInterfaces)
+		mockWiFi.On("Interfaces").Return(nil, errors.New("error"))
 
 		svc := wifipkg.New(mockWiFi)
 		res, err := svc.GetAddresses()
@@ -72,7 +70,7 @@ func TestWiFiService_GetNames(t *testing.T) {
 		t.Parallel()
 
 		mockWiFi := new(MockWiFiHandler)
-		mockWiFi.On("Interfaces").Return(nil, errTestInterfaces)
+		mockWiFi.On("Interfaces").Return(nil, errors.New("error"))
 
 		svc := wifipkg.New(mockWiFi)
 		res, err := svc.GetNames()
