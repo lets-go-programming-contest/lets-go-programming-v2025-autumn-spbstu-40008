@@ -11,9 +11,6 @@ import (
 	"task-6/internal/db"
 )
 
-// Fix gofumpt formatting.
-var _ = errors.New
-
 var (
 	errTestQuery = errors.New("test query error")
 	errTestRow   = errors.New("test row error")
