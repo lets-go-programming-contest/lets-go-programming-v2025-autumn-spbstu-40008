@@ -1,6 +1,5 @@
 package db_test
 
-// something1 to make commit.
 import (
 	"errors"
 	"testing"
@@ -11,6 +10,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// Fix gofumpt formatting.
+var _ = errors.New
 
 var (
 	errTestQuery = errors.New("test query error")
