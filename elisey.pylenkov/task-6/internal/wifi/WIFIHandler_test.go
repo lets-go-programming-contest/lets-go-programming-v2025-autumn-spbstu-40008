@@ -14,8 +14,10 @@ type MockWiFiHandler struct {
 func (m *MockWiFiHandler) Interfaces() ([]*wifi.Interface, error) {
 	args := m.Called()
 
-	var ifaces []*wifi.Interface
-	val := args.Get(0)
+	var (
+		ifaces []*wifi.Interface
+		val    = args.Get(0)
+	)
 
 	if val != nil {
 		var ok bool

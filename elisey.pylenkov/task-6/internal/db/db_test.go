@@ -24,6 +24,7 @@ func TestDBService_GetNames(t *testing.T) {
 
 		dbConn, mock, err := sqlmock.New()
 		require.NoError(t, err)
+
 		defer func() { _ = dbConn.Close() }()
 
 		svc := db.New(dbConn)
@@ -98,6 +99,7 @@ func TestDBService_GetUniqueNames(t *testing.T) {
 
 		dbConn, mock, err := sqlmock.New()
 		require.NoError(t, err)
+
 		defer func() { _ = dbConn.Close() }()
 
 		svc := db.New(dbConn)
