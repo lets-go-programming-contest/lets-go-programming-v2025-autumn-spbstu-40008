@@ -6,9 +6,7 @@ import (
 )
 
 func main() {
-	var (
-		departments, employees, minT, maxT uint16
-	)
+	var departments, employees, minT, maxT uint16
 
 	_, err := fmt.Scan(&departments)
 	if err != nil {
