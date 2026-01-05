@@ -15,13 +15,13 @@ type Config struct {
 func Load(configPath string) (*Config, error) {
 	yamlFile, err := os.ReadFile(configPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read YAML file '%s': %w", configPath, err)
+		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}
 
 	var config Config
 	err = yaml.Unmarshal(yamlFile, &config)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal YAML from '%s': %w", configPath, err)
+		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
 	return &config, nil
