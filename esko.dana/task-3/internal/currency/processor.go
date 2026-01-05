@@ -24,6 +24,10 @@ func ProcessAndSort(xmlCurrencies []xml.ParsedValute) ([]Currency, error) {
 	currencies := make([]Currency, len(xmlCurrencies))
 
 	for index, curr := range xmlCurrencies {
+		if curr.NumCode == "" {
+			return nil, fmt.Errorf("empty 'NumCode' for currency %s", curr.CharCode)
+		}
+
 		numCode, err := strconv.Atoi(curr.NumCode)
 		if err != nil {
 			return nil, fmt.Errorf("invalid 'NumCode' format '%s': %w", curr.NumCode, err)
