@@ -2,29 +2,30 @@ package json
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
-
-	"esko.dana/task-3/internal/currency"
 )
 
-func Save(currencies []currency.Currency, outputPath string) error {
+const (
+	dirPermissions  = 0o755
+	filePermissions = 0o600
+)
+
+func Write(data interface{}, outputPath string) error {
 	outputDir := filepath.Dir(outputPath)
-	err := os.MkdirAll(outputDir, 0o755)
+	err := os.MkdirAll(outputDir, dirPermissions)
+
 	if err != nil {
-		return fmt.Errorf("failed to create output directory '%s': %w", outputDir, err)
+		return err
 	}
 
-	jsonData, err := json.MarshalIndent(currencies, "", "    ")
+	jsonData, err := json.MarshalIndent(data, "", "  ")
+
 	if err != nil {
-		return fmt.Errorf("failed to marshal results to JSON: %w", err)
+		return err
 	}
 
-	err = os.WriteFile(outputPath, jsonData, 0o600)
-	if err != nil {
-		return fmt.Errorf("failed to write results to output file '%s': %w", outputPath, err)
-	}
+	err = os.WriteFile(outputPath, jsonData, filePermissions)
 
-	return nil
+	return err
 }

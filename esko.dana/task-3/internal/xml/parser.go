@@ -33,21 +33,27 @@ func Parse(filePath string) ([]ParsedValute, error) {
 		return nil, fmt.Errorf("failed to open XML file '%s': %w", filePath, err)
 	}
 
-	var valCurs ValCurs
 	decoder := xml.NewDecoder(xmlFile)
 	decoder.CharsetReader = charset.NewReaderLabel
 
+	var valCurs ValCurs
 	err = decoder.Decode(&valCurs)
+
+	closeErr := xmlFile.Close()
+	if closeErr != nil {
+		return nil, fmt.Errorf("failed to close XML file: %w", closeErr)
+	}
+
 	if err != nil {
-		xmlFile.Close()
 		return nil, fmt.Errorf("failed to decode XML from '%s': %w", filePath, err)
 	}
-	xmlFile.Close()
 
 	parsedValutes := make([]ParsedValute, 0, len(valCurs.Valutes))
+
 	for _, valute := range valCurs.Valutes {
 		valueStr := strings.ReplaceAll(valute.Value, ",", ".")
 		value, err := strconv.ParseFloat(valueStr, 64)
+
 		if err != nil {
 			return nil, fmt.Errorf("invalid 'Value' format '%s' in XML: %w", valute.Value, err)
 		}

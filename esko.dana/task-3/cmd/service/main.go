@@ -25,7 +25,7 @@ func main() {
 		panic(fmt.Sprintf("Error loading config: %v", err))
 	}
 
-	valutes, err := xml.Parse(cfg.InputFile)
+	valutes, err := xml.Parse(cfg.InputPath)
 	if err != nil {
 		panic(fmt.Sprintf("Error parsing XML: %v", err))
 	}
@@ -35,11 +35,11 @@ func main() {
 		panic(fmt.Sprintf("Error processing/sorting currencies: %v", err))
 	}
 
-	err = json.Save(sortedCurrencies, cfg.OutputFile)
+	err = json.Write(sortedCurrencies, cfg.OutputPath)
 	if err != nil {
 		panic(fmt.Sprintf("Error saving JSON: %v", err))
 	}
 
 	fmt.Printf("Success! Processed %d currencies. Result saved to: %s\n",
-		len(sortedCurrencies), cfg.OutputFile)
+		len(sortedCurrencies), cfg.OutputPath)
 }

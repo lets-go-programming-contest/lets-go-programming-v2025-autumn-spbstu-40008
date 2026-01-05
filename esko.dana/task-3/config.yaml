@@ -1,2 +1,3 @@
-input-file: "source/input_02_03_2002.xml"
-output-file: "result/output_02_03_2002.json"
+inputPath: "source/input_02_03_2002.xml"
+currencyCode: "USD" # Добавьте это поле
+outputPath: "result/output_02_03_2002.json"

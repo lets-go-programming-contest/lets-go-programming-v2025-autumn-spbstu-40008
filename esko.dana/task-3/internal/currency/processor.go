@@ -22,8 +22,10 @@ func (a ByValueDesc) Less(i, j int) bool { return a[i].Value > a[j].Value }
 
 func ProcessAndSort(xmlCurrencies []xml.ParsedValute) ([]Currency, error) {
 	currencies := make([]Currency, len(xmlCurrencies))
+
 	for index, curr := range xmlCurrencies {
 		numCode, err := strconv.Atoi(curr.NumCode)
+
 		if err != nil {
 			return nil, fmt.Errorf("invalid 'NumCode' format '%s': %w", curr.NumCode, err)
 		}
