@@ -15,14 +15,12 @@ type Config struct {
 
 func Load(configPath string) (*Config, error) {
 	data, err := os.ReadFile(configPath)
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}
 
 	var cfg Config
 	err = yaml.Unmarshal(data, &cfg)
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}

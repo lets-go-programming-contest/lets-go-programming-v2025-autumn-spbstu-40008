@@ -53,7 +53,6 @@ func Parse(filePath string) ([]ParsedValute, error) {
 	for _, valute := range valCurs.Valutes {
 		valueStr := strings.ReplaceAll(valute.Value, ",", ".")
 		value, err := strconv.ParseFloat(valueStr, 64)
-
 		if err != nil {
 			return nil, fmt.Errorf("invalid 'Value' format '%s' in XML: %w", valute.Value, err)
 		}
