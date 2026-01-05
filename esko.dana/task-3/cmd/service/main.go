@@ -4,10 +4,10 @@ import (
 	"flag"
 	"fmt"
 
-	"task-3/internal/config"
-	"task-3/internal/currency"
-	"task-3/internal/json"
-	"task-3/internal/xml"
+	"esko.dana/task-3/internal/config"
+	"esko.dana/task-3/internal/currency"
+	"esko.dana/task-3/internal/json"
+	"esko.dana/task-3/internal/xml"
 )
 
 func main() {

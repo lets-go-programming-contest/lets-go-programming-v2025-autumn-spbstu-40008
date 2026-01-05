@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
-	"task-3/internal/xml"
+
+	"esko.dana/task-3/internal/xml"
 )
 
 type Currency struct {

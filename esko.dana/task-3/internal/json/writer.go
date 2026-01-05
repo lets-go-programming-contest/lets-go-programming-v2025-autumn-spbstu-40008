@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"task-3/internal/currency"
+	"esko.dana/task-3/internal/currency"
 )
 
 func Save(currencies []currency.Currency, outputPath string) error {
