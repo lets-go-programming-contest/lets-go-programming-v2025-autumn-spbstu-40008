@@ -8,9 +8,9 @@ import (
 )
 
 type Config struct {
-	InputPath    string `yaml:"inputPath"`
+	InputPath    string `yaml:"input-file"`
 	CurrencyCode string `yaml:"currencyCode"`
-	OutputPath   string `yaml:"outputPath"`
+	OutputPath   string `yaml:"output-file"`
 }
 
 func Load(configPath string) (*Config, error) {
