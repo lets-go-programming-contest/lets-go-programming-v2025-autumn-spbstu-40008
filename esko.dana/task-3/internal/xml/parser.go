@@ -28,9 +28,7 @@ type ParsedValute struct {
 	Value    float64
 }
 
-var (
-	ErrEmptyFilePath = errors.New("empty file path")
-)
+var ErrEmptyFilePath = errors.New("empty file path")
 
 func Parse(filePath string) ([]ParsedValute, error) {
 	if filePath == "" {
