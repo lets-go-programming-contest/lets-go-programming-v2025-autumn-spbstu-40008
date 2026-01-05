@@ -13,6 +13,10 @@ import (
 	"esko.dana/task-3/internal/xml"
 )
 
+const (
+	dirPermissions = 0o755
+)
+
 func main() {
 	var configPath string
 
@@ -47,7 +51,7 @@ func main() {
 	}
 
 	outputDir := filepath.Dir(cfg.OutputPath)
-	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+	if err := os.MkdirAll(outputDir, dirPermissions); err != nil {
 		log.Fatalf("Error creating output directory: %v", err)
 	}
 
