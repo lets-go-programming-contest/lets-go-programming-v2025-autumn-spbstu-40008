@@ -30,7 +30,7 @@ func main() {
 
 		for range employees {
 			var operator string
-			
+
 			var temperature uint16
 
 			_, err = fmt.Scan(&operator)
