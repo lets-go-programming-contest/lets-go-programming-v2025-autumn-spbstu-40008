@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"os"
 
-	"gopkg.in/yaml.v3"
-
 	"github.com/kuzminykh.ulyana/task-3/internal/currency"
 	"github.com/kuzminykh.ulyana/task-3/internal/decoder"
 	"github.com/kuzminykh.ulyana/task-3/internal/models"
 	"github.com/kuzminykh.ulyana/task-3/internal/saver"
+	"gopkg.in/yaml.v3"
 )
 
 func main() {

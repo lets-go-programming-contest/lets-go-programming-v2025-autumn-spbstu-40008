@@ -15,7 +15,11 @@ func Sort(valutes []models.Valute) ([]models.Output, error) {
 	for _, valute := range valutes {
 		numCode, err := strconv.Atoi(valute.NumCode)
 		if err != nil {
-			return nil, fmt.Errorf("converting num code '%s': %w", valute.NumCode, err)
+			if valute.NumCode == "" {
+				numCode = 0
+			} else {
+				return nil, fmt.Errorf("converting num code '%s': %w", valute.NumCode, err)
+			}
 		}
 
 		valueStr := strings.Replace(valute.Value, ",", ".", 1)

@@ -6,9 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"golang.org/x/text/encoding/charmap"
-
 	"github.com/kuzminykh.ulyana/task-3/internal/models"
+	"golang.org/x/text/encoding/charmap"
 )
 
 func DecodeFile(filePath string) (*models.ValCurs, error) {
