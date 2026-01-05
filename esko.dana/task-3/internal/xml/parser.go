@@ -28,6 +28,10 @@ type ParsedValute struct {
 }
 
 func Parse(filePath string) ([]ParsedValute, error) {
+	if filePath == "" {
+		return nil, fmt.Errorf("failed to open XML file '': open : no such file or directory")
+	}
+
 	xmlFile, err := os.Open(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open XML file '%s': %w", filePath, err)

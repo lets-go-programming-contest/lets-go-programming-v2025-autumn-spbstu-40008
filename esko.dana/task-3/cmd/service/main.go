@@ -27,17 +27,9 @@ func main() {
 		log.Fatal("Configuration file path is required. Use -config <path>")
 	}
 
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		log.Fatalf("Config file does not exist: %s", configPath)
-	}
-
 	cfg, err := config.Load(configPath)
 	if err != nil {
 		log.Fatalf("Error loading config: %v", err)
-	}
-
-	if cfg.InputPath == "" {
-		log.Fatal("Input path is not specified in config")
 	}
 
 	valutes, err := xml.Parse(cfg.InputPath)
