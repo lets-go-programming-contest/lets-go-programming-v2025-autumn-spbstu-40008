@@ -2,6 +2,7 @@ package xml
 
 import (
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -27,9 +28,13 @@ type ParsedValute struct {
 	Value    float64
 }
 
+var (
+	ErrEmptyFilePath = errors.New("empty file path")
+)
+
 func Parse(filePath string) ([]ParsedValute, error) {
 	if filePath == "" {
-		return nil, fmt.Errorf("failed to open XML file '': open : no such file or directory")
+		return nil, fmt.Errorf("failed to open XML file '': %w", ErrEmptyFilePath)
 	}
 
 	xmlFile, err := os.Open(filePath)

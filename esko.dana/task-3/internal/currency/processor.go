@@ -20,19 +20,27 @@ func (a ByValueDesc) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByValueDesc) Less(i, j int) bool { return a[i].Value > a[j].Value }
 
 func ProcessAndSort(xmlCurrencies []xml.ParsedValute) ([]Currency, error) {
-	var currencies []Currency
+	currencies := make([]Currency, len(xmlCurrencies))
 
-	for _, curr := range xmlCurrencies {
-		numCode, err := strconv.Atoi(curr.NumCode)
-		if err != nil {
-			continue
+	for index, curr := range xmlCurrencies {
+		var numCode int
+
+		if curr.NumCode == "" {
+			numCode = 0
+		} else {
+			parsedNumCode, err := strconv.Atoi(curr.NumCode)
+			if err != nil {
+				numCode = 0
+			} else {
+				numCode = parsedNumCode
+			}
 		}
 
-		currencies = append(currencies, Currency{
+		currencies[index] = Currency{
 			NumCode:  numCode,
 			CharCode: curr.CharCode,
 			Value:    curr.Value,
-		})
+		}
 	}
 
 	sort.Sort(ByValueDesc(currencies))
