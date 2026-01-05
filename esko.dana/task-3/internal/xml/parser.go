@@ -37,6 +37,7 @@ func Parse(filePath string) ([]ParsedValute, error) {
 	decoder.CharsetReader = charset.NewReaderLabel
 
 	var valCurs ValCurs
+
 	err = decoder.Decode(&valCurs)
 
 	closeErr := xmlFile.Close()
