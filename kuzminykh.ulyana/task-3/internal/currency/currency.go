@@ -10,7 +10,7 @@ import (
 )
 
 func Sort(valutes []models.Valute) ([]models.Output, error) {
-	var outdata []models.Output
+	outdata := make([]models.Output, 0, len(valutes))
 
 	for _, valute := range valutes {
 		numCode, err := strconv.Atoi(valute.NumCode)

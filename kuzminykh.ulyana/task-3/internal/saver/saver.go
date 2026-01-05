@@ -19,12 +19,17 @@ func Save(data []models.Output, filePath string) error {
 	if err != nil {
 		return fmt.Errorf("creating file: %w", err)
 	}
-	defer file.Close()
 
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ")
+
 	if err := encoder.Encode(data); err != nil {
+		file.Close()
 		return fmt.Errorf("encoding JSON: %w", err)
+	}
+
+	if err := file.Close(); err != nil {
+		return fmt.Errorf("closing file: %w", err)
 	}
 
 	return nil
