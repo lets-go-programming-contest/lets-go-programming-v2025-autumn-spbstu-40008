@@ -1,7 +1,6 @@
 package currency
 
 import (
-	"fmt"
 	"sort"
 	"strconv"
 
@@ -21,23 +20,19 @@ func (a ByValueDesc) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByValueDesc) Less(i, j int) bool { return a[i].Value > a[j].Value }
 
 func ProcessAndSort(xmlCurrencies []xml.ParsedValute) ([]Currency, error) {
-	currencies := make([]Currency, len(xmlCurrencies))
+	var currencies []Currency
 
-	for index, curr := range xmlCurrencies {
-		if curr.NumCode == "" {
-			return nil, fmt.Errorf("empty 'NumCode' for currency %s", curr.CharCode)
-		}
-
+	for _, curr := range xmlCurrencies {
 		numCode, err := strconv.Atoi(curr.NumCode)
 		if err != nil {
-			return nil, fmt.Errorf("invalid 'NumCode' format '%s': %w", curr.NumCode, err)
+			continue
 		}
 
-		currencies[index] = Currency{
+		currencies = append(currencies, Currency{
 			NumCode:  numCode,
 			CharCode: curr.CharCode,
 			Value:    curr.Value,
-		}
+		})
 	}
 
 	sort.Sort(ByValueDesc(currencies))
