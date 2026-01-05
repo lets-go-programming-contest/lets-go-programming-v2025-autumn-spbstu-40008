@@ -13,6 +13,7 @@ func main() {
 	_, err := fmt.Scan(&departments)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error reading the number of departments: %v\n", err)
+
 		return
 	}
 
@@ -23,6 +24,7 @@ func main() {
 		_, err = fmt.Scan(&employees)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error readind the number of employees: %v\n", err)
+
 			return
 		}
 
@@ -33,12 +35,14 @@ func main() {
 			_, err = fmt.Scan(&operator)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "error reading the logical operator: %v", err)
+
 				return
 			}
 
 			_, err = fmt.Scan(&temperature)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "error reading temperature: %v", err)
+
 				return
 			}
 
