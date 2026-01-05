@@ -47,13 +47,9 @@ func main() {
 
 			switch operator {
 			case ">=":
-				if temperature > minT {
-					minT = temperature
-				}
+				minT = max(minT, temperature)
 			case "<=":
-				if temperature < maxT {
-					maxT = temperature
-				}
+				maxT = min(maxT, temperature)
 			default:
 				fmt.Fprintf(os.Stderr, "use only the operators >= or <=")
 			}
