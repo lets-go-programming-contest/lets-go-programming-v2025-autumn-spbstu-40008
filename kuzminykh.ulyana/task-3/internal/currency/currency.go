@@ -23,6 +23,7 @@ func Sort(valutes []models.Valute) ([]models.Output, error) {
 		}
 
 		valueStr := strings.Replace(valute.Value, ",", ".", 1)
+
 		value, err := strconv.ParseFloat(valueStr, 64)
 		if err != nil {
 			return nil, fmt.Errorf("parsing value '%s': %w", valute.Value, err)
