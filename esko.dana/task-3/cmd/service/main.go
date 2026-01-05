@@ -23,7 +23,6 @@ func main() {
 		log.Fatal("Configuration file path is required. Use -config <path>")
 	}
 
-	// Проверяем существование файла конфига
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		log.Fatalf("Config file does not exist: %s", configPath)
 	}
@@ -48,7 +47,7 @@ func main() {
 	}
 
 	outputDir := filepath.Dir(cfg.OutputPath)
-	if err := os.MkdirAll(outputDir, 0755); err != nil {
+	if err := os.MkdirAll(outputDir, 0o755); err != nil {
 		log.Fatalf("Error creating output directory: %v", err)
 	}
 
