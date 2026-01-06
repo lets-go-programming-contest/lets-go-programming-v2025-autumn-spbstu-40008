@@ -3,54 +3,58 @@ package main
 import "fmt"
 
 func main() {
-	var countDepartments, countWorkers uint
+	var numberOfDepartments, numberOfPeople uint
 
-	_, err := fmt.Scan(&countDepartments)
+	_, err := fmt.Scan(&numberOfDepartments)
 	if err != nil {
-		fmt.Println("Invalid departments count")
+		fmt.Println("Error with number of departments, code error: ", err)
+
 		return
 	}
 
 	var (
-		minValue, maxValue uint8
-		currentTemp        uint8
-		operationSign      string
+		minTemp, maxTemp uint8
+		temp             uint8
+		operator         string
 	)
 
-	for range countDepartments {
-		_, err = fmt.Scan(&countWorkers)
+	for range numberOfDepartments {
+		_, err = fmt.Scan(&numberOfPeople)
 		if err != nil {
-			fmt.Println("Invalid workers count")
+			fmt.Println("Error with number of people in department, code error: ", err)
+
 			return
 		}
 
-		minValue, maxValue = 15, 30
+		minTemp, maxTemp = 15, 30
 
-		for range countWorkers {
-			_, err = fmt.Scan(&operationSign, &currentTemp)
+		for range numberOfPeople {
+			_, err = fmt.Scan(&operator, &temp)
 			if err != nil {
-				fmt.Println("Invalid temperature input")
+				fmt.Println("Error with number of people in department, code error: ", err)
+
 				return
 			}
 
-			switch operationSign {
+			switch operator {
 			case ">=":
-				if currentTemp > minValue {
-					minValue = currentTemp
+				if temp > minTemp {
+					minTemp = temp
 				}
 			case "<=":
-				if currentTemp < maxValue {
-					maxValue = currentTemp
+				if temp < maxTemp {
+					maxTemp = temp
 				}
 			default:
-				fmt.Println("Unknown operation")
+				fmt.Println("Error with operator")
+
 				return
 			}
 
-			if minValue > maxValue {
+			if minTemp > maxTemp {
 				fmt.Println(-1)
 			} else {
-				fmt.Println(minValue)
+				fmt.Println(minTemp)
 			}
 		}
 	}
