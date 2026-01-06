@@ -28,6 +28,6 @@ func ReadXML(path string) (*ExchangeRates, error) {
 	if err := dec.Decode(&rates); err != nil {
 		return nil, fmt.Errorf("decode xml: %w", err)
 	}
-	
+
 	return &rates, nil
 }
