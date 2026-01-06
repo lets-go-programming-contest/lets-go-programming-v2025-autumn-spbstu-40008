@@ -7,85 +7,85 @@ import (
 	"fmt"
 )
 
-type DBQuerier interface {
-	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
+type DatabaseQueryExecutor interface {
+	QueryContext(ctx context.Context, sqlQuery string, params ...any) (*sql.Rows, error)
 }
 
-func scanString(scanner interface{ Scan(...any) error }, target *string) error {
-	if err := scanner.Scan(target); err != nil {
-		return fmt.Errorf("failed to scan name column: %w", err)
+func extractString(scanner interface{ Scan(...any) error }, output *string) error {
+	if scanErr := scanner.Scan(output); scanErr != nil {
+		return fmt.Errorf("string extraction failed: %w", scanErr)
 	}
 	return nil
 }
 
-type nameCollector struct {
-	querier DBQuerier
-	query   string
+type nameFetcher struct {
+	executor DatabaseQueryExecutor
+	sqlQuery string
 }
 
-func (c *nameCollector) Collect(ctx context.Context) ([]string, error) {
-	rows, err := c.querier.QueryContext(ctx, c.query)
-	if err != nil {
-		return nil, fmt.Errorf("database query failed: %w", err)
+func (f *nameFetcher) Retrieve(ctx context.Context) ([]string, error) {
+	rows, queryErr := f.executor.QueryContext(ctx, f.sqlQuery)
+	if queryErr != nil {
+		return nil, fmt.Errorf("database query execution failed: %w", queryErr)
 	}
 	defer rows.Close()
 
-	var result []string
+	var results []string
 	for rows.Next() {
-		var name string
-		if err := scanString(rows, &name); err != nil {
-			return nil, err
+		var nameValue string
+		if extractErr := extractString(rows, &nameValue); extractErr != nil {
+			return nil, extractErr
 		}
-		result = append(result, name)
+		results = append(results, nameValue)
 	}
 
-	if err := rows.Err(); err != nil {
-		return nil, errors.Join(fmt.Errorf("row iteration failed"), err)
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, errors.Join(fmt.Errorf("row processing failed"), rowsErr)
 	}
 
-	return result, nil
+	return results, nil
 }
 
-type UserService struct {
-	nameLister NameCollector
+type UserHandler struct {
+	nameRetriever NameRetriever
 }
 
-type NameCollector interface {
-	Collect(ctx context.Context) ([]string, error)
+type NameRetriever interface {
+	Retrieve(ctx context.Context) ([]string, error)
 }
 
-func NewUserService(db DBQuerier) *UserService {
-	return &UserService{
-		nameLister: &nameCollector{
-			querier: db,
-			query:   "SELECT name FROM users",
+func InitializeUserHandler(db DatabaseQueryExecutor) *UserHandler {
+	return &UserHandler{
+		nameRetriever: &nameFetcher{
+			executor: db,
+			sqlQuery: "SELECT name FROM users",
 		},
 	}
 }
 
-func (s *UserService) ListAllNames(ctx context.Context) ([]string, error) {
-	return s.nameLister.Collect(ctx)
+func (h *UserHandler) GetAllNames(ctx context.Context) ([]string, error) {
+	return h.nameRetriever.Retrieve(ctx)
 }
 
-func (s *UserService) ListUniqueNamesAsSet(ctx context.Context) (map[string]struct{}, error) {
-	rows, err := s.nameLister.(*nameCollector).querier.QueryContext(ctx, "SELECT DISTINCT name FROM users")
-	if err != nil {
-		return nil, fmt.Errorf("database query for unique names failed: %w", err)
+func (h *UserHandler) GetDistinctNamesAsSet(ctx context.Context) (map[string]struct{}, error) {
+	rows, queryErr := h.nameRetriever.(*nameFetcher).executor.QueryContext(ctx, "SELECT DISTINCT name FROM users")
+	if queryErr != nil {
+		return nil, fmt.Errorf("distinct name query failed: %w", queryErr)
 	}
 	defer rows.Close()
 
-	result := make(map[string]struct{})
+	resultSet := make(map[string]struct{})
 	for rows.Next() {
-		var name string
-		if err := scanString(rows, &name); err != nil {
-			return nil, err
+		var nameValue string
+		if extractErr := extractString(rows, &nameValue); extractErr != nil {
+			return nil, extractErr
 		}
-		result[name] = struct{}{}
+		resultSet[nameValue] = struct{}{}
 	}
 
-	if err := rows.Err(); err != nil {
-		return nil, errors.Join(fmt.Errorf("row iteration failed during unique name fetch"), err)
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, errors.Join(fmt.Errorf("distinct name processing failed"), rowsErr)
 	}
 
-	return result, nil
+	return resultSet, nil
 }

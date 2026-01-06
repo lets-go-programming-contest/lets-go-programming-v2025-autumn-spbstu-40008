@@ -5,106 +5,215 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/stretchr/testify/require"
+	dataStorage "task-6/internal/db"
 
-	"task-6/internal/db"
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestUserService_ListAllNames(t *testing.T) {
+var (
+	connectErr    = errors.New("connection failure")
+	rowProcessErr = errors.New("row processing error")
+	dbErr         = errors.New("database error")
+)
+
+func TestUserHandler_GetAllNames(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name  string
-		mock  func(sqlmock.Sqlmock)
-		check func(*testing.T, []string, error)
+	testScenarios := []struct {
+		scenarioName string
+		mockSetup    func(mock sqlmock.Sqlmock)
+		expectError  bool
+		expectedData []string
 	}{
 		{
-			name: "returns correct list",
-			mock: func(m sqlmock.Sqlmock) {
-				m.ExpectQuery(`^SELECT name FROM users$`).
-					WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("Alice").AddRow("Bob"))
+			scenarioName: "successful name retrieval",
+			mockSetup: func(mock sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{"name"}).
+					AddRow("Alexander").
+					AddRow("Dmitry").
+					AddRow("Sergey")
+				mock.ExpectQuery("SELECT name FROM users").
+					WillReturnRows(rows)
 			},
-			check: func(t *testing.T, result []string, err error) {
-				require.NoError(t, err)
-				require.ElementsMatch(t, []string{"Alice", "Bob"}, result)
-			},
+			expectError:  false,
+			expectedData: []string{"Alexander", "Dmitry", "Sergey"},
 		},
 		{
-			name: "propagates query error",
-			mock: func(m sqlmock.Sqlmock) {
-				m.ExpectQuery(`^SELECT name FROM users$`).
-					WillReturnError(errors.New("io timeout"))
+			scenarioName: "query execution error",
+			mockSetup: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT name FROM users").
+					WillReturnError(connectErr)
 			},
-			check: func(t *testing.T, _ []string, err error) {
-				require.Error(t, err)
-				require.Contains(t, err.Error(), "database query failed")
-			},
+			expectError:  true,
+			expectedData: nil,
 		},
 		{
-			name: "returns empty on empty result",
-			mock: func(m sqlmock.Sqlmock) {
-				m.ExpectQuery(`^SELECT name FROM users$`).
-					WillReturnRows(sqlmock.NewRows([]string{"name"}))
+			scenarioName: "data extraction error",
+			mockSetup: func(mock sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{"name"}).
+					AddRow("Alexander").
+					AddRow(nil).
+					AddRow("Sergey")
+				mock.ExpectQuery("SELECT name FROM users").
+					WillReturnRows(rows)
 			},
-			check: func(t *testing.T, result []string, err error) {
-				require.NoError(t, err)
-				require.Empty(t, result)
+			expectError:  true,
+			expectedData: nil,
+		},
+		{
+			scenarioName: "row iteration error",
+			mockSetup: func(mock sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{"name"}).
+					AddRow("Alexander").
+					RowError(0, rowProcessErr)
+				mock.ExpectQuery("SELECT name FROM users").
+					WillReturnRows(rows)
 			},
+			expectError:  true,
+			expectedData: nil,
+		},
+		{
+			scenarioName: "empty result set",
+			mockSetup: func(mock sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{"name"})
+				mock.ExpectQuery("SELECT name FROM users").
+					WillReturnRows(rows)
+			},
+			expectError:  false,
+			expectedData: nil,
 		},
 	}
 
-	for _, tc := range tests {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
+	for _, ts := range testScenarios {
+		t.Run(ts.scenarioName, func(t *testing.T) {
 			t.Parallel()
-			dbMock, mock, err := sqlmock.New()
-			require.NoError(t, err)
-			defer dbMock.Close()
 
-			tc.mock(mock)
+			db, mock, createErr := sqlmock.New()
+			require.NoError(t, createErr)
+			defer db.Close()
 
-			service := db.NewUserService(dbMock)
-			names, err := service.ListAllNames(context.Background())
-			tc.check(t, names, err)
+			ts.mockSetup(mock)
 
-			require.NoError(t, mock.ExpectationsWereMet())
+			handler := dataStorage.InitializeUserHandler(db)
+
+			result, err := handler.GetAllNames(context.Background())
+
+			if ts.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+
+				if ts.expectedData == nil {
+					assert.Nil(t, result)
+				} else {
+					assert.Equal(t, ts.expectedData, result)
+				}
+			}
+
+			assert.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
 }
 
-func TestUserService_ListUniqueNamesAsSet(t *testing.T) {
+func TestUserHandler_GetDistinctNamesAsSet(t *testing.T) {
 	t.Parallel()
 
-	dbMock, mock, err := sqlmock.New()
-	require.NoError(t, err)
-	defer dbMock.Close()
+	testScenarios := []struct {
+		scenarioName string
+		mockSetup    func(mock sqlmock.Sqlmock)
+		expectError  bool
+		expectedData []string
+	}{
+		{
+			scenarioName: "successful distinct name retrieval",
+			mockSetup: func(mock sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{"name"}).
+					AddRow("Alexander").
+					AddRow("Alexander").
+					AddRow("Dmitry").
+					AddRow("Sergey").
+					AddRow("Dmitry")
+				mock.ExpectQuery("SELECT DISTINCT name FROM users").
+					WillReturnRows(rows)
+			},
+			expectError:  false,
+			expectedData: []string{"Alexander", "Alexander", "Dmitry", "Sergey", "Dmitry"},
+		},
+		{
+			scenarioName: "distinct query error",
+			mockSetup: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT DISTINCT name FROM users").
+					WillReturnError(dbErr)
+			},
+			expectError:  true,
+			expectedData: nil,
+		},
+		{
+			scenarioName: "distinct data extraction error",
+			mockSetup: func(mock sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{"name"}).
+					AddRow("Alexander").
+					AddRow(nil).
+					AddRow("Sergey")
+				mock.ExpectQuery("SELECT DISTINCT name FROM users").
+					WillReturnRows(rows)
+			},
+			expectError:  true,
+			expectedData: nil,
+		},
+		{
+			scenarioName: "distinct row iteration error",
+			mockSetup: func(mock sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{"name"}).
+					AddRow("Alexander").
+					RowError(0, rowProcessErr)
+				mock.ExpectQuery("SELECT DISTINCT name FROM users").
+					WillReturnRows(rows)
+			},
+			expectError:  true,
+			expectedData: nil,
+		},
+		{
+			scenarioName: "empty distinct result set",
+			mockSetup: func(mock sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{"name"})
+				mock.ExpectQuery("SELECT DISTINCT name FROM users").
+					WillReturnRows(rows)
+			},
+			expectError:  false,
+			expectedData: nil,
+		},
+	}
 
-	mock.ExpectQuery(`^SELECT DISTINCT name FROM users$`).
-		WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("Alice").AddRow("Bob").AddRow("Alice"))
+	for _, ts := range testScenarios {
+		t.Run(ts.scenarioName, func(t *testing.T) {
+			t.Parallel()
 
-	service := db.NewUserService(dbMock)
-	result, err := service.ListUniqueNamesAsSet(context.Background())
-	require.NoError(t, err)
-	require.Len(t, result, 2)
-	require.Contains(t, result, "Alice")
-	require.Contains(t, result, "Bob")
-	require.NoError(t, mock.ExpectationsWereMet())
-}
+			db, mock, createErr := sqlmock.New()
+			require.NoError(t, createErr)
+			defer db.Close()
 
-func TestUserService_ListUniqueNamesAsSet_Error(t *testing.T) {
-	t.Parallel()
+			ts.mockSetup(mock)
 
-	dbMock, mock, err := sqlmock.New()
-	require.NoError(t, err)
-	defer dbMock.Close()
+			handler := dataStorage.InitializeUserHandler(db)
 
-	mock.ExpectQuery(`^SELECT DISTINCT name FROM users$`).
-		WillReturnError(errors.New("connection lost"))
+			result, err := handler.GetDistinctNamesAsSet(context.Background())
 
-	service := db.NewUserService(dbMock)
-	_, err = service.ListUniqueNamesAsSet(context.Background())
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "database query for unique names failed")
-	require.NoError(t, mock.ExpectationsWereMet())
+			if ts.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+
+				if ts.expectedData == nil {
+					assert.Nil(t, result)
+				} else {
+					assert.Equal(t, ts.expectedData, result)
+				}
+			}
+
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
 }
