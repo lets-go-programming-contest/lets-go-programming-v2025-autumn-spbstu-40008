@@ -7,9 +7,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var (
-	ErrEmptyFields = errors.New("environment and log_level must be specified")
-)
+var ErrEmptyFields = errors.New("environment and log_level must be specified")
 
 type AppConfig struct {
 	Environment string `yaml:"environment"`
