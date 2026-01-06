@@ -19,7 +19,6 @@ func Load(path string) (Config, error) {
 	var cfg Config
 
 	data, err := os.ReadFile(path)
-
 	if err != nil {
 		return cfg, fmt.Errorf("open config: %w", err)
 	}
