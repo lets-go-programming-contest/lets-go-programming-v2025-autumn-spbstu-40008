@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"task-8/internal/config"
+	"elisey.pylenkov/task-8/internal/config"
 )
 
 func main() {
@@ -14,6 +14,5 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Используем Print без \n, как в примерах
 	fmt.Print(cfg.Environment, " ", cfg.LogLevel)
 }
