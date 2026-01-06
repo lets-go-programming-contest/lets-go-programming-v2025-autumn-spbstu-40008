@@ -11,252 +11,250 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	wifiModule "task-6/internal/wifi"
+	wifiPkg "task-6/internal/wifi"
 )
 
 var (
-	driverErr     = errors.New("driver malfunction")
-	permissionErr = errors.New("insufficient permissions")
-	assertionErr  = errors.New("type conversion failure")
+	errDrv  = errors.New("ошибка драйвера")
+	errPerm = errors.New("отказано в доступе")
+	errType = errors.New("ошибка приведения типа")
 )
 
-type MockWiFiAdapter struct {
+type MockWiFiHandle struct {
 	mock.Mock
 }
 
-func (m *MockWiFiAdapter) NetworkInterfaces() ([]*wifi.Interface, error) {
+func (m *MockWiFiHandle) Interfaces() ([]*wifi.Interface, error) {
 	args := m.Called()
 
 	if args.Get(0) == nil {
-		err := args.Error(1)
-		if err != nil {
-			return nil, fmt.Errorf("mock adapter error: %w", err)
+		e := args.Error(1)
+		if e != nil {
+			return nil, fmt.Errorf("ошибка мока: %w", e)
 		}
-
 		return nil, nil
 	}
 
-	ifaces, conversionOk := args.Get(0).([]*wifi.Interface)
-	if !conversionOk {
-		err := args.Error(1)
-		if err != nil {
-			return nil, fmt.Errorf("interface conversion failed: %w", err)
+	ifaces, ok := args.Get(0).([]*wifi.Interface)
+	if !ok {
+		e := args.Error(1)
+		if e != nil {
+			return nil, fmt.Errorf("ошибка приведения типа: %w", e)
 		}
-
-		return nil, assertionErr
+		return nil, errType
 	}
 
-	err := args.Error(1)
-	if err != nil {
-		return ifaces, fmt.Errorf("mock adapter returned error: %w", err)
+	e := args.Error(1)
+	if e != nil {
+		return ifaces, fmt.Errorf("ошибка результата мока: %w", e)
 	}
 
 	return ifaces, nil
 }
 
-func createMockInterfaces(macStrings []string) []*wifi.Interface {
-	interfaces := make([]*wifi.Interface, 0, len(macStrings))
+func createMockIfaces(macs []string) []*wifi.Interface {
+	res := make([]*wifi.Interface, 0, len(macs))
 
-	for idx, macString := range macStrings {
-		parsedAddr, parseErr := net.ParseMAC(macString)
+	for idx, mac := range macs {
+		hw, parseErr := net.ParseMAC(mac)
 		if parseErr != nil {
 			continue
 		}
 
 		iface := &wifi.Interface{
 			Index:        idx,
-			Name:         "wireless" + string(rune('0'+idx)),
-			HardwareAddr: parsedAddr,
+			Name:         "wlan" + string(rune('0'+idx)),
+			HardwareAddr: hw,
 		}
-		interfaces = append(interfaces, iface)
+		res = append(res, iface)
 	}
 
-	return interfaces
+	return res
 }
 
-func TestWiFiManager_FetchHardwareAddresses(t *testing.T) {
+func TestWiFiService_GetAddresses(t *testing.T) {
 	t.Parallel()
 
-	testCases := []struct {
-		description string
-		macStrings  []string
-		mockErr     error
-		shouldFail  bool
+	tt := []struct {
+		name      string
+		macs      []string
+		mockErr   error
+		expectErr bool
 	}{
 		{
-			description: "successful hardware address retrieval",
-			macStrings:  []string{"00:11:22:33:44:55", "AA:BB:CC:DD:EE:FF"},
-			mockErr:     nil,
-			shouldFail:  false,
+			name:      "успешное получение MAC-адресов",
+			macs:      []string{"00:11:22:33:44:55", "AA:BB:CC:DD:EE:FF"},
+			mockErr:   nil,
+			expectErr: false,
 		},
 		{
-			description: "no network interfaces present",
-			macStrings:  []string{},
-			mockErr:     nil,
-			shouldFail:  false,
+			name:      "список интерфейсов пуст",
+			macs:      []string{},
+			mockErr:   nil,
+			expectErr: false,
 		},
 		{
-			description: "network interface error",
-			macStrings:  nil,
-			mockErr:     driverErr,
-			shouldFail:  true,
+			name:      "ошибка интерфейсов",
+			macs:      nil,
+			mockErr:   errDrv,
+			expectErr: true,
 		},
 		{
-			description: "malformed MAC address in list",
-			macStrings:  []string{"00:11:22:33:44:55", "incorrect-format"},
-			mockErr:     nil,
-			shouldFail:  false,
+			name:      "некорректный MAC-адрес",
+			macs:      []string{"00:11:22:33:44:55", "неправильный-mac"},
+			mockErr:   nil,
+			expectErr: false,
 		},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.description, func(t *testing.T) {
+	for _, tc := range tt {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			mockAdapter := &MockWiFiAdapter{}
+			mockHandle := &MockWiFiHandle{}
 
-			var interfaces []*wifi.Interface
-			if tc.macStrings != nil {
-				interfaces = createMockInterfaces(tc.macStrings)
+			var ifaces []*wifi.Interface
+			if tc.macs != nil {
+				ifaces = createMockIfaces(tc.macs)
 			}
 
-			mockAdapter.On("NetworkInterfaces").Return(interfaces, tc.mockErr)
+			mockHandle.On("Interfaces").Return(ifaces, tc.mockErr)
 
-			manager := wifiModule.Create(mockAdapter)
+			service := wifiPkg.New(mockHandle)
 
-			addresses, err := manager.FetchHardwareAddresses()
+			addrs, err := service.GetAddresses()
 
-			if tc.shouldFail {
+			if tc.expectErr {
 				require.Error(t, err)
-				assert.Nil(t, addresses)
+				assert.Nil(t, addrs)
 			} else {
 				require.NoError(t, err)
 
 				validCount := 0
-
-				for _, mac := range tc.macStrings {
-					if _, parseErr := net.ParseMAC(mac); parseErr == nil {
+				for _, m := range tc.macs {
+					if _, e := net.ParseMAC(m); e == nil {
 						validCount++
 					}
 				}
 
 				if validCount == 0 {
-					assert.Empty(t, addresses)
+					assert.Empty(t, addrs)
 				} else {
-					assert.Len(t, addresses, validCount)
-
-					for _, addr := range addresses {
-						assert.NotNil(t, addr)
+					assert.Len(t, addrs, validCount)
+					for _, a := range addrs {
+						assert.NotNil(t, a)
 					}
 				}
 			}
 
-			mockAdapter.AssertExpectations(t)
+			mockHandle.AssertExpectations(t)
 		})
 	}
 }
 
-func TestWiFiManager_FetchInterfaceNames(t *testing.T) {
+func TestWiFiService_GetNames(t *testing.T) {
 	t.Parallel()
 
-	testCases := []struct {
-		description string
-		namesList   []string
-		mockErr     error
-		shouldFail  bool
+	tt := []struct {
+		name      string
+		names     []string
+		mockErr   error
+		expectErr bool
 	}{
 		{
-			description: "successful interface name retrieval",
-			namesList:   []string{"wireless0", "wireless1", "ethernet0"},
-			mockErr:     nil,
-			shouldFail:  false,
+			name:      "успешное получение имен",
+			names:     []string{"wlan0", "wlan1", "eth0"},
+			mockErr:   nil,
+			expectErr: false,
 		},
 		{
-			description: "interface access error",
-			namesList:   nil,
-			mockErr:     permissionErr,
-			shouldFail:  true,
+			name:      "ошибка интерфейсов",
+			names:     nil,
+			mockErr:   errPerm,
+			expectErr: true,
 		},
 		{
-			description: "empty interface list",
-			namesList:   []string{},
-			mockErr:     nil,
-			shouldFail:  false,
+			name:      "нет интерфейсов",
+			names:     []string{},
+			mockErr:   nil,
+			expectErr: false,
 		},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.description, func(t *testing.T) {
+	for _, tc := range tt {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			mockAdapter := &MockWiFiAdapter{}
+			mockHandle := &MockWiFiHandle{}
 
-			var interfaces []*wifi.Interface
+			var ifaces []*wifi.Interface
 
-			for idx, name := range tc.namesList {
+			for i, n := range tc.names {
 				iface := &wifi.Interface{
-					Index: idx,
-					Name:  name,
+					Index: i,
+					Name:  n,
 				}
-				interfaces = append(interfaces, iface)
+				ifaces = append(ifaces, iface)
 			}
 
-			mockAdapter.On("NetworkInterfaces").Return(interfaces, tc.mockErr)
+			mockHandle.On("Interfaces").Return(ifaces, tc.mockErr)
 
-			manager := wifiModule.Create(mockAdapter)
+			service := wifiPkg.New(mockHandle)
 
-			names, err := manager.FetchInterfaceNames()
+			names, err := service.GetNames()
 
-			if tc.shouldFail {
+			if tc.expectErr {
 				require.Error(t, err)
 				assert.Nil(t, names)
 			} else {
 				require.NoError(t, err)
-				assert.Equal(t, tc.namesList, names)
+				assert.Equal(t, tc.names, names)
 			}
 
-			mockAdapter.AssertExpectations(t)
+			mockHandle.AssertExpectations(t)
 		})
 	}
 }
 
-func BenchmarkFetchHardwareAddresses(b *testing.B) {
-	mockAdapter := &MockWiFiAdapter{}
-	macStrings := []string{"00:11:22:33:44:55", "AA:BB:CC:DD:EE:FF"}
-	interfaces := createMockInterfaces(macStrings)
+func BenchmarkGetAddresses(b *testing.B) {
+	mockHandle := &MockWiFiHandle{}
+	macs := []string{"00:11:22:33:44:55", "AA:BB:CC:DD:EE:FF"}
+	ifaces := createMockIfaces(macs)
 
-	mockAdapter.On("NetworkInterfaces").Return(interfaces, nil).Times(b.N)
+	mockHandle.On("Interfaces").Return(ifaces, nil).Times(b.N)
 
-	manager := wifiModule.Create(mockAdapter)
+	s := wifiPkg.New(mockHandle)
 
 	b.ResetTimer()
 
-	for range b.N {
-		_, _ = manager.FetchHardwareAddresses()
+	for i := 0; i < b.N; i++ {
+		_, _ = s.GetAddresses()
 	}
 }
 
-func BenchmarkFetchInterfaceNames(b *testing.B) {
-	mockAdapter := &MockWiFiAdapter{}
-	namesList := []string{"wireless0", "wireless1", "ethernet0"}
+func BenchmarkGetNames(b *testing.B) {
+	mockHandle := &MockWiFiHandle{}
+	names := []string{"wlan0", "wlan1", "eth0"}
 
-	interfaces := make([]*wifi.Interface, 0, len(namesList))
+	ifaces := make([]*wifi.Interface, 0, len(names))
 
-	for idx, name := range namesList {
+	for idx, n := range names {
 		iface := &wifi.Interface{
 			Index: idx,
-			Name:  name,
+			Name:  n,
 		}
-		interfaces = append(interfaces, iface)
+		ifaces = append(ifaces, iface)
 	}
 
-	mockAdapter.On("NetworkInterfaces").Return(interfaces, nil).Times(b.N)
+	mockHandle.On("Interfaces").Return(ifaces, nil).Times(b.N)
 
-	manager := wifiModule.Create(mockAdapter)
+	s := wifiPkg.New(mockHandle)
 
 	b.ResetTimer()
 
-	for range b.N {
-		_, _ = manager.FetchInterfaceNames()
+	for i := 0; i < b.N; i++ {
+		_, _ = s.GetNames()
 	}
 }

@@ -1,91 +1,74 @@
 package db
 
 import (
-	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 )
 
-type DatabaseQueryExecutor interface {
-	QueryContext(ctx context.Context, sqlQuery string, params ...any) (*sql.Rows, error)
+type Database interface {
+	Query(q string, a ...any) (*sql.Rows, error)
 }
 
-func extractString(scanner interface{ Scan(...any) error }, output *string) error {
-	if scanErr := scanner.Scan(output); scanErr != nil {
-		return fmt.Errorf("string extraction failed: %w", scanErr)
-	}
-	return nil
+type DBService struct {
+	db Database
 }
 
-type nameFetcher struct {
-	executor DatabaseQueryExecutor
-	sqlQuery string
+func New(d Database) DBService {
+	return DBService{db: d}
 }
 
-func (f *nameFetcher) Retrieve(ctx context.Context) ([]string, error) {
-	rows, queryErr := f.executor.QueryContext(ctx, f.sqlQuery)
+func (s DBService) GetNames() ([]string, error) {
+	const queryText = "SELECT name FROM users"
+
+	rows, queryErr := s.db.Query(queryText)
 	if queryErr != nil {
-		return nil, fmt.Errorf("database query execution failed: %w", queryErr)
+		return nil, fmt.Errorf("ошибка запроса: %w", queryErr)
 	}
 	defer rows.Close()
 
-	var results []string
+	var result []string
+
 	for rows.Next() {
-		var nameValue string
-		if extractErr := extractString(rows, &nameValue); extractErr != nil {
-			return nil, extractErr
+		var n string
+
+		if scanErr := rows.Scan(&n); scanErr != nil {
+			return nil, fmt.Errorf("ошибка чтения строки: %w", scanErr)
 		}
-		results = append(results, nameValue)
+
+		result = append(result, n)
 	}
 
 	if rowsErr := rows.Err(); rowsErr != nil {
-		return nil, errors.Join(fmt.Errorf("row processing failed"), rowsErr)
+		return nil, fmt.Errorf("ошибка обработки строк: %w", rowsErr)
 	}
 
-	return results, nil
+	return result, nil
 }
 
-type UserHandler struct {
-	nameRetriever NameRetriever
-}
+func (s DBService) GetUniqueNames() ([]string, error) {
+	const q = "SELECT DISTINCT name FROM users"
 
-type NameRetriever interface {
-	Retrieve(ctx context.Context) ([]string, error)
-}
-
-func InitializeUserHandler(db DatabaseQueryExecutor) *UserHandler {
-	return &UserHandler{
-		nameRetriever: &nameFetcher{
-			executor: db,
-			sqlQuery: "SELECT name FROM users",
-		},
-	}
-}
-
-func (h *UserHandler) GetAllNames(ctx context.Context) ([]string, error) {
-	return h.nameRetriever.Retrieve(ctx)
-}
-
-func (h *UserHandler) GetDistinctNamesAsSet(ctx context.Context) (map[string]struct{}, error) {
-	rows, queryErr := h.nameRetriever.(*nameFetcher).executor.QueryContext(ctx, "SELECT DISTINCT name FROM users")
-	if queryErr != nil {
-		return nil, fmt.Errorf("distinct name query failed: %w", queryErr)
+	rows, err := s.db.Query(q)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка выполнения запроса: %w", err)
 	}
 	defer rows.Close()
 
-	resultSet := make(map[string]struct{})
+	var data []string
+
 	for rows.Next() {
-		var nameValue string
-		if extractErr := extractString(rows, &nameValue); extractErr != nil {
-			return nil, extractErr
+		var val string
+
+		if e := rows.Scan(&val); e != nil {
+			return nil, fmt.Errorf("ошибка сканирования: %w", e)
 		}
-		resultSet[nameValue] = struct{}{}
+
+		data = append(data, val)
 	}
 
-	if rowsErr := rows.Err(); rowsErr != nil {
-		return nil, errors.Join(fmt.Errorf("distinct name processing failed"), rowsErr)
+	if e := rows.Err(); e != nil {
+		return nil, fmt.Errorf("ошибка итерации: %w", e)
 	}
 
-	return resultSet, nil
+	return data, nil
 }
