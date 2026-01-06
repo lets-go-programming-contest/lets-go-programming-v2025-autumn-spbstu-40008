@@ -20,12 +20,10 @@ var (
 	errType = errors.New("ошибка приведения типа")
 )
 
-// MockWiFiHandle имитирует WiFiHandle
 type MockWiFiHandle struct {
 	mock.Mock
 }
 
-// Interfaces реализует интерфейс WiFiHandle
 func (m *MockWiFiHandle) Interfaces() ([]*wifi.Interface, error) {
 	args := m.Called()
 
