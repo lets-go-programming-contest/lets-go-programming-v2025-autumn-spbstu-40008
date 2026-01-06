@@ -1,4 +1,4 @@
-package db
+package db_test
 
 import (
 	"errors"
@@ -7,6 +7,8 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	db "popov.artem/task-6/internal/db"
 )
 
 var (
@@ -23,7 +25,7 @@ func TestDataService_FetchAllNames(t *testing.T) {
 		dbConn, mock, _ := sqlmock.New()
 		defer dbConn.Close()
 
-		svc := NewService(dbConn)
+		svc := db.NewService(dbConn)
 
 		rows := sqlmock.NewRows([]string{"name"}).AddRow("Mikhail").AddRow("Dmitry")
 		mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
@@ -39,7 +41,7 @@ func TestDataService_FetchAllNames(t *testing.T) {
 		dbConn, mock, _ := sqlmock.New()
 		defer dbConn.Close()
 
-		svc := NewService(dbConn)
+		svc := db.NewService(dbConn)
 
 		mock.ExpectQuery("SELECT name FROM users").WillReturnError(errDBQuery)
 
@@ -54,7 +56,7 @@ func TestDataService_FetchAllNames(t *testing.T) {
 		dbConn, mock, _ := sqlmock.New()
 		defer dbConn.Close()
 
-		svc := NewService(dbConn)
+		svc := db.NewService(dbConn)
 
 		rows := sqlmock.NewRows([]string{"name"}).AddRow(nil)
 		mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
@@ -71,7 +73,7 @@ func TestDataService_FetchAllNames(t *testing.T) {
 		dbConn, mock, _ := sqlmock.New()
 		defer dbConn.Close()
 
-		svc := NewService(dbConn)
+		svc := db.NewService(dbConn)
 
 		rows := sqlmock.NewRows([]string{"name"}).AddRow("User").RowError(0, errRowScan)
 		mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
@@ -92,7 +94,7 @@ func TestDataService_FetchDistinctNames(t *testing.T) {
 		dbConn, mock, _ := sqlmock.New()
 		defer dbConn.Close()
 
-		svc := NewService(dbConn)
+		svc := db.NewService(dbConn)
 
 		rows := sqlmock.NewRows([]string{"name"}).AddRow("Admin")
 		mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
@@ -108,7 +110,7 @@ func TestDataService_FetchDistinctNames(t *testing.T) {
 		dbConn, mock, _ := sqlmock.New()
 		defer dbConn.Close()
 
-		svc := NewService(dbConn)
+		svc := db.NewService(dbConn)
 
 		mock.ExpectQuery("SELECT name FROM users").WillReturnError(errDBQuery)
 
@@ -123,7 +125,7 @@ func TestDataService_FetchDistinctNames(t *testing.T) {
 		dbConn, mock, _ := sqlmock.New()
 		defer dbConn.Close()
 
-		svc := NewService(dbConn)
+		svc := db.NewService(dbConn)
 
 		rows := sqlmock.NewRows([]string{"name"}).AddRow(nil)
 		mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
@@ -139,7 +141,7 @@ func TestDataService_FetchDistinctNames(t *testing.T) {
 		dbConn, mock, _ := sqlmock.New()
 		defer dbConn.Close()
 
-		svc := NewService(dbConn)
+		svc := db.NewService(dbConn)
 
 		rows := sqlmock.NewRows([]string{"name"}).AddRow("User").RowError(0, errRowScan)
 		mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
