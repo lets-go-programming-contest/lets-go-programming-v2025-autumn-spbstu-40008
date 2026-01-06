@@ -8,8 +8,7 @@ import (
 )
 
 var (
-	ErrInvalidConfig = errors.New("invalid configuration")
-	ErrEmptyFields   = errors.New("environment and log_level must be specified")
+	ErrEmptyFields = errors.New("environment and log_level must be specified")
 )
 
 type AppConfig struct {
@@ -21,7 +20,7 @@ func Parse(data []byte) (*AppConfig, error) {
 	var cfg AppConfig
 
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrInvalidConfig, err)
+		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
 	if cfg.Environment == "" || cfg.LogLevel == "" {
