@@ -161,7 +161,6 @@ func (c *Conveyer) Run(ctx context.Context) error {
 	case <-ctx.Done():
 
 	case <-done:
-
 	}
 
 	c.closeAllChannels()
