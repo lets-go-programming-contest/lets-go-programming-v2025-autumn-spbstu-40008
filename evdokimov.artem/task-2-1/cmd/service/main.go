@@ -10,9 +10,6 @@ const (
 
 func main() {
 	var departments int
-	var employees int
-	var temperature int
-	var operation string
 
 	if _, err := fmt.Scan(&departments); err != nil {
 		fmt.Println("Incorrect input")
@@ -21,50 +18,75 @@ func main() {
 	}
 
 	for range departments {
-		if _, err := fmt.Scan(&employees); err != nil {
-			fmt.Println("Incorrect input")
+		processDepartment()
+	}
+}
 
-			return
-		}
+func processDepartment() {
+	var employees int
 
-		currentMin := MinTemp
-		currentMax := MaxTemp
-		validRange := true
+	if _, err := fmt.Scan(&employees); err != nil {
+		fmt.Println("Incorrect input")
 
-		for range employees {
-			if _, err := fmt.Scan(&operation, &temperature); err != nil {
-				fmt.Println("Incorrect input")
+		return
+	}
 
-				return
-			}
+	currentMin := MinTemp
+	currentMax := MaxTemp
+	validRange := true
 
-			if !validRange {
-				fmt.Println(ErrorVal)
+	for range employees {
+		validRange = processEmployee(currentMin, currentMax, validRange)
 
-				continue
-			}
-
-			switch operation {
-			case ">=":
-				if temperature > currentMin {
-					currentMin = temperature
-				}
-			case "<=":
-				if temperature < currentMax {
-					currentMax = temperature
-				}
-			default:
-				fmt.Println("Incorrect input")
-
-				return
-			}
-
-			if currentMin > currentMax {
-				validRange = false
-				fmt.Println(ErrorVal)
-			} else {
-				fmt.Println(currentMin)
-			}
+		if !validRange {
+			currentMin = MinTemp
+			currentMax = MaxTemp
 		}
 	}
+}
+
+func processEmployee(currentMin, currentMax int, validRange bool) bool {
+	var operation string
+	var temperature int
+
+	if _, err := fmt.Scan(&operation, &temperature); err != nil {
+		fmt.Println("Incorrect input")
+
+		return false
+	}
+
+	if !validRange {
+		fmt.Println(ErrorVal)
+
+		return false
+	}
+
+	newMin, newMax := updateTemperatureRange(operation, temperature, currentMin, currentMax)
+
+	if newMin > newMax {
+		fmt.Println(ErrorVal)
+
+		return false
+	}
+
+	fmt.Println(newMin)
+
+	return true
+}
+
+func updateTemperatureRange(operation string, temperature, min, max int) (int, int) {
+	switch operation {
+	case ">=":
+		if temperature > min {
+			min = temperature
+		}
+	case "<=":
+		if temperature < max {
+			max = temperature
+		}
+	default:
+		fmt.Println("Incorrect input")
+	}
+
+	return min, max
 }
