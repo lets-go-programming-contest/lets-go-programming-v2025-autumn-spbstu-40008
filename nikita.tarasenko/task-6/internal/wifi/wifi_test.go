@@ -20,10 +20,12 @@ var (
 	errType = errors.New("ошибка приведения типа")
 )
 
+// MockWiFiHandle имитирует WiFiHandle
 type MockWiFiHandle struct {
 	mock.Mock
 }
 
+// Interfaces реализует интерфейс WiFiHandle
 func (m *MockWiFiHandle) Interfaces() ([]*wifi.Interface, error) {
 	args := m.Called()
 
@@ -32,6 +34,7 @@ func (m *MockWiFiHandle) Interfaces() ([]*wifi.Interface, error) {
 		if e != nil {
 			return nil, fmt.Errorf("ошибка мока: %w", e)
 		}
+
 		return nil, nil
 	}
 
@@ -41,6 +44,7 @@ func (m *MockWiFiHandle) Interfaces() ([]*wifi.Interface, error) {
 		if e != nil {
 			return nil, fmt.Errorf("ошибка приведения типа: %w", e)
 		}
+
 		return nil, errType
 	}
 
@@ -108,7 +112,6 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -132,6 +135,7 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 				require.NoError(t, err)
 
 				validCount := 0
+
 				for _, m := range tc.macs {
 					if _, e := net.ParseMAC(m); e == nil {
 						validCount++
@@ -142,6 +146,7 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 					assert.Empty(t, addrs)
 				} else {
 					assert.Len(t, addrs, validCount)
+
 					for _, a := range addrs {
 						assert.NotNil(t, a)
 					}
@@ -183,7 +188,6 @@ func TestWiFiService_GetNames(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -229,7 +233,7 @@ func BenchmarkGetAddresses(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, _ = s.GetAddresses()
 	}
 }
@@ -254,7 +258,7 @@ func BenchmarkGetNames(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, _ = s.GetNames()
 	}
 }
