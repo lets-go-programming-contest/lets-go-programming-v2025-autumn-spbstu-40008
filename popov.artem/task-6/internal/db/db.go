@@ -5,62 +5,66 @@ import (
 	"fmt"
 )
 
-type Database interface {
+type DBQueryer interface {
 	Query(query string, args ...any) (*sql.Rows, error)
 }
 
-type DBService struct {
-	DB Database
+type DataService struct {
+	DB DBQueryer
 }
 
-func New(db Database) DBService {
-	return DBService{DB: db}
+func NewService(db DBQueryer) DataService {
+	return DataService{DB: db}
 }
 
-func (s DBService) GetNames() ([]string, error) {
-	const sqlStmt = "SELECT name FROM users"
-	rows, err := s.DB.Query(sqlStmt)
+func (svc DataService) FetchAllNames() ([]string, error) {
+	const query = "SELECT name FROM users"
+
+	rows, err := svc.DB.Query(query)
 	if err != nil {
-		return nil, fmt.Errorf("query execution failed: %w", err)
+		return nil, fmt.Errorf("db query failed: %w", err)
 	}
 	defer rows.Close()
 
-	var output []string
+	var names []string
+
 	for rows.Next() {
-		var record string
-		if err := rows.Scan(&record); err != nil {
-			return nil, fmt.Errorf("failed to read row data: %w", err)
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, fmt.Errorf("scan row error: %w", err)
 		}
-		output = append(output, record)
+		names = append(names, name)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("error occurred during iteration: %w", err)
+		return nil, fmt.Errorf("rows iteration error: %w", err)
 	}
 
-	return output, nil
+	return names, nil
 }
 
-func (s DBService) GetUniqueNames() ([]string, error) {
-	const sqlStmt = "SELECT DISTINCT name FROM users"
-	rows, err := s.DB.Query(sqlStmt)
+func (svc DataService) FetchDistinctNames() ([]string, error) {
+	const query = "SELECT DISTINCT name FROM users"
+
+	rows, err := svc.DB.Query(query)
 	if err != nil {
-		return nil, fmt.Errorf("distinct query failed: %w", err)
+		return nil, fmt.Errorf("db query failed: %w", err)
 	}
 	defer rows.Close()
 
-	var distinct []string
+	var uniqueNames []string
+
 	for rows.Next() {
-		var item string
-		if err := rows.Scan(&item); err != nil {
-			return nil, fmt.Errorf("distinct row scan error: %w", err)
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, fmt.Errorf("scan row error: %w", err)
 		}
-		distinct = append(distinct, item)
+		uniqueNames = append(uniqueNames, name)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("distinct iteration error: %w", err)
+		return nil, fmt.Errorf("rows iteration error: %w", err)
 	}
 
-	return distinct, nil
+	return uniqueNames, nil
 }
