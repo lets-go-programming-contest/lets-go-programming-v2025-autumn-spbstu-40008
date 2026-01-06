@@ -48,6 +48,10 @@ func main() {
 		return
 	}
 
+	if amountOfDishes < 1 {
+		fmt.Fprintf(os.Stderr, "the number of dishes must be more than 0\n")
+	}
+
 	for range amountOfDishes {
 		_, err = fmt.Scan(&tempRating)
 		if err != nil {
