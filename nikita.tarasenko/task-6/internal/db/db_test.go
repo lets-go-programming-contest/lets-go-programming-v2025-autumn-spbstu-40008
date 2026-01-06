@@ -15,9 +15,9 @@ func TestUserService_ListAllNames(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name   string
-		mock   func(sqlmock.Sqlmock)
-		assert func(*testing.T, []string, error)
+		name  string
+		mock  func(sqlmock.Sqlmock)
+		check func(*testing.T, []string, error)
 	}{
 		{
 			name: "returns correct list",
@@ -25,7 +25,7 @@ func TestUserService_ListAllNames(t *testing.T) {
 				m.ExpectQuery(`^SELECT name FROM users$`).
 					WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("Alice").AddRow("Bob"))
 			},
-			assert: func(t *testing.T, result []string, err error) {
+			check: func(t *testing.T, result []string, err error) {
 				require.NoError(t, err)
 				require.ElementsMatch(t, []string{"Alice", "Bob"}, result)
 			},
@@ -36,8 +36,9 @@ func TestUserService_ListAllNames(t *testing.T) {
 				m.ExpectQuery(`^SELECT name FROM users$`).
 					WillReturnError(errors.New("io timeout"))
 			},
-			assert: func(t *testing.T, _ []string, err error) {
-				require.ErrorIs(t, err, db.ErrQueryFailed)
+			check: func(t *testing.T, _ []string, err error) {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "database query failed")
 			},
 		},
 		{
@@ -46,7 +47,7 @@ func TestUserService_ListAllNames(t *testing.T) {
 				m.ExpectQuery(`^SELECT name FROM users$`).
 					WillReturnRows(sqlmock.NewRows([]string{"name"}))
 			},
-			assert: func(t *testing.T, result []string, err error) {
+			check: func(t *testing.T, result []string, err error) {
 				require.NoError(t, err)
 				require.Empty(t, result)
 			},
@@ -65,7 +66,7 @@ func TestUserService_ListAllNames(t *testing.T) {
 
 			service := db.NewUserService(dbMock)
 			names, err := service.ListAllNames(context.Background())
-			tc.assert(t, names, err)
+			tc.check(t, names, err)
 
 			require.NoError(t, mock.ExpectationsWereMet())
 		})
@@ -103,6 +104,7 @@ func TestUserService_ListUniqueNamesAsSet_Error(t *testing.T) {
 
 	service := db.NewUserService(dbMock)
 	_, err = service.ListUniqueNamesAsSet(context.Background())
-	require.ErrorIs(t, err, db.ErrQueryFailed)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "database query for unique names failed")
 	require.NoError(t, mock.ExpectationsWereMet())
 }

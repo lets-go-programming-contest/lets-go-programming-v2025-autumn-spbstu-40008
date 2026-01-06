@@ -7,19 +7,13 @@ import (
 	"fmt"
 )
 
-var (
-	ErrQueryFailed   = errors.New("failed to query database")
-	ErrScanFailed    = errors.New("failed to scan row")
-	ErrIterationFail = errors.New("error during row iteration")
-)
-
 type DBQuerier interface {
 	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
 }
 
 func scanString(scanner interface{ Scan(...any) error }, target *string) error {
 	if err := scanner.Scan(target); err != nil {
-		return fmt.Errorf("%w: %v", ErrScanFailed, err)
+		return fmt.Errorf("failed to scan name column: %w", err)
 	}
 	return nil
 }
@@ -32,7 +26,7 @@ type nameCollector struct {
 func (c *nameCollector) Collect(ctx context.Context) ([]string, error) {
 	rows, err := c.querier.QueryContext(ctx, c.query)
 	if err != nil {
-		return nil, errors.Join(ErrQueryFailed, err)
+		return nil, fmt.Errorf("database query failed: %w", err)
 	}
 	defer rows.Close()
 
@@ -46,7 +40,7 @@ func (c *nameCollector) Collect(ctx context.Context) ([]string, error) {
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, errors.Join(ErrIterationFail, err)
+		return nil, errors.Join(fmt.Errorf("row iteration failed"), err)
 	}
 
 	return result, nil
@@ -76,7 +70,7 @@ func (s *UserService) ListAllNames(ctx context.Context) ([]string, error) {
 func (s *UserService) ListUniqueNamesAsSet(ctx context.Context) (map[string]struct{}, error) {
 	rows, err := s.nameLister.(*nameCollector).querier.QueryContext(ctx, "SELECT DISTINCT name FROM users")
 	if err != nil {
-		return nil, errors.Join(ErrQueryFailed, err)
+		return nil, fmt.Errorf("database query for unique names failed: %w", err)
 	}
 	defer rows.Close()
 
@@ -90,12 +84,8 @@ func (s *UserService) ListUniqueNamesAsSet(ctx context.Context) (map[string]stru
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, errors.Join(ErrIterationFail, err)
+		return nil, errors.Join(fmt.Errorf("row iteration failed during unique name fetch"), err)
 	}
 
 	return result, nil
-}
-func _() {
-	_ = ErrQueryFailed
-	_ = NewUserService
 }
