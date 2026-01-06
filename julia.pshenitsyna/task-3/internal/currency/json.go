@@ -13,7 +13,6 @@ const (
 )
 
 func WriteJSON(list []Currency, outPath string) error {
-	
 	if err := os.MkdirAll(filepath.Dir(outPath), dirPerm); err != nil {
 		return fmt.Errorf("create dir: %w", err)
 	}
@@ -28,5 +27,6 @@ func WriteJSON(list []Currency, outPath string) error {
 	if err := os.WriteFile(outPath, data, filePerm); err != nil {
 		return fmt.Errorf("write file: %w", err)
 	}
+
 	return nil
 }

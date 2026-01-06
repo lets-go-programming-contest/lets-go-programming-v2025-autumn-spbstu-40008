@@ -31,5 +31,6 @@ func Load(path string) (Config, error) {
 	if cfg.InputFile == "" || cfg.OutputFile == "" {
 		return cfg, ErrInvalidConfig
 	}
+	
 	return cfg, nil
 }
