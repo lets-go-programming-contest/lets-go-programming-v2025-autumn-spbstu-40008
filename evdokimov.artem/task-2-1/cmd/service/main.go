@@ -9,7 +9,9 @@ const (
 )
 
 func main() {
-	var departments, employees, temperature int
+	var departments int
+	var employees int
+	var temperature int
 	var operation string
 
 	if _, err := fmt.Scan(&departments); err != nil {
@@ -38,6 +40,7 @@ func main() {
 
 			if !validRange {
 				fmt.Println(ErrorVal)
+
 				continue
 			}
 
@@ -58,12 +61,9 @@ func main() {
 
 			if currentMin > currentMax {
 				validRange = false
-			}
-
-			if validRange {
-				fmt.Println(currentMin)
-			} else {
 				fmt.Println(ErrorVal)
+			} else {
+				fmt.Println(currentMin)
 			}
 		}
 	}
