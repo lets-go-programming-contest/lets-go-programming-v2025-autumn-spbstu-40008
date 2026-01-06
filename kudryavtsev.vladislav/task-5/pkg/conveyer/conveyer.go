@@ -9,32 +9,24 @@ import (
 var ErrChanNotFound = errors.New("chan not found")
 
 type Conveyer struct {
-	mutex sync.Mutex
-
+	mutex    sync.Mutex
 	channels map[string]chan string
-
-	tasks []func(context.Context) error
-
-	size int
+	tasks    []func(context.Context) error
+	size     int
 }
 
 func New(size int) *Conveyer {
 	return &Conveyer{
-		mutex: sync.Mutex{},
-
+		mutex:    sync.Mutex{},
 		channels: make(map[string]chan string),
-
-		tasks: make([]func(context.Context) error, 0),
-
-		size: size,
+		tasks:    make([]func(context.Context) error, 0),
+		size:     size,
 	}
 }
 
 func (c *Conveyer) RegisterDecorator(
 	decorator func(context.Context, chan string, chan string) error,
-
 	input string,
-
 	output string,
 ) error {
 	c.mutex.Lock()
@@ -64,9 +56,7 @@ func (c *Conveyer) RegisterDecorator(
 
 func (c *Conveyer) RegisterMultiplexer(
 	multiplexer func(context.Context, []chan string, chan string) error,
-
 	inputs []string,
-
 	output string,
 ) error {
 	inChs := make([]chan string, 0, len(inputs))
@@ -74,13 +64,11 @@ func (c *Conveyer) RegisterMultiplexer(
 	c.mutex.Lock()
 
 	for _, name := range inputs {
-
 		if _, exists := c.channels[name]; !exists {
 			c.channels[name] = make(chan string, c.size)
 		}
 
 		inChs = append(inChs, c.channels[name])
-
 	}
 
 	if _, exists := c.channels[output]; !exists {
@@ -102,9 +90,7 @@ func (c *Conveyer) RegisterMultiplexer(
 
 func (c *Conveyer) RegisterSeparator(
 	separator func(context.Context, chan string, []chan string) error,
-
 	input string,
-
 	outputs []string,
 ) error {
 	c.mutex.Lock()
@@ -118,13 +104,11 @@ func (c *Conveyer) RegisterSeparator(
 	outChs := make([]chan string, 0, len(outputs))
 
 	for _, name := range outputs {
-
 		if _, exists := c.channels[name]; !exists {
 			c.channels[name] = make(chan string, c.size)
 		}
 
 		outChs = append(outChs, c.channels[name])
-
 	}
 
 	c.mutex.Unlock()
@@ -148,7 +132,6 @@ func (c *Conveyer) Run(ctx context.Context) error {
 	defer cancel()
 
 	for _, task := range c.tasks {
-
 		waitGroup.Add(1)
 
 		go func(work func(context.Context) error) {
@@ -159,7 +142,6 @@ func (c *Conveyer) Run(ctx context.Context) error {
 				errChan <- err
 			}
 		}(task)
-
 	}
 
 	done := make(chan struct{})
@@ -173,9 +155,7 @@ func (c *Conveyer) Run(ctx context.Context) error {
 	var err error
 
 	select {
-
 	case err = <-errChan:
-
 		cancel()
 
 	case <-ctx.Done():
