@@ -95,3 +95,7 @@ func (s *UserService) ListUniqueNamesAsSet(ctx context.Context) (map[string]stru
 
 	return result, nil
 }
+func _() {
+	_ = ErrQueryFailed
+	_ = NewUserService
+}
