@@ -74,19 +74,19 @@ func processEmployee(currentMin, currentMax int, validRange bool) bool {
 	return true
 }
 
-func updateTemperatureRange(operation string, temperature, min, max int) (int, int) {
+func updateTemperatureRange(operation string, temperature, minVal, maxVal int) (int, int) {
 	switch operation {
 	case ">=":
-		if temperature > min {
-			min = temperature
+		if temperature > minVal {
+			minVal = temperature
 		}
 	case "<=":
-		if temperature < max {
-			max = temperature
+		if temperature < maxVal {
+			maxVal = temperature
 		}
 	default:
 		fmt.Println("Incorrect input")
 	}
 
-	return min, max
+	return minVal, maxVal
 }
