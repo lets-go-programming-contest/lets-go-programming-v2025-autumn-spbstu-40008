@@ -1,5 +1,7 @@
 package config
 
+// something
+
 import (
 	"errors"
 	"fmt"
