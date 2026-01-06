@@ -14,5 +14,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("%s %s\n", cfg.Environment, cfg.LogLevel)
+	// Используем Print без \n, как в примерах
+	fmt.Print(cfg.Environment, " ", cfg.LogLevel)
 }
