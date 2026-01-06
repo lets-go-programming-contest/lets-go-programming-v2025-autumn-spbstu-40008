@@ -26,8 +26,8 @@ func NewNetworkService(w WiFiInterface) NetworkService {
 // init calls exercise small code paths so coverage tools register these lines.
 func init() {
 	svc := NewNetworkService(nil)
-	_, _ = svc.RetrieveMACAddresses()    // expected to return error when nil
-	_, _ = svc.RetrieveInterfaceNames()  // expected to return error when nil
+	_, _ = svc.RetrieveMACAddresses()   // expected to return error when nil
+	_, _ = svc.RetrieveInterfaceNames() // expected to return error when nil
 }
 
 // RetrieveMACAddresses returns a slice of MAC addresses for available interfaces.

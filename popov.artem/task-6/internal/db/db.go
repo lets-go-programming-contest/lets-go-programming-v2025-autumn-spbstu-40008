@@ -11,7 +11,7 @@ type DBQueryer interface {
 }
 
 // DataService provides methods to work with data stored in the database.
-type DataService struct{
+type DataService struct {
 	DB DBQueryer
 }
 
