@@ -27,7 +27,6 @@ func (svc DataService) FetchAllNames() ([]string, error) {
 	defer rows.Close()
 
 	var names []string
-
 	for rows.Next() {
 		var name string
 		if err := rows.Scan(&name); err != nil {
@@ -53,7 +52,6 @@ func (svc DataService) FetchDistinctNames() ([]string, error) {
 	defer rows.Close()
 
 	var uniqueNames []string
-
 	for rows.Next() {
 		var name string
 		if err := rows.Scan(&name); err != nil {

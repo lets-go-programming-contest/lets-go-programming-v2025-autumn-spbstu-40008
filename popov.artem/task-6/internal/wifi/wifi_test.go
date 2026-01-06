@@ -1,4 +1,4 @@
-package wifi
+package wifi_test
 
 import (
 	"errors"
@@ -8,6 +8,8 @@ import (
 	"github.com/mdlayher/wifi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	wifipkg "popov.artem/task-6/internal/wifi"
 )
 
 var (
@@ -21,13 +23,13 @@ func TestNetworkService_RetrieveMACAddresses(t *testing.T) {
 	t.Run("successful_retrieval", func(t *testing.T) {
 		t.Parallel()
 
-		m := new(MockWiFiHandle)
+		m := new(wifipkg.MockWiFiHandle)
 		hw, _ := net.ParseMAC("00:11:22:33:44:55")
 		ifaces := []*wifi.Interface{{HardwareAddr: hw}}
 
 		m.On("Interfaces").Return(ifaces, nil)
 
-		svc := NewNetworkService(m)
+		svc := wifipkg.NewNetworkService(m)
 		res, err := svc.RetrieveMACAddresses()
 
 		require.NoError(t, err)
@@ -38,10 +40,10 @@ func TestNetworkService_RetrieveMACAddresses(t *testing.T) {
 	t.Run("interface_error", func(t *testing.T) {
 		t.Parallel()
 
-		m := new(MockWiFiHandle)
+		m := new(wifipkg.MockWiFiHandle)
 		m.On("Interfaces").Return(nil, errMACRead)
 
-		svc := NewNetworkService(m)
+		svc := wifipkg.NewNetworkService(m)
 		res, err := svc.RetrieveMACAddresses()
 
 		require.Error(t, err)
@@ -56,12 +58,12 @@ func TestNetworkService_RetrieveInterfaceNames(t *testing.T) {
 	t.Run("successful_names", func(t *testing.T) {
 		t.Parallel()
 
-		m := new(MockWiFiHandle)
+		m := new(wifipkg.MockWiFiHandle)
 		ifaces := []*wifi.Interface{{Name: "wlan0"}, {Name: "wlan1"}}
 
 		m.On("Interfaces").Return(ifaces, nil)
 
-		svc := NewNetworkService(m)
+		svc := wifipkg.NewNetworkService(m)
 		res, err := svc.RetrieveInterfaceNames()
 
 		require.NoError(t, err)
@@ -72,10 +74,10 @@ func TestNetworkService_RetrieveInterfaceNames(t *testing.T) {
 	t.Run("interface_list_error", func(t *testing.T) {
 		t.Parallel()
 
-		m := new(MockWiFiHandle)
+		m := new(wifipkg.MockWiFiHandle)
 		m.On("Interfaces").Return(nil, errIFRead)
 
-		svc := NewNetworkService(m)
+		svc := wifipkg.NewNetworkService(m)
 		res, err := svc.RetrieveInterfaceNames()
 
 		require.Error(t, err)
