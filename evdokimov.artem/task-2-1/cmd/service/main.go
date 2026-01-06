@@ -2,91 +2,56 @@ package main
 
 import "fmt"
 
-const (
-	MinTemp  = 15
-	MaxTemp  = 30
-	ErrorVal = -1
-)
-
 func main() {
-	var departments int
+	var numberOfDepartments, numberOfPeople uint
 
-	if _, err := fmt.Scan(&departments); err != nil {
-		fmt.Println("Incorrect input")
-
-		return
-	}
-
-	for range departments {
-		processDepartment()
-	}
-}
-
-func processDepartment() {
-	var employees int
-
-	if _, err := fmt.Scan(&employees); err != nil {
-		fmt.Println("Incorrect input")
+	_, err := fmt.Scan(&numberOfDepartments)
+	if err != nil {
+		fmt.Println("Error with number of departments, code error: ", err)
 
 		return
 	}
 
-	currentMin := MinTemp
-	currentMax := MaxTemp
-	validRange := true
+	var (
+		minTemp, maxTemp uint8
+		temp             uint8
+		operator         string
+	)
 
-	for range employees {
-		validRange = processEmployee(currentMin, currentMax, validRange)
+	for range numberOfDepartments {
+		_, err = fmt.Scan(&numberOfPeople)
+		if err != nil {
+			fmt.Println("Error with number of people in department, code error: ", err)
 
-		if !validRange {
-			currentMin = MinTemp
-			currentMax = MaxTemp
+			return
+		}
+
+		minTemp, maxTemp = 15, 30
+
+		for range numberOfPeople {
+			_, err = fmt.Scan(&operator, &temp)
+			if err != nil {
+				fmt.Println("Error with number of people in department, code error: ", err)
+
+				return
+			}
+
+			switch operator {
+			case ">=":
+				minTemp = max(minTemp, temp)
+			case "<=":
+				maxTemp = min(maxTemp, temp)
+			default:
+				fmt.Println("Error with operator")
+
+				return
+			}
+
+			if maxTemp < minTemp {
+				fmt.Println(-1)
+			} else {
+				fmt.Println(minTemp)
+			}
 		}
 	}
-}
-
-func processEmployee(currentMin, currentMax int, validRange bool) bool {
-	var operation string
-	var temperature int
-
-	if _, err := fmt.Scan(&operation, &temperature); err != nil {
-		fmt.Println("Incorrect input")
-
-		return false
-	}
-
-	if !validRange {
-		fmt.Println(ErrorVal)
-
-		return false
-	}
-
-	newMin, newMax := updateTemperatureRange(operation, temperature, currentMin, currentMax)
-
-	if newMin > newMax {
-		fmt.Println(ErrorVal)
-
-		return false
-	}
-
-	fmt.Println(newMin)
-
-	return true
-}
-
-func updateTemperatureRange(operation string, temperature, minVal, maxVal int) (int, int) {
-	switch operation {
-	case ">=":
-		if temperature > minVal {
-			minVal = temperature
-		}
-	case "<=":
-		if temperature < maxVal {
-			maxVal = temperature
-		}
-	default:
-		fmt.Println("Incorrect input")
-	}
-
-	return minVal, maxVal
 }
