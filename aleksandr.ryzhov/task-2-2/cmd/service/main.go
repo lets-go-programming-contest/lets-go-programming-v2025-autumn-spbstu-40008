@@ -17,8 +17,10 @@ func (h *intHeap) Push(x any) {
 
 		return
 	}
+
 	*h = append(*h, num)
 }
+
 func (h *intHeap) Pop() any {
 	old := *h
 	n := len(old)
@@ -50,6 +52,7 @@ func main() {
 
 			return
 		}
+
 		heap.Push(&dishes, tmp)
 	}
 
@@ -66,7 +69,9 @@ func main() {
 		if dishes.Len() == prefDishNum {
 			break
 		}
+
 		heap.Pop(&dishes)
 	}
+
 	fmt.Println(heap.Pop(&dishes))
 }
