@@ -1,4 +1,4 @@
-module task-8
+module elisey.pylenkov/task-8
 
 go 1.22.7
 

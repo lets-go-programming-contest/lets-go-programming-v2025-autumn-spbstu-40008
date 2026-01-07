@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"task-8/internal/config"
+	"elisey.pylenkov/task-8/internal/config"
 )
 
 func main() {
