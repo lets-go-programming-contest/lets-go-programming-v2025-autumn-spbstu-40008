@@ -1,11 +1,10 @@
 package main
 
-//something
+// something
 
 import (
 	"fmt"
 	"os"
-
 	"task-8/internal/config"
 )
 
