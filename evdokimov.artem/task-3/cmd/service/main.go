@@ -53,6 +53,7 @@ func main() {
 	if _, err := outputFile.Write(jsonData); err != nil {
 		_ = outputFile.Close()
 		log.Fatalf("Failed to write to file: %v", err)
+
 	}
 
 	if err := outputFile.Close(); err != nil {
