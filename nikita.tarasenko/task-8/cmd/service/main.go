@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"nikita.tarasenko/task-8/internal/config"
+	"github.com/NikTarYT/task-8/internal/config"
 )
 
 func main() {
