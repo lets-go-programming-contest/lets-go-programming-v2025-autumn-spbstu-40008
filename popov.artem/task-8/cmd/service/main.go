@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+
 	"popov.artem/task-8/internal/config"
 )
 
@@ -11,5 +12,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to load config: %v", err)
 	}
+
 	fmt.Printf("%s %s", cfg.Environment, cfg.LogLevel)
 }
