@@ -85,8 +85,7 @@ func readConfig(path string) (*Config, error) {
 	}
 
 	var config Config
-	err = yaml.Unmarshal(data, &config)
-	if err != nil {
+	if err := yaml.Unmarshal(data, &config); err != nil {
 		return nil, fmt.Errorf("parse yaml: %w", err)
 	}
 
@@ -120,8 +119,7 @@ func parseXML(path string) ([]Currency, error) {
 	xmlContent = strings.Replace(xmlContent, `encoding="windows-1251"`, `encoding="UTF-8"`, 1)
 
 	var valCurs ValCurs
-	err = xml.Unmarshal([]byte(xmlContent), &valCurs)
-	if err != nil {
+	if err := xml.Unmarshal([]byte(xmlContent), &valCurs); err != nil {
 		return nil, fmt.Errorf("xml unmarshal: %w", err)
 	}
 
