@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"popov.artem/task-6/internal/db"
+	"github.com/temaPop1e/lets-go-programming-v2025-autumn-spbstu-40008/popov.artem/task-6/internal/db"
 )
 
 var (

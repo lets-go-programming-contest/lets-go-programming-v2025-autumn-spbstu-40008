@@ -1,4 +1,4 @@
-module popov.artem/task-6
+module github.com/temaPop1e/lets-go-programming-v2025-autumn-spbstu-40008/popov.artem/task-6
 
 go 1.22.7
 

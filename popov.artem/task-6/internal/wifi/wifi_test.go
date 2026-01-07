@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	wifiPkg "github.com/temaPop1e/lets-go-programming-v2025-autumn-spbstu-40008/popov.artem/task-6/internal/wifi"
 )
 
 var (
@@ -106,7 +107,7 @@ func TestNetworkService_GetAddresses(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			service := New(tc.provider)
+			service := wifiPkg.New(tc.provider)
 			result, err := service.GetAddresses()
 
 			if tc.expectError {
@@ -208,7 +209,7 @@ func TestNetworkService_GetNames(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			service := New(tc.provider)
+			service := wifiPkg.New(tc.provider)
 			result, err := service.GetNames()
 
 			if tc.expectError {
@@ -227,6 +228,6 @@ func TestNetworkService_New(t *testing.T) {
 	t.Parallel()
 
 	provider := &MockProvider{}
-	service := New(provider)
+	service := wifiPkg.New(provider)
 	assert.NotNil(t, service)
 }
