@@ -41,6 +41,7 @@ func main() {
 		return
 	}
 
+	// Создаем контейнер для хранения приоритетов
 	dishes := intHeap{}
 	heap.Init(&dishes)
 
