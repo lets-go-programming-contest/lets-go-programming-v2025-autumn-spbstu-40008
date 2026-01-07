@@ -8,8 +8,8 @@ import (
 )
 
 var (
-	ErrInvalidConfig = errors.New("invalid config: environment/log_level must be set")
-	ErrUnmarshalYAML = errors.New("failed to unmarshal config YAML")
+	ErrUnmarshal = errors.New("failed to unmarshal config YAML")
+	ErrInvalid   = errors.New("invalid config: environment/log_level must be set")
 )
 
 type Config struct {
@@ -19,13 +19,12 @@ type Config struct {
 
 func Load() (Config, error) {
 	var cfg Config
-
 	if err := yaml.Unmarshal(rawYAML, &cfg); err != nil {
-		return Config{}, fmt.Errorf("%w: %w", ErrUnmarshalYAML, err)
+		return Config{}, fmt.Errorf("%w: %w", ErrUnmarshal, err)
 	}
 
 	if cfg.Environment == "" || cfg.LogLevel == "" {
-		return Config{}, ErrInvalidConfig
+		return Config{}, ErrInvalid
 	}
 
 	return cfg, nil
