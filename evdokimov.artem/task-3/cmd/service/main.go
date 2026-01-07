@@ -50,10 +50,13 @@ func main() {
 		log.Fatalf("Failed to create output file: %v", err)
 	}
 
-	if _, err := outputFile.Write(jsonData); err != nil {
-		_ = outputFile.Close()
-		log.Fatalf("Failed to write to file: %v", err)
+	if _, writeErr := outputFile.Write(jsonData); writeErr != nil {
+		closeErr := outputFile.Close()
+		if closeErr != nil {
+			log.Printf("Warning: failed to close file: %v", closeErr)
+		}
 
+		log.Fatalf("Failed to write to file: %v", writeErr)
 	}
 
 	if err := outputFile.Close(); err != nil {
