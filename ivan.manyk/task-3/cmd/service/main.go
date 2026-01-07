@@ -110,6 +110,7 @@ func parseXML(path string) ([]Currency, error) {
 	}
 
 	decoder := charmap.Windows1251.NewDecoder()
+
 	utf8Data, err := decoder.Bytes(data)
 	if err != nil {
 		return nil, fmt.Errorf("decode windows-1251: %w", err)
