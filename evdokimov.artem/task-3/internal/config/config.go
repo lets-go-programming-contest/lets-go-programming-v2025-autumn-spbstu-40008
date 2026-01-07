@@ -27,4 +27,3 @@ func ReadFile(configPath string) (File, error) {
 
 	return cfg, nil
 }
-

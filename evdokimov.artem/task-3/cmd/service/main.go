@@ -55,4 +55,3 @@ func main() {
 		log.Fatalf("Failed to write to file: %v", err)
 	}
 }
-

@@ -38,4 +38,3 @@ type Valute struct {
 	CharCode string      `json:"char_code" xml:"CharCode"`
 	Value    CustomFloat `json:"value"     xml:"Value"`
 }
-
