@@ -3,7 +3,6 @@ package main
 import "fmt"
 
 func main() {
-
 	var depCount, emplCount, minTemp, maxTemp, reqTemp int
 
 	var reqTempInfo string
