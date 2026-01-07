@@ -2,6 +2,7 @@ package decoder
 
 import (
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -12,28 +13,28 @@ import (
 	"golang.org/x/text/encoding/charmap"
 )
 
-var (
-	ErrUnsupportedCharset = fmt.Errorf("unsupported charset")
-)
+var ErrUnsupportedCharset = errors.New("unsupported charset")
 
 func DecodeXML(cfg config.File) (structures.ValCurs, error) {
 	file, err := os.Open(cfg.Input)
 	if err != nil {
 		return structures.ValCurs{}, fmt.Errorf("open %s: %w", cfg.Input, err)
 	}
-	defer func() {
-		if closeErr := file.Close(); closeErr != nil {
-			fmt.Printf("warning: failed to close file: %v\n", closeErr)
-		}
-	}()
 
 	var result structures.ValCurs
 
 	decoder := xml.NewDecoder(file)
 	decoder.CharsetReader = charsetReader
 
-	if err := decoder.Decode(&result); err != nil {
-		return structures.ValCurs{}, fmt.Errorf("decode XML: %w", err)
+	decodeErr := decoder.Decode(&result)
+
+	closeErr := file.Close()
+	if closeErr != nil {
+		fmt.Printf("warning: failed to close file: %v\n", closeErr)
+	}
+
+	if decodeErr != nil {
+		return structures.ValCurs{}, fmt.Errorf("decode XML: %w", decodeErr)
 	}
 
 	return result, nil

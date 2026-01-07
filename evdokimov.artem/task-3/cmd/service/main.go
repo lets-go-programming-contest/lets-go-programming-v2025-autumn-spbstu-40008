@@ -50,7 +50,6 @@ func main() {
 		log.Fatalf("Failed to create output file: %v", err)
 	}
 
-	// Не используем defer с log.Fatal, а явно закрываем файл
 	if _, err := outputFile.Write(jsonData); err != nil {
 		_ = outputFile.Close()
 		log.Fatalf("Failed to write to file: %v", err)
