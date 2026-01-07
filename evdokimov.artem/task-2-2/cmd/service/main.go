@@ -76,6 +76,7 @@ func main() {
 	result, ok := heap.Pop(ratings).(int)
 	if !ok {
 		fmt.Println(-1)
+
 		return
 	}
 
