@@ -1,10 +1,8 @@
 package main
 
-// something
-
 import (
 	"fmt"
-	"os"
+	"log"
 
 	"task-8/internal/config"
 )
@@ -12,9 +10,8 @@ import (
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to load configuration: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("failed to load config: %v", err)
 	}
 
-	fmt.Print(cfg.Environment, " ", cfg.LogLevel)
+	fmt.Printf("%s %s", cfg.Environment, cfg.LogLevel)
 }
