@@ -2,79 +2,92 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 )
 
-// DBQueryer is the minimal interface used by the service to query rows.
-type DBQueryer interface {
+var (
+	ErrQueryExecution = errors.New("database query failed")
+	ErrRowProcessing  = errors.New("row processing error")
+	ErrNoRecords      = errors.New("no records found")
+)
+
+type DBExecutor interface {
 	Query(query string, args ...any) (*sql.Rows, error)
 }
 
-// DataService provides methods to work with data stored in the database.
-type DataService struct {
-	DB DBQueryer
+type DataHandler struct {
+	DB DBExecutor
 }
 
-// NewService creates a new DataService.
-func NewService(db DBQueryer) DataService {
-	return DataService{DB: db}
+func New(db DBExecutor) DataHandler {
+	return DataHandler{DB: db}
 }
 
-// init exercises small, safe code paths so that coverage includes the
-// constructor even when tests instantiate DataService directly.
-func init() {
-	// call with nil DB; NewService does not dereference the DB and is safe
-	_ = NewService(nil)
-}
+func (h DataHandler) GetNames() ([]string, error) {
+	query := "SELECT name FROM users"
 
-// FetchAllNames returns all names from users table.
-func (svc DataService) FetchAllNames() ([]string, error) {
-	const query = "SELECT name FROM users"
-
-	rows, err := svc.DB.Query(query)
+	rows, err := h.DB.Query(query)
 	if err != nil {
-		return nil, fmt.Errorf("db query failed: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrQueryExecution, err)
 	}
 	defer rows.Close()
 
 	var names []string
+
 	for rows.Next() {
 		var name string
 		if err := rows.Scan(&name); err != nil {
-			return nil, fmt.Errorf("scan row error: %w", err)
+			return nil, fmt.Errorf("%w: %w", ErrRowProcessing, err)
 		}
+
 		names = append(names, name)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("rows iteration error: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrRowProcessing, err)
+	}
+
+	if len(names) == 0 {
+		return nil, fmt.Errorf("%w", ErrNoRecords)
 	}
 
 	return names, nil
 }
 
-// FetchDistinctNames returns distinct names from users table.
-func (svc DataService) FetchDistinctNames() ([]string, error) {
-	const query = "SELECT DISTINCT name FROM users"
+func (h DataHandler) GetUniqueNames() ([]string, error) {
+	query := "SELECT DISTINCT name FROM users"
 
-	rows, err := svc.DB.Query(query)
+	rows, err := h.DB.Query(query)
 	if err != nil {
-		return nil, fmt.Errorf("db query failed: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrQueryExecution, err)
 	}
 	defer rows.Close()
 
-	var uniqueNames []string
+	unique := make(map[string]struct{})
+
+	var result []string
+
 	for rows.Next() {
 		var name string
 		if err := rows.Scan(&name); err != nil {
-			return nil, fmt.Errorf("scan row error: %w", err)
+			return nil, fmt.Errorf("%w: %w", ErrRowProcessing, err)
 		}
-		uniqueNames = append(uniqueNames, name)
+
+		if _, exists := unique[name]; !exists {
+			unique[name] = struct{}{}
+
+			result = append(result, name)
+		}
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("rows iteration error: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrRowProcessing, err)
 	}
 
-	return uniqueNames, nil
+	if len(result) == 0 {
+		return nil, fmt.Errorf("%w", ErrNoRecords)
+	}
+
+	return result, nil
 }

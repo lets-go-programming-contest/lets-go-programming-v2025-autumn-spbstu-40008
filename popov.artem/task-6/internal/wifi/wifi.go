@@ -1,68 +1,75 @@
-package wifi
+package wifi_test
 
 import (
+	"errors"
 	"fmt"
 	"net"
 
 	"github.com/mdlayher/wifi"
 )
 
-// WiFiInterface abstracts the wifi handle used in production so tests
-// may inject a mock implementation.
-type WiFiInterface interface {
+var (
+	ErrInterfaceFetch    = errors.New("failed to fetch interfaces")
+	ErrNoValidInterfaces = errors.New("no valid network interfaces found")
+)
+
+type InterfaceProvider interface {
 	Interfaces() ([]*wifi.Interface, error)
 }
 
-// NetworkService provides helper methods for querying WiFi information.
 type NetworkService struct {
-	WiFi WiFiInterface
+	provider InterfaceProvider
 }
 
-// NewNetworkService constructs a NetworkService.
-func NewNetworkService(w WiFiInterface) NetworkService {
-	return NetworkService{WiFi: w}
+func New(provider InterfaceProvider) NetworkService {
+	return NetworkService{provider: provider}
 }
 
-// init calls exercise small code paths so coverage tools register these lines.
-func init() {
-	svc := NewNetworkService(nil)
-	_, _ = svc.RetrieveMACAddresses()   // expected to return error when nil
-	_, _ = svc.RetrieveInterfaceNames() // expected to return error when nil
-}
-
-// RetrieveMACAddresses returns a slice of MAC addresses for available interfaces.
-func (svc NetworkService) RetrieveMACAddresses() ([]net.HardwareAddr, error) {
-	if svc.WiFi == nil {
-		return nil, fmt.Errorf("wifi handle is nil")
-	}
-
-	interfaces, err := svc.WiFi.Interfaces()
+func (s NetworkService) GetAddresses() ([]net.HardwareAddr, error) {
+	interfaces, err := s.provider.Interfaces()
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve interfaces: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrInterfaceFetch, err)
 	}
 
-	macs := make([]net.HardwareAddr, 0, len(interfaces))
+	if len(interfaces) == 0 {
+		return nil, fmt.Errorf("%w", ErrNoValidInterfaces)
+	}
+
+	addresses := make([]net.HardwareAddr, 0, len(interfaces))
+
 	for _, iface := range interfaces {
-		macs = append(macs, iface.HardwareAddr)
+		if len(iface.HardwareAddr) > 0 {
+			addresses = append(addresses, iface.HardwareAddr)
+		}
 	}
 
-	return macs, nil
+	if len(addresses) == 0 {
+		return nil, fmt.Errorf("%w", ErrNoValidInterfaces)
+	}
+
+	return addresses, nil
 }
 
-// RetrieveInterfaceNames returns interface names available on the host.
-func (svc NetworkService) RetrieveInterfaceNames() ([]string, error) {
-	if svc.WiFi == nil {
-		return nil, fmt.Errorf("wifi handle is nil")
+func (s NetworkService) GetNames() ([]string, error) {
+	interfaces, err := s.provider.Interfaces()
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrInterfaceFetch, err)
 	}
 
-	interfaces, err := svc.WiFi.Interfaces()
-	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve interfaces: %w", err)
+	if len(interfaces) == 0 {
+		return nil, fmt.Errorf("%w", ErrNoValidInterfaces)
 	}
 
 	names := make([]string, 0, len(interfaces))
+
 	for _, iface := range interfaces {
-		names = append(names, iface.Name)
+		if iface.Name != "" {
+			names = append(names, iface.Name)
+		}
+	}
+
+	if len(names) == 0 {
+		return nil, fmt.Errorf("%w", ErrNoValidInterfaces)
 	}
 
 	return names, nil
