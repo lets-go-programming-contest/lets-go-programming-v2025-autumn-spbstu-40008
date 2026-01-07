@@ -1,4 +1,4 @@
-module task-8
+module nikita.tarasenko/task-8
 
 go 1.22.7
 
