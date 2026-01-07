@@ -7,20 +7,25 @@ import (
 
 type RatingHeap []int
 
-func (h RatingHeap) Len() int {
-	return len(h)
+func (h *RatingHeap) Len() int {
+	return len(*h)
 }
 
-func (h RatingHeap) Less(i, j int) bool {
-	return h[i] > h[j]
+func (h *RatingHeap) Less(i, j int) bool {
+	return (*h)[i] > (*h)[j]
 }
 
-func (h RatingHeap) Swap(i, j int) {
-	h[i], h[j] = h[j], h[i]
+func (h *RatingHeap) Swap(i, j int) {
+	(*h)[i], (*h)[j] = (*h)[j], (*h)[i]
 }
 
 func (h *RatingHeap) Push(x any) {
-	*h = append(*h, x.(int))
+	value, ok := x.(int)
+	if !ok {
+		panic("invalid type for RatingHeap")
+	}
+
+	*h = append(*h, value)
 }
 
 func (h *RatingHeap) Pop() any {
@@ -33,7 +38,7 @@ func (h *RatingHeap) Pop() any {
 }
 
 func main() {
-	var dishCount, k int
+	var dishCount, position int
 
 	_, err := fmt.Scan(&dishCount)
 	if err != nil || dishCount < 1 {
@@ -57,17 +62,22 @@ func main() {
 		heap.Push(ratings, rating)
 	}
 
-	_, err = fmt.Scan(&k)
-	if err != nil || k < 1 || k > dishCount {
+	_, err = fmt.Scan(&position)
+	if err != nil || position < 1 || position > dishCount {
 		fmt.Println(-1)
 
 		return
 	}
 
-	for i := 1; i < k; i++ {
+	for i := 1; i < position; i++ {
 		heap.Pop(ratings)
 	}
 
-	result := heap.Pop(ratings).(int)
+	result, ok := heap.Pop(ratings).(int)
+	if !ok {
+		fmt.Println(-1)
+		return
+	}
+
 	fmt.Println(result)
 }
