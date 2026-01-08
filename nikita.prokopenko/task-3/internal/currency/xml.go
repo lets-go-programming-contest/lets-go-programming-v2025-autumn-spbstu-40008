@@ -58,16 +58,10 @@ func DecodeXML(r io.Reader) ([]Currency, error) {
 			return nil, fmt.Errorf("parse value: %w", err)
 		}
 
-		nStr := strings.ReplaceAll(strings.TrimSpace(val.Nominal), ",", ".")
-		nFloat, _ := strconv.ParseFloat(nStr, 64)
-		if nFloat <= 0 {
-			nFloat = 1
-		}
-
 		result = append(result, Currency{
 			NumCode:  numCode,
 			CharCode: strings.TrimSpace(val.CharCode),
-			Value:    vFloat / nFloat,
+			Value:    vFloat,
 		})
 	}
 
