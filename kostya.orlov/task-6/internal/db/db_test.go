@@ -5,121 +5,234 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/stretchr/testify/assert"
+	"github.com/kostya.orlov/task-6/internal/db"
 	"github.com/stretchr/testify/require"
-	"github.com/task-6/internal/db"
 )
 
-func TestDBService(t *testing.T) {
-	errMock := errors.New("mock error")
+const (
+	queryGetName   = "SELECT name FROM users"
+	queryGetUnique = "SELECT DISTINCT name FROM users"
+)
 
-	t.Run("GetNames", func(t *testing.T) {
-		t.Run("Success", func(t *testing.T) {
-			dbMock, mock, err := sqlmock.New()
-			require.NoError(t, err)
-			defer dbMock.Close()
+var ErrExpected = errors.New("error expected")
 
-			rows := sqlmock.NewRows([]string{"name"}).AddRow("Alice").AddRow("Bob")
-			mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
+func TestGetNameSuccess(t *testing.T) {
+	t.Parallel()
 
-			service := db.New(dbMock)
-			names, err := service.GetNames()
+	mockDB, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when marshaling expected json data", err)
+	}
+	defer mockDB.Close()
 
-			assert.NoError(t, err)
-			assert.Equal(t, []string{"Alice", "Bob"}, names)
-		})
+	dbService := db.New(mockDB)
 
-		t.Run("QueryError", func(t *testing.T) {
-			dbMock, mock, err := sqlmock.New()
-			require.NoError(t, err)
-			defer dbMock.Close()
+	testTable := [][]string{
+		{"Peter", "Ivan", "Casey"},
+		{"Jim89", "Sherlock76"},
+		{"", ""},
+	}
 
-			mock.ExpectQuery("SELECT name FROM users").WillReturnError(errMock)
+	for _, row := range testTable {
+		mock.ExpectQuery(queryGetName).WillReturnRows(mockDBRows(row))
 
-			service := db.New(dbMock)
-			_, err = service.GetNames()
-			assert.Error(t, err)
-		})
+		names, err := dbService.GetNames()
 
-		t.Run("ScanError", func(t *testing.T) {
-			dbMock, mock, err := sqlmock.New()
-			require.NoError(t, err)
-			defer dbMock.Close()
+		require.Equal(t, row, names)
+		require.NoError(t, err)
+	}
+}
 
-			rows := sqlmock.NewRows([]string{"name", "extra"}).AddRow("Alice", "something")
-			mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
+func TestGetNameDbQueryError(t *testing.T) {
+	t.Parallel()
 
-			service := db.New(dbMock)
-			_, err = service.GetNames()
-			assert.Error(t, err)
-		})
+	mockDB, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when marshaling expected json data", err)
+	}
+	defer mockDB.Close()
 
-		t.Run("RowsIterationError", func(t *testing.T) {
-			dbMock, mock, err := sqlmock.New()
-			require.NoError(t, err)
-			defer dbMock.Close()
+	dbService := db.New(mockDB)
 
-			rows := sqlmock.NewRows([]string{"name"}).AddRow("Alice").RowError(0, errMock)
-			mock.ExpectQuery("SELECT name FROM users").WillReturnRows(rows)
+	rows := mockDBRows(nil)
 
-			service := db.New(dbMock)
-			_, err = service.GetNames()
-			assert.Error(t, err)
-		})
-	})
+	mock.ExpectQuery(queryGetName).WillReturnRows(rows).WillReturnError(ErrExpected)
 
-	t.Run("GetUniqueNames", func(t *testing.T) {
-		t.Run("Success", func(t *testing.T) {
-			dbMock, mock, err := sqlmock.New()
-			require.NoError(t, err)
-			defer dbMock.Close()
+	names, err := dbService.GetNames()
 
-			rows := sqlmock.NewRows([]string{"name"}).AddRow("Alice")
-			mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
+	require.Nil(t, names)
+	require.ErrorIs(t, err, ErrExpected)
+	require.ErrorContains(t, err, "db query")
+}
 
-			service := db.New(dbMock)
-			names, err := service.GetUniqueNames()
+func TestGetNameScanError(t *testing.T) {
+	t.Parallel()
 
-			assert.NoError(t, err)
-			assert.Equal(t, []string{"Alice"}, names)
-		})
+	mockDB, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when marshaling expected json data", err)
+	}
+	defer mockDB.Close()
 
-		t.Run("QueryError", func(t *testing.T) {
-			dbMock, mock, err := sqlmock.New()
-			require.NoError(t, err)
-			defer dbMock.Close()
+	dbService := db.New(mockDB)
 
-			mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnError(errMock)
+	rows := sqlmock.NewRows([]string{"name"})
+	rows.AddRow(nil)
 
-			service := db.New(dbMock)
-			_, err = service.GetUniqueNames()
-			assert.Error(t, err)
-		})
+	mock.ExpectQuery(queryGetName).WillReturnRows(rows)
 
-		t.Run("ScanError", func(t *testing.T) {
-			dbMock, mock, err := sqlmock.New()
-			require.NoError(t, err)
-			defer dbMock.Close()
+	names, err := dbService.GetNames()
 
-			rows := sqlmock.NewRows([]string{"name", "extra"}).AddRow("Alice", "extra")
-			mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
+	require.Nil(t, names)
+	require.ErrorContains(t, err, "rows scanning")
+}
 
-			service := db.New(dbMock)
-			_, err = service.GetUniqueNames()
-			assert.Error(t, err)
-		})
+func TestGetNameRowsError(t *testing.T) {
+	t.Parallel()
 
-		t.Run("RowsIterationError", func(t *testing.T) {
-			dbMock, mock, err := sqlmock.New()
-			require.NoError(t, err)
-			defer dbMock.Close()
+	mockDB, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when marshaling expected json data", err)
+	}
+	defer mockDB.Close()
 
-			rows := sqlmock.NewRows([]string{"name"}).AddRow("Alice").RowError(0, errMock)
-			mock.ExpectQuery("SELECT DISTINCT name FROM users").WillReturnRows(rows)
+	dbService := db.New(mockDB)
 
-			service := db.New(dbMock)
-			_, err = service.GetUniqueNames()
-			assert.Error(t, err)
-		})
-	})
+	rows := sqlmock.NewRows([]string{"name"})
+	rows.AddRow("Peter")
+	rows.RowError(0, ErrExpected)
+
+	mock.ExpectQuery(queryGetName).WillReturnRows(rows)
+
+	names, err := dbService.GetNames()
+
+	require.Nil(t, names)
+	require.ErrorContains(t, err, "rows error")
+}
+
+func TestGetUniqueNameSuccess(t *testing.T) {
+	t.Parallel()
+
+	mockDB, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when marshaling expected json data", err)
+	}
+	defer mockDB.Close()
+
+	dbService := db.New(mockDB)
+
+	testTable := [][]string{
+		{"Peter", "Peter", "Peter"},
+		{"Peter", "Peter", "Casey", "Casey", "Casey1"},
+		{"", ""},
+	}
+
+	for _, row := range testTable {
+		uniqueRow := uniqueRows(row)
+
+		mock.ExpectQuery(queryGetUnique).WillReturnRows(mockDBRows(uniqueRow))
+
+		names, err := dbService.GetUniqueNames()
+
+		require.Equal(t, uniqueRow, names)
+		require.NoError(t, err)
+	}
+}
+
+func TestGetUniqueNameDbQueryError(t *testing.T) {
+	t.Parallel()
+
+	mockDB, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when marshaling expected json data", err)
+	}
+	defer mockDB.Close()
+
+	dbService := db.New(mockDB)
+
+	rows := mockDBRows(nil)
+
+	mock.ExpectQuery(queryGetUnique).WillReturnRows(rows).WillReturnError(ErrExpected)
+
+	names, err := dbService.GetUniqueNames()
+
+	require.Nil(t, names)
+	require.ErrorIs(t, err, ErrExpected)
+	require.ErrorContains(t, err, "db query")
+}
+
+func TestGetUniqueNameScanError(t *testing.T) {
+	t.Parallel()
+
+	mockDB, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when marshaling expected json data", err)
+	}
+	defer mockDB.Close()
+
+	dbService := db.New(mockDB)
+
+	rows := sqlmock.NewRows([]string{"name"})
+	rows.AddRow(nil)
+
+	mock.ExpectQuery(queryGetUnique).WillReturnRows(rows)
+
+	names, err := dbService.GetUniqueNames()
+
+	require.Nil(t, names)
+	require.ErrorContains(t, err, "rows scanning")
+}
+
+func TestGetUniqueNameRowsError(t *testing.T) {
+	t.Parallel()
+
+	mockDB, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when marshaling expected json data", err)
+	}
+	defer mockDB.Close()
+
+	dbService := db.New(mockDB)
+
+	rows := sqlmock.NewRows([]string{"name"})
+	rows.AddRow("Peter")
+	rows.RowError(0, ErrExpected)
+
+	mock.ExpectQuery(queryGetUnique).WillReturnRows(rows)
+
+	names, err := dbService.GetUniqueNames()
+
+	require.Nil(t, names)
+	require.ErrorContains(t, err, "rows error")
+}
+
+func mockDBRows(names []string) *sqlmock.Rows {
+	rows := sqlmock.NewRows([]string{"name"})
+	for _, name := range names {
+		rows = rows.AddRow(name)
+	}
+
+	return rows
+}
+
+func uniqueRows(names []string) []string {
+	find := func(value string, array []string) bool {
+		for _, str := range array {
+			if str == value {
+				return true
+			}
+		}
+
+		return false
+	}
+
+	var uniqueRows []string
+
+	for _, name := range names {
+		if !find(name, uniqueRows) {
+			uniqueRows = append(uniqueRows, name)
+		}
+	}
+
+	return uniqueRows
 }

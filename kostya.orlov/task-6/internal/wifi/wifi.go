@@ -15,31 +15,36 @@ type WiFiService struct {
 	WiFi WiFiHandle
 }
 
-// NewWiFiManager creates a new WiFiService
-func NewWiFiManager(w WiFiHandle) WiFiService {
-	return WiFiService{WiFi: w}
+func New(wifi WiFiHandle) WiFiService {
+	return WiFiService{WiFi: wifi}
 }
 
-func (s WiFiService) GetNames() ([]string, error) {
-	ifaces, err := s.WiFi.Interfaces()
+func (service WiFiService) GetAddresses() ([]net.HardwareAddr, error) {
+	interfaces, err := service.WiFi.Interfaces()
 	if err != nil {
 		return nil, fmt.Errorf("getting interfaces: %w", err)
 	}
-	names := make([]string, 0, len(ifaces))
-	for _, iface := range ifaces {
-		names = append(names, iface.Name)
-	}
-	return names, nil
-}
 
-func (s WiFiService) GetAddresses() ([]net.HardwareAddr, error) {
-	ifaces, err := s.WiFi.Interfaces()
-	if err != nil {
-		return nil, fmt.Errorf("getting interfaces: %w", err)
-	}
-	addrs := make([]net.HardwareAddr, 0, len(ifaces))
-	for _, iface := range ifaces {
+	addrs := make([]net.HardwareAddr, 0, len(interfaces))
+
+	for _, iface := range interfaces {
 		addrs = append(addrs, iface.HardwareAddr)
 	}
+
 	return addrs, nil
+}
+
+func (service WiFiService) GetNames() ([]string, error) {
+	interfaces, err := service.WiFi.Interfaces()
+	if err != nil {
+		return nil, fmt.Errorf("getting interfaces: %w", err)
+	}
+
+	names := make([]string, 0, len(interfaces))
+
+	for _, iface := range interfaces {
+		names = append(names, iface.Name)
+	}
+
+	return names, nil
 }
