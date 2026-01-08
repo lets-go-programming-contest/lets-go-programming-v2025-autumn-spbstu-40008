@@ -19,7 +19,9 @@ func ExportToJSON(items []CurrencyItem, outputPath string) error {
 	}
 
 	defer func() {
-		_ = file.Close()
+		if closeErr := file.Close(); closeErr != nil {
+			fmt.Printf("failed to close file: %v\n", closeErr)
+		}
 	}()
 
 	encoder := json.NewEncoder(file)
