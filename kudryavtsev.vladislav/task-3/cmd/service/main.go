@@ -6,7 +6,6 @@ import (
 )
 
 func main() {
-
 	cfgPath := conf.FetchPathFromArgs()
 
 	settings, err := conf.LoadSettings(cfgPath)
@@ -22,15 +21,10 @@ func main() {
 	err = utils.ExportToJSON(sortedList, settings.DestinationPath)
 
 	handleError(err)
-
 }
 
 func handleError(err error) {
-
 	if err != nil {
-
 		panic(err)
-
 	}
-
 }
