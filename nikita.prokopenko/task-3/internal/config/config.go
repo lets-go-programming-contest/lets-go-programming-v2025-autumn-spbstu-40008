@@ -1,27 +1,25 @@
-package config
+package appconfig
 
 import (
-	"fmt"
 	"os"
 
 	"gopkg.in/yaml.v3"
 )
 
-type Config struct {
-	InputFile  string `yaml:"input-file"`
-	OutputFile string `yaml:"output-file"`
+type Settings struct {
+	SourceFile string `yaml:"input-file"`
+	TargetFile string `yaml:"output-file"`
 }
 
-func LoadConfig(path string) (*Config, error) {
-	file, err := os.Open(path)
+func New(path string) (*Settings, error) {
+	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("open: %w", err)
+		return nil, err
 	}
-	defer func() { _ = file.Close() }()
 
-	var cfg Config
-	if err := yaml.NewDecoder(file).Decode(&cfg); err != nil {
-		return nil, fmt.Errorf("decode: %w", err)
+	var cfg Settings
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return nil, err
 	}
 
 	return &cfg, nil

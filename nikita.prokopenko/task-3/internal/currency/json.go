@@ -1,29 +1,24 @@
-package currency
+package conversion
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 )
 
-func SaveAsJSON(path string, items []Currency) error {
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return fmt.Errorf("mkdir: %w", err)
+func ExportToJSON(items []CurrencyItem, outputPath string) error {
+	dir := filepath.Dir(outputPath)
+	if err := os.MkdirAll(dir, 0750); err != nil {
+		return err
 	}
 
-	outFile, err := os.Create(path)
+	file, err := os.Create(outputPath)
 	if err != nil {
-		return fmt.Errorf("create: %w", err)
+		return err
 	}
-	defer func() { _ = outFile.Close() }()
+	defer file.Close()
 
-	enc := json.NewEncoder(outFile)
-	enc.SetIndent("", "    ")
-	if err := enc.Encode(items); err != nil {
-		return fmt.Errorf("encode: %w", err)
-	}
-
-	return nil
+	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "  ")
+	return encoder.Encode(items)
 }
