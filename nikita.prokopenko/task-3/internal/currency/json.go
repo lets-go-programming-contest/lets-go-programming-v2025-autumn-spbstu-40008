@@ -8,16 +8,22 @@ import (
 )
 
 func SaveAsJSON(path string, items []Currency) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
-		return err
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("mkdir: %w", err)
 	}
-	f, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
 
-	enc := json.NewEncoder(f)
+	outFile, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("create: %w", err)
+	}
+	defer func() { _ = outFile.Close() }()
+
+	enc := json.NewEncoder(outFile)
 	enc.SetIndent("", "    ")
-	return enc.Encode(items)
+	if err := enc.Encode(items); err != nil {
+		return fmt.Errorf("encode: %w", err)
+	}
+
+	return nil
 }

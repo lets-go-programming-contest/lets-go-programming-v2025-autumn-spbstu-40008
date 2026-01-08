@@ -16,6 +16,7 @@ type valCurs struct {
 }
 
 type valute struct {
+	ID       string `xml:"ID,attr"`
 	NumCode  string `xml:"NumCode"`
 	CharCode string `xml:"CharCode"`
 	Nominal  string `xml:"Nominal"`
@@ -27,46 +28,61 @@ func DecodeXMLFile(path string) ([]Currency, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open xml %s: %w", path, err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
+
 	return DecodeXML(file)
 }
 
 func DecodeXML(r io.Reader) ([]Currency, error) {
+	var parsed valCurs
 	dec := xml.NewDecoder(r)
 	dec.CharsetReader = func(charset string, input io.Reader) (io.Reader, error) {
-		if strings.Contains(strings.ToLower(charset), "1251") {
+		switch strings.ToLower(strings.TrimSpace(charset)) {
+		case "windows-1251", "cp1251":
 			return charmap.Windows1251.NewDecoder().Reader(input), nil
+		default:
+			return input, nil
 		}
-		return input, nil
 	}
 
-	var parsed valCurs
 	if err := dec.Decode(&parsed); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("decode xml: %w", err)
 	}
 
-	var result []Currency
-	for _, v := range parsed.Valutes {
-		nCode, _ := strconv.Atoi(strings.TrimSpace(v.NumCode))
-		if nCode == 0 {
+	result := make([]Currency, 0, len(parsed.Valutes))
+	for _, val := range parsed.Valutes {
+		numCodeStr := strings.TrimSpace(val.NumCode)
+		if numCodeStr == "" {
+			continue
+		}
+		numCode, err := strconv.Atoi(numCodeStr)
+		if err != nil {
 			continue
 		}
 
-		rawVal := strings.ReplaceAll(v.Value, ",", ".")
-		rawNom := strings.ReplaceAll(v.Nominal, ",", ".")
+		charCode := strings.TrimSpace(val.CharCode)
 
-		val, _ := strconv.ParseFloat(rawVal, 64)
-		nom, _ := strconv.ParseFloat(rawNom, 64)
+		nominalStr := strings.TrimSpace(val.Nominal)
+		if nominalStr == "" {
+			nominalStr = "1"
+		}
+		nominal, err := strconv.Atoi(nominalStr)
+		if err != nil {
+			return nil, fmt.Errorf("parse nominal: %w", err)
+		}
 
-		if nom == 0 {
-			nom = 1
+		vStr := strings.ReplaceAll(strings.TrimSpace(val.Value), ",", ".")
+		vFloat, err := strconv.ParseFloat(vStr, 64)
+		if err != nil {
+			return nil, fmt.Errorf("parse value: %w", err)
 		}
 
 		result = append(result, Currency{
-			NumCode:  nCode,
-			CharCode: strings.TrimSpace(v.CharCode),
-			Value:    val / nom,
+			NumCode:  numCode,
+			CharCode: charCode,
+			Value:    vFloat / float64(nominal),
 		})
 	}
+
 	return result, nil
 }

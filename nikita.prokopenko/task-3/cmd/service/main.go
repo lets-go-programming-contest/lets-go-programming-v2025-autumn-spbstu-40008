@@ -11,7 +11,7 @@ import (
 
 func main() {
 	var cfgPath string
-	flag.StringVar(&cfgPath, "config", "configs/config.yaml", "path to config file")
+	flag.StringVar(&cfgPath, "config", "configs/config.yaml", "")
 	flag.Parse()
 
 	cfg, err := config.LoadConfig(cfgPath)
@@ -25,7 +25,7 @@ func main() {
 	}
 
 	sort.Slice(items, func(i, j int) bool {
-		return items[i].NumCode > items[j].NumCode
+		return items[i].NumCode < items[j].NumCode
 	})
 
 	if err := currency.SaveAsJSON(cfg.OutputFile, items); err != nil {

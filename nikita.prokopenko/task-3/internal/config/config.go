@@ -15,13 +15,13 @@ type Config struct {
 func LoadConfig(path string) (*Config, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("open config: %w", err)
+		return nil, fmt.Errorf("open: %w", err)
 	}
 	defer func() { _ = file.Close() }()
 
 	var cfg Config
 	if err := yaml.NewDecoder(file).Decode(&cfg); err != nil {
-		return nil, fmt.Errorf("decode config: %w", err)
+		return nil, fmt.Errorf("decode: %w", err)
 	}
 
 	return &cfg, nil

@@ -1,4 +1,4 @@
-package currency
+ackage currency
 
 type Currency struct {
 	NumCode  int     `json:"num_code"`
