@@ -2,31 +2,46 @@ package wifi
 
 import (
 	"fmt"
+	"net"
 
 	"github.com/mdlayher/wifi"
 )
 
-type Scanner interface {
+type WiFiHandle interface {
 	Interfaces() ([]*wifi.Interface, error)
 }
 
-type WiFiManager struct {
-	scanner Scanner
+type WiFiService struct {
+	WiFi WiFiHandle
 }
 
-func NewWiFiManager(s Scanner) *WiFiManager {
-	return &WiFiManager{scanner: s}
+
+func NewWiFiManager(w WiFiHandle) WiFiService {
+	return WiFiService{WiFi: w}
 }
 
-func (m *WiFiManager) FetchMACAddresses() ([]string, error) {
-	ifaces, err := m.scanner.Interfaces()
+func (s WiFiService) GetNames() ([]string, error) {
+	ifaces, err := s.WiFi.Interfaces()
 	if err != nil {
-		return nil, fmt.Errorf("network error: %w", err)
+		return nil, fmt.Errorf("getting interfaces: %w", err)
 	}
 
-	macs := make([]string, 0, len(ifaces))
-	for _, i := range ifaces {
-		macs = append(macs, i.HardwareAddr.String())
+	names := make([]string, 0, len(ifaces))
+	for _, iface := range ifaces {
+		names = append(names, iface.Name)
 	}
-	return macs, nil
+	return names, nil
+}
+
+func (s WiFiService) GetAddresses() ([]net.HardwareAddr, error) {
+	ifaces, err := s.WiFi.Interfaces()
+	if err != nil {
+		return nil, fmt.Errorf("getting interfaces: %w", err)
+	}
+
+	addrs := make([]net.HardwareAddr, 0, len(ifaces))
+	for _, iface := range ifaces {
+		addrs = append(addrs, iface.HardwareAddr)
+	}
+	return addrs, nil
 }
