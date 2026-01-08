@@ -7,10 +7,11 @@ import (
 	"path/filepath"
 )
 
+const directoryPerm = 0o750
+
 func ExportToJSON(items []CurrencyItem, outputPath string) error {
 	dir := filepath.Dir(outputPath)
-    // Fix: Changed 0750 to 0o750 for gofumpt compliance
-	if err := os.MkdirAll(dir, 0o750); err != nil {
+	if err := os.MkdirAll(dir, directoryPerm); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 

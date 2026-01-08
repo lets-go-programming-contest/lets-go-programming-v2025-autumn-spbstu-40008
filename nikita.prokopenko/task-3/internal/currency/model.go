@@ -11,7 +11,6 @@ type Decimal float64
 func (d *Decimal) UnmarshalText(text []byte) error {
 	cleanText := strings.ReplaceAll(strings.TrimSpace(string(text)), ",", ".")
 
-    // Fix: Added a newline here so the error check isn't "cuddled" with too many lines
 	value, err := strconv.ParseFloat(cleanText, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse decimal value: %w", err)
