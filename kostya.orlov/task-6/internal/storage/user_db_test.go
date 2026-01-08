@@ -1,4 +1,4 @@
-package storage_test  // <-- ВАЖНО: добавить _test
+package storage_test
 
 import (
     "errors"
@@ -7,7 +7,7 @@ import (
     "github.com/DATA-DOG/go-sqlmock"
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
-    "github.com/task-6/internal/storage"  // <-- Теперь это нормальный импорт
+    "github.com/task-6/internal/storage"
 )
 
 func TestUserStore_GetUserEmails(t *testing.T) {
@@ -57,7 +57,7 @@ func TestUserStore_GetUserEmails(t *testing.T) {
             require.NoError(t, err)
             defer db.Close()
 
-            store := storage.NewUserStore(db)  // <-- Используем полный путь
+            store := storage.NewUserStore(db)
             tc.setupMock(mock)
 
             res, err := store.GetUserEmails()
@@ -71,7 +71,6 @@ func TestUserStore_GetUserEmails(t *testing.T) {
                 assert.Equal(t, tc.expected, res)
             }
 
-            // Проверяем, что все ожидания выполнены
             assert.NoError(t, mock.ExpectationsWereMet())
         })
     }
@@ -82,6 +81,6 @@ func TestNewUserStore(t *testing.T) {
     require.NoError(t, err)
     defer db.Close()
 
-    store := storage.NewUserStore(db)  // <-- Используем полный путь
+    store := storage.NewUserStore(db)
     assert.NotNil(t, store)
 }
