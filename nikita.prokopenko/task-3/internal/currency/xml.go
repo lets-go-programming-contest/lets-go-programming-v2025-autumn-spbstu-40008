@@ -33,7 +33,6 @@ func DecodeXMLFile(path string) ([]Currency, error) {
 }
 
 func DecodeXML(r io.Reader) ([]Currency, error) {
-	var parsed valCurs
 	dec := xml.NewDecoder(r)
 	dec.CharsetReader = func(charset string, input io.Reader) (io.Reader, error) {
 		switch strings.ToLower(strings.TrimSpace(charset)) {
@@ -44,6 +43,7 @@ func DecodeXML(r io.Reader) ([]Currency, error) {
 		}
 	}
 
+	var parsed valCurs
 	if err := dec.Decode(&parsed); err != nil {
 		return nil, fmt.Errorf("decode xml: %w", err)
 	}
@@ -59,16 +59,22 @@ func DecodeXML(r io.Reader) ([]Currency, error) {
 			continue
 		}
 
+		nomStr := strings.TrimSpace(val.Nominal)
+		nominal, err := strconv.ParseFloat(nomStr, 64)
+		if err != nil || nominal == 0 {
+			continue
+		}
+
 		vStr := strings.ReplaceAll(strings.TrimSpace(val.Value), ",", ".")
 		vFloat, err := strconv.ParseFloat(vStr, 64)
 		if err != nil {
-			return nil, fmt.Errorf("parse value: %w", err)
+			continue
 		}
 
 		result = append(result, Currency{
 			NumCode:  numCode,
 			CharCode: strings.TrimSpace(val.CharCode),
-			Value:    vFloat,
+			Value:    vFloat / nominal,
 		})
 	}
 

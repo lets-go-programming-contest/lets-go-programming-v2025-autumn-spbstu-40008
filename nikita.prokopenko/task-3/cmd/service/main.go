@@ -11,17 +11,17 @@ import (
 
 func main() {
 	var cfgPath string
-	flag.StringVar(&cfgPath, "config", "configs/config.yaml", "")
+	flag.StringVar(&cfgPath, "config", "configs/config.yaml", "path to config file")
 	flag.Parse()
 
 	cfg, err := config.LoadConfig(cfgPath)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed to load config: %v", err)
 	}
 
 	items, err := currency.DecodeXMLFile(cfg.InputFile)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed to decode xml: %v", err)
 	}
 
 	sort.Slice(items, func(i, j int) bool {
@@ -29,6 +29,6 @@ func main() {
 	})
 
 	if err := currency.SaveAsJSON(cfg.OutputFile, items); err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed to save json: %v", err)
 	}
 }
