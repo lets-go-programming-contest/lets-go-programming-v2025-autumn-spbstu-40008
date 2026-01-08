@@ -15,14 +15,14 @@ func SaveAsJSON(path string, items []Currency) error {
 
 	outFile, err := os.Create(path)
 	if err != nil {
-		return fmt.Errorf("create: %w", err)
+		return fmt.Errorf("create file: %w", err)
 	}
 	defer func() { _ = outFile.Close() }()
 
 	enc := json.NewEncoder(outFile)
 	enc.SetIndent("", "    ")
 	if err := enc.Encode(items); err != nil {
-		return fmt.Errorf("encode: %w", err)
+		return fmt.Errorf("encode json: %w", err)
 	}
 
 	return nil
