@@ -1,4 +1,4 @@
-module github.com/gagysun/task-3
+module student/currency-processor
 
 go 1.22
 
