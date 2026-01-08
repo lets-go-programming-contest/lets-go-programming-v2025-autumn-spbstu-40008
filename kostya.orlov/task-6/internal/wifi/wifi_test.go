@@ -8,7 +8,7 @@ import (
 
 	"github.com/mdlayher/wifi"
 	"github.com/stretchr/testify/require"
-	myWifi "github.com/kostya.orlov/task-6/internal/wifi"
+	myWifi "github.com/TWChromeTW/task-6/internal/wifi"
 )
 
 var errInterfaces = errors.New("interfaces error")
