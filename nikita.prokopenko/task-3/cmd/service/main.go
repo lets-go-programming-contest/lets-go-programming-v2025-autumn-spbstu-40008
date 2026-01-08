@@ -16,12 +16,12 @@ func main() {
 
 	cfg, err := config.LoadConfig(cfgPath)
 	if err != nil {
-		log.Fatalf("failed to load config: %v", err)
+		log.Fatal(err)
 	}
 
 	items, err := currency.DecodeXMLFile(cfg.InputFile)
 	if err != nil {
-		log.Fatalf("failed to decode xml: %v", err)
+		log.Fatal(err)
 	}
 
 	sort.Slice(items, func(i, j int) bool {
@@ -29,6 +29,6 @@ func main() {
 	})
 
 	if err := currency.SaveAsJSON(cfg.OutputFile, items); err != nil {
-		log.Fatalf("failed to save json: %v", err)
+		log.Fatal(err)
 	}
 }

@@ -34,7 +34,7 @@ func DecodeXMLFile(path string) ([]Currency, error) {
 func DecodeXML(r io.Reader) ([]Currency, error) {
 	dec := xml.NewDecoder(r)
 	dec.CharsetReader = func(charset string, input io.Reader) (io.Reader, error) {
-		if strings.ToLower(charset) == "windows-1251" {
+		if strings.Contains(strings.ToLower(charset), "1251") {
 			return charmap.Windows1251.NewDecoder().Reader(input), nil
 		}
 		return input, nil
@@ -47,17 +47,24 @@ func DecodeXML(r io.Reader) ([]Currency, error) {
 
 	var result []Currency
 	for _, v := range parsed.Valutes {
-		num, _ := strconv.Atoi(v.NumCode)
-		nom, _ := strconv.ParseFloat(strings.ReplaceAll(v.Nominal, ",", "."), 64)
-		val, _ := strconv.ParseFloat(strings.ReplaceAll(v.Value, ",", "."), 64)
+		nCode, _ := strconv.Atoi(strings.TrimSpace(v.NumCode))
+		if nCode == 0 {
+			continue
+		}
+
+		rawVal := strings.ReplaceAll(v.Value, ",", ".")
+		rawNom := strings.ReplaceAll(v.Nominal, ",", ".")
+
+		val, _ := strconv.ParseFloat(rawVal, 64)
+		nom, _ := strconv.ParseFloat(rawNom, 64)
 
 		if nom == 0 {
 			nom = 1
 		}
 
 		result = append(result, Currency{
-			NumCode:  num,
-			CharCode: v.CharCode,
+			NumCode:  nCode,
+			CharCode: strings.TrimSpace(v.CharCode),
 			Value:    val / nom,
 		})
 	}
