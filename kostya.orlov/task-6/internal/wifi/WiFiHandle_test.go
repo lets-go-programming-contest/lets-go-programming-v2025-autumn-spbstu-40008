@@ -16,8 +16,10 @@ func (_m *WiFiHandle) Interfaces() ([]*wifi.Interface, error) {
 		panic("no return value specified for Interfaces")
 	}
 
-	var r0 []*wifi.Interface
-	var r1 error
+	var (
+		r0 []*wifi.Interface
+		r1 error
+	)
 
 	if rf, ok := ret.Get(0).(func() ([]*wifi.Interface, error)); ok {
 		return rf()
@@ -25,10 +27,10 @@ func (_m *WiFiHandle) Interfaces() ([]*wifi.Interface, error) {
 
 	if rf, ok := ret.Get(0).(func() []*wifi.Interface); ok {
 		r0 = rf()
-	} else if ret.Get(0) != nil {
-		r0, ok = ret.Get(0).([]*wifi.Interface)
-		if !ok {
-			panic("type assertion failed")
+	} else if v := ret.Get(0); v != nil {
+		val, ok := v.([]*wifi.Interface)
+		if ok {
+			r0 = val
 		}
 	}
 
@@ -38,17 +40,18 @@ func (_m *WiFiHandle) Interfaces() ([]*wifi.Interface, error) {
 		r1 = ret.Error(1)
 	}
 
-	return r0, r1
+	return r0, r1 //nolint:wrapcheck
 }
 
 func NewWiFiHandle(t interface {
 	mock.TestingT
-	Cleanup(func())
-}) *WiFiHandle {
-	mockObj := &WiFiHandle{}
-	mockObj.Mock.Test(t)
+	Cleanup(f func())
+},
+) *WiFiHandle {
+	h := &WiFiHandle{}
+	h.Mock.Test(t)
 
-	t.Cleanup(func() { mockObj.AssertExpectations(t) })
+	t.Cleanup(func() { h.AssertExpectations(t) })
 
-	return mockObj
+	return h
 }
