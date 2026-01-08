@@ -33,9 +33,9 @@ type ExchangeData struct {
 }
 
 type CurrencyItem struct {
-	NumericCode int `json:"num_code"  xml:"NumCode"`
+	NumericCode int `json:"num_code" xml:"NumCode"`
 
 	LetterCode string `json:"char_code" xml:"CharCode"`
 
-	Rate CustomFloat `json:"value"     xml:"Value"`
+	Rate CustomFloat `json:"value" xml:"Value"`
 }
