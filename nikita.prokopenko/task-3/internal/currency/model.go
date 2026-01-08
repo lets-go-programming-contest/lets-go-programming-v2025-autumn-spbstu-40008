@@ -10,12 +10,14 @@ type Decimal float64
 
 func (d *Decimal) UnmarshalText(text []byte) error {
 	cleanText := strings.ReplaceAll(strings.TrimSpace(string(text)), ",", ".")
+
 	value, err := strconv.ParseFloat(cleanText, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse decimal value: %w", err)
 	}
 
 	*d = Decimal(value)
+
 	return nil
 }
 
@@ -24,7 +26,7 @@ type CurrencyRates struct {
 }
 
 type CurrencyItem struct {
-	NumCode  int     `json:"num_code" xml:"NumCode"`
+	NumCode  int     `json:"num_code"  xml:"NumCode"`
 	CharCode string  `json:"char_code" xml:"CharCode"`
-	Value    Decimal `json:"value"    xml:"Value"`
+	Value    Decimal `json:"value"     xml:"Value"`
 }
