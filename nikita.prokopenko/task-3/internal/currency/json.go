@@ -2,24 +2,32 @@ package currency
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 )
 
+const dirPerm = 0o755
+
 func SaveAsJSON(path string, items []Currency) error {
-	if dir := filepath.Dir(path); dir != "" {
-		if err := os.MkdirAll(dir, 0o755); err != nil {
-			return err
+	dir := filepath.Dir(path)
+	if dir != "" {
+		if err := os.MkdirAll(dir, dirPerm); err != nil {
+			return fmt.Errorf("mkdir %s: %w", dir, err)
 		}
 	}
 
-	f, err := os.Create(path)
+	outFile, err := os.Create(path)
 	if err != nil {
-		return err
+		return fmt.Errorf("create file %s: %w", path, err)
 	}
-	defer f.Close()
+	defer func() { _ = outFile.Close() }()
 
-	enc := json.NewEncoder(f)
+	enc := json.NewEncoder(outFile)
 	enc.SetIndent("", "    ")
-	return enc.Encode(items)
+	if err := enc.Encode(items); err != nil {
+		return fmt.Errorf("encode json: %w", err)
+	}
+
+	return nil
 }

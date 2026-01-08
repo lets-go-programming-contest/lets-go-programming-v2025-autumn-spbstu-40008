@@ -10,14 +10,16 @@ import (
 )
 
 func main() {
-	cfgPath := flag.String(
+	var cfgPath string
+	flag.StringVar(
+		&cfgPath,
 		"config",
 		"configs/config.yaml",
 		"path to YAML config file",
 	)
 	flag.Parse()
 
-	cfg, err := config.LoadConfig(*cfgPath)
+	cfg, err := config.LoadConfig(cfgPath)
 	if err != nil {
 		log.Fatal(err)
 	}

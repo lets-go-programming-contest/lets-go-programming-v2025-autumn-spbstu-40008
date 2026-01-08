@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 
 	"gopkg.in/yaml.v3"
@@ -12,15 +13,16 @@ type Config struct {
 }
 
 func LoadConfig(path string) (*Config, error) {
-	f, err := os.Open(path)
+	file, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("open config %s: %w", path, err)
 	}
-	defer f.Close()
+	defer func() { _ = file.Close() }()
 
-	var c Config
-	if err := yaml.NewDecoder(f).Decode(&c); err != nil {
-		return nil, err
+	var cfg Config
+	if err := yaml.NewDecoder(file).Decode(&cfg); err != nil {
+		return nil, fmt.Errorf("decode config %s: %w", path, err)
 	}
-	return &c, nil
+
+	return &cfg, nil
 }
