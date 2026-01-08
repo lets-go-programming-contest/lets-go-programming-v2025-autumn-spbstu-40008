@@ -39,10 +39,8 @@ func DecodeXML(r io.Reader) ([]Currency, error) {
 		switch strings.ToLower(strings.TrimSpace(charset)) {
 		case "windows-1251", "cp1251":
 			return charmap.Windows1251.NewDecoder().Reader(input), nil
-		case "utf-8", "utf8":
-			return input, nil
 		default:
-			return nil, fmt.Errorf("unsupported charset %q", charset)
+			return input, nil
 		}
 	}
 
@@ -52,35 +50,24 @@ func DecodeXML(r io.Reader) ([]Currency, error) {
 
 	result := make([]Currency, 0, len(parsed.Valutes))
 	for _, val := range parsed.Valutes {
-		numCode := 0
-		if s := strings.TrimSpace(val.NumCode); s != "" {
-			if n, err := strconv.Atoi(s); err == nil {
-				numCode = n
-			}
-		}
+		numCode, _ := strconv.Atoi(strings.TrimSpace(val.NumCode))
 
-		valueStr := strings.ReplaceAll(strings.TrimSpace(val.Value), " ", "")
-		valueStr = strings.ReplaceAll(valueStr, ",", ".")
-		parsedValue, err := strconv.ParseFloat(valueStr, 64)
+		vStr := strings.ReplaceAll(strings.TrimSpace(val.Value), ",", ".")
+		vFloat, err := strconv.ParseFloat(vStr, 64)
 		if err != nil {
-			return nil, fmt.Errorf("parse value %q: %w", valueStr, err)
+			return nil, fmt.Errorf("parse value: %w", err)
 		}
 
-		nominal := 1.0
-		if s := strings.TrimSpace(val.Nominal); s != "" {
-			s2 := strings.ReplaceAll(s, ",", ".")
-			if nf, err := strconv.ParseFloat(s2, 64); err == nil && nf > 0 {
-				nominal = nf
-			}
-		}
-		if nominal != 1 {
-			parsedValue /= nominal
+		nStr := strings.ReplaceAll(strings.TrimSpace(val.Nominal), ",", ".")
+		nFloat, _ := strconv.ParseFloat(nStr, 64)
+		if nFloat <= 0 {
+			nFloat = 1
 		}
 
 		result = append(result, Currency{
 			NumCode:  numCode,
 			CharCode: strings.TrimSpace(val.CharCode),
-			Value:    parsedValue,
+			Value:    vFloat / nFloat,
 		})
 	}
 
