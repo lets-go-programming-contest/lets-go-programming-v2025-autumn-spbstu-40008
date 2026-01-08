@@ -50,7 +50,14 @@ func DecodeXML(r io.Reader) ([]Currency, error) {
 
 	result := make([]Currency, 0, len(parsed.Valutes))
 	for _, val := range parsed.Valutes {
-		numCode, _ := strconv.Atoi(strings.TrimSpace(val.NumCode))
+		nCodeStr := strings.TrimSpace(val.NumCode)
+		if nCodeStr == "" {
+			continue
+		}
+		numCode, err := strconv.Atoi(nCodeStr)
+		if err != nil {
+			continue
+		}
 
 		vStr := strings.ReplaceAll(strings.TrimSpace(val.Value), ",", ".")
 		vFloat, err := strconv.ParseFloat(vStr, 64)

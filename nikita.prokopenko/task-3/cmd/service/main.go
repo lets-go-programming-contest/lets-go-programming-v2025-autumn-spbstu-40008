@@ -25,7 +25,7 @@ func main() {
 	}
 
 	sort.Slice(items, func(i, j int) bool {
-		return items[i].NumCode < items[j].NumCode
+		return items[i].NumCode > items[j].NumCode
 	})
 
 	if err := currency.SaveAsJSON(cfg.OutputFile, items); err != nil {
