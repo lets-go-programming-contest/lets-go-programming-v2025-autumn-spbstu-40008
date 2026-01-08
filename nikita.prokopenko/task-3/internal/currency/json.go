@@ -20,5 +20,6 @@ func ExportToJSON(items []CurrencyItem, outputPath string) error {
 
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ")
+	
 	return encoder.Encode(items)
 }

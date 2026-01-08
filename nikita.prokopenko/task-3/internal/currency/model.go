@@ -13,7 +13,9 @@ func (d *Decimal) UnmarshalText(text []byte) error {
 	if err != nil {
 		return err
 	}
+	
 	*d = Decimal(value)
+
 	return nil
 }
 
