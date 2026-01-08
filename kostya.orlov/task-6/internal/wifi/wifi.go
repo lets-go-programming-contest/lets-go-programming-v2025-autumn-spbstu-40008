@@ -15,6 +15,7 @@ type WiFiService struct {
 	WiFi WiFiHandle
 }
 
+// NewWiFiManager creates a new WiFiService
 func NewWiFiManager(w WiFiHandle) WiFiService {
 	return WiFiService{WiFi: w}
 }
