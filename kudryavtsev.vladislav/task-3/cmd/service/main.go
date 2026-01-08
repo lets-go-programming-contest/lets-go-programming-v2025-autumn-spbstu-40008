@@ -1,8 +1,8 @@
 package main
 
 import (
-	"student/currency-processor/internal/conf"
-	"student/currency-processor/internal/utils"
+	"github.com/gagysun/task-3/internal/conf"
+	"github.com/gagysun/task-3/internal/utils"
 )
 
 func main() {

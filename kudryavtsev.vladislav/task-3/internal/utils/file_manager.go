@@ -8,9 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/gagysun/task-3/internal/models"
 	"golang.org/x/net/html/charset"
-
-	"student/currency-processor/internal/models"
 )
 
 func LoadXML(filePath string) (*models.ExchangeData, error) {
@@ -20,10 +19,10 @@ func LoadXML(filePath string) (*models.ExchangeData, error) {
 	}
 
 	var result models.ExchangeData
-
+	
 	reader := bytes.NewReader(fileContent)
 	decoder := xml.NewDecoder(reader)
-
+	
 	decoder.CharsetReader = charset.NewReaderLabel
 
 	err = decoder.Decode(&result)
@@ -45,8 +44,7 @@ func ExportToJSON(data []models.CurrencyItem, path string) error {
 		return fmt.Errorf("filesystem error (mkdir): %w", err)
 	}
 
-	// Fix G306: Expect WriteFile permissions to be 0600 or less
-	if err := os.WriteFile(path, encodedJSON, 0o600); err != nil {
+	if err := os.WriteFile(path, encodedJSON, 0o644); err != nil {
 		return fmt.Errorf("write error: %w", err)
 	}
 
