@@ -15,6 +15,7 @@ type AppSettings struct {
 
 func FetchPathFromArgs() string {
 	var flagValue string
+
 	flag.StringVar(&flagValue, "config", "", "path to configuration file")
 	flag.Parse()
 
@@ -28,6 +29,7 @@ func LoadSettings(filename string) (AppSettings, error) {
 	}
 
 	var settings AppSettings
+
 	err = yaml.Unmarshal(rawBytes, &settings)
 	if err != nil {
 		return AppSettings{}, fmt.Errorf("parsing yaml failed: %w", err)

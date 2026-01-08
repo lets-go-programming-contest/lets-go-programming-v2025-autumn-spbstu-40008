@@ -3,12 +3,12 @@ package utils
 import (
 	"sort"
 
-	"github.com/gagysun/task-3/internal/models"
+	"student/currency-processor/internal/models"
 )
 
 func SortCurrencyData(source *models.ExchangeData) []models.CurrencyItem {
 	output := make([]models.CurrencyItem, len(source.Items))
-	
+
 	copy(output, source.Items)
 
 	sort.Slice(output, func(i, j int) bool {

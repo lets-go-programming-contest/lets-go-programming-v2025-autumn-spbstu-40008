@@ -24,6 +24,7 @@ func (cf *CustomFloat) UnmarshalXML(d *xml.Decoder, start xml.StartElement) erro
 	}
 
 	*cf = CustomFloat(parsedVal)
+
 	return nil
 }
 
@@ -32,7 +33,7 @@ type ExchangeData struct {
 }
 
 type CurrencyItem struct {
-	NumericCode int         `xml:"NumCode" json:"num_code"`
-	LetterCode  string      `xml:"CharCode" json:"char_code"`
-	Rate        CustomFloat `xml:"Value"    json:"value"`
+	NumericCode int         `json:"num_code"  xml:"NumCode"`
+	LetterCode  string      `json:"char_code" xml:"CharCode"`
+	Rate        CustomFloat `json:"value"     xml:"Value"`
 }
