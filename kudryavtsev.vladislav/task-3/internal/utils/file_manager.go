@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/HorekProgrammer/task-3/internal/models"
+	"github.com/gagysun/task-3/internal/models"
 	"golang.org/x/net/html/charset"
 )
 

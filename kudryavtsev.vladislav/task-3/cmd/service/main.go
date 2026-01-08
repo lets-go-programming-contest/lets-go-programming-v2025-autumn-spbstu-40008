@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/HorekProgrammer/task-3/internal/conf"
-	"github.com/HorekProgrammer/task-3/internal/utils"
+	"github.com/gagysun/task-3/internal/conf"
+	"github.com/gagysun/task-3/internal/utils"
 )
 
 func main() {

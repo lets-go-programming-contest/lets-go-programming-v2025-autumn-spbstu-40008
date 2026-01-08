@@ -3,7 +3,7 @@ package utils
 import (
 	"sort"
 
-	"github.com/HorekProgrammer/task-3/internal/models"
+	"github.com/gagysun/task-3/internal/models"
 )
 
 func SortCurrencyData(source *models.ExchangeData) []models.CurrencyItem {
