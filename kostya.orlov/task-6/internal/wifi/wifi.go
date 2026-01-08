@@ -16,6 +16,7 @@ type WiFiService struct {
 }
 
 
+
 func NewWiFiManager(w WiFiHandle) WiFiService {
 	return WiFiService{WiFi: w}
 }
@@ -25,7 +26,6 @@ func (s WiFiService) GetNames() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("getting interfaces: %w", err)
 	}
-
 	names := make([]string, 0, len(ifaces))
 	for _, iface := range ifaces {
 		names = append(names, iface.Name)
@@ -38,7 +38,6 @@ func (s WiFiService) GetAddresses() ([]net.HardwareAddr, error) {
 	if err != nil {
 		return nil, fmt.Errorf("getting interfaces: %w", err)
 	}
-
 	addrs := make([]net.HardwareAddr, 0, len(ifaces))
 	for _, iface := range ifaces {
 		addrs = append(addrs, iface.HardwareAddr)
