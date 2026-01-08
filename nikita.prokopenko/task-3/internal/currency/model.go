@@ -1,4 +1,4 @@
-package conversion
+package currency
 
 import (
 	"strconv"
@@ -17,16 +17,12 @@ func (d *Decimal) UnmarshalText(text []byte) error {
 	return nil
 }
 
-type ExchangeData struct {
-	Items []CurrencyItem `xml:"Valute"`
-}
-
-func (e *ExchangeData) GetAllCurrencies() []CurrencyItem {
-	return e.Items
+type CurrencyRates struct {
+	Currencies []CurrencyItem `xml:"Valute"`
 }
 
 type CurrencyItem struct {
-	NumericCode int     `json:"num_code" xml:"NumCode"`
-	AlphaCode   string  `json:"char_code" xml:"CharCode"`
-	Value       Decimal `json:"value" xml:"Value"`
+	NumCode  int     `json:"num_code" xml:"NumCode"`
+	CharCode string  `json:"char_code" xml:"CharCode"`
+	Value    Decimal `json:"value" xml:"Value"`
 }

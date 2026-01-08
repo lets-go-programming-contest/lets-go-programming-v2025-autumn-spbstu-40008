@@ -1,4 +1,4 @@
-package conversion
+package currency
 
 import (
 	"encoding/xml"
@@ -7,7 +7,7 @@ import (
 	"golang.org/x/net/html/charset"
 )
 
-func ParseCurrencyData(filePath string) (*ExchangeData, error) {
+func ParseCurrencyFile(filePath string) ([]CurrencyItem, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
@@ -17,10 +17,10 @@ func ParseCurrencyData(filePath string) (*ExchangeData, error) {
 	decoder := xml.NewDecoder(file)
 	decoder.CharsetReader = charset.NewReaderLabel
 
-	var data ExchangeData
+	var data CurrencyRates
 	if err := decoder.Decode(&data); err != nil {
 		return nil, err
 	}
 
-	return &data, nil
+	return data.Currencies, nil
 }
