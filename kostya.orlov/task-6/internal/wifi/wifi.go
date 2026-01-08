@@ -1,4 +1,4 @@
-package netinfo
+package wifi
 
 import (
     "fmt"

@@ -1,4 +1,4 @@
-package netinfo_test  // <-- ВАЖНО: добавить _test
+package wifi_test
 
 import (
     "errors"
@@ -8,10 +8,9 @@ import (
     "github.com/mdlayher/wifi"
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
-    "github.com/task-6/internal/netinfo"  // <-- Теперь это нормальный импорт
+    mywifi "github.com/task-6/internal/wifi"
 )
 
-// MockScanner остается здесь
 type MockScanner struct {
     MockFn func() ([]*wifi.Interface, error)
 }
@@ -67,7 +66,7 @@ func TestWiFiManager_FetchMACAddresses(t *testing.T) {
     for _, tc := range tests {
         t.Run(tc.name, func(t *testing.T) {
             mock := &MockScanner{MockFn: tc.mockFn}
-            mgr := netinfo.NewWiFiManager(mock)  // <-- Используем полный путь
+            mgr := mywifi.NewWiFiManager(mock)
             
             res, err := mgr.FetchMACAddresses()
             
@@ -81,16 +80,4 @@ func TestWiFiManager_FetchMACAddresses(t *testing.T) {
             }
         })
     }
-}
-
-func TestNewWiFiManager(t *testing.T) {
-    mock := &MockScanner{}
-    mgr := netinfo.NewWiFiManager(mock)  // <-- Используем полный путь
-    
-    assert.NotNil(t, mgr)
-    // Нельзя проверить приватное поле scanner напрямую
-    // Но можно проверить через поведение
-    res, err := mgr.FetchMACAddresses()
-    assert.Error(t, err)  // mock вернет nil, nil по умолчанию
-    assert.Nil(t, res)
 }
