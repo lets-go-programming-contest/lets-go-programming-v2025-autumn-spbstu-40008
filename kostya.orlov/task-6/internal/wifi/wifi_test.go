@@ -14,7 +14,9 @@ type MockWiFi struct {
 	fn func() ([]*wifi.Interface, error)
 }
 
-func (m *MockWiFi) Interfaces() ([]*wifi.Interface, error) { return m.fn() }
+func (m *MockWiFi) Interfaces() ([]*wifi.Interface, error) { 
+	return m.fn() 
+}
 
 func TestWiFiService(t *testing.T) {
 	t.Run("GetNames", func(t *testing.T) {
