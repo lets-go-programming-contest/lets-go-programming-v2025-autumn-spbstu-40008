@@ -10,12 +10,14 @@ type Decimal float64
 
 func (d *Decimal) UnmarshalText(text []byte) error {
 	cleanText := strings.ReplaceAll(strings.TrimSpace(string(text)), ",", ".")
+	
 	value, err := strconv.ParseFloat(cleanText, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse decimal value: %w", err)
 	}
 
 	*d = Decimal(value)
+
 	return nil
 }
 

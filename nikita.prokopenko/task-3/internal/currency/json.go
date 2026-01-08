@@ -27,5 +27,9 @@ func ExportToJSON(items []CurrencyItem, outputPath string) error {
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ")
 
-	return encoder.Encode(items)
+	if err := encoder.Encode(items); err != nil {
+		return fmt.Errorf("failed to encode JSON: %w", err)
+	}
+
+	return nil
 }
