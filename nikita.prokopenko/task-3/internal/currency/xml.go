@@ -13,6 +13,7 @@ func ParseCurrencyFile(filePath string) ([]CurrencyItem, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open currency file: %w", err)
 	}
+
 	defer func() {
 		if closeErr := file.Close(); closeErr != nil {
 			fmt.Printf("failed to close file: %v\n", closeErr)
