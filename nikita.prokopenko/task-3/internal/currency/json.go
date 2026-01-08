@@ -12,24 +12,16 @@ func ExportToJSON(items []CurrencyItem, outputPath string) error {
 	if err := os.MkdirAll(dir, 0750); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
-
 	file, err := os.Create(outputPath)
 	if err != nil {
 		return fmt.Errorf("failed to create output file: %w", err)
 	}
-
 	defer func() {
 		if closeErr := file.Close(); closeErr != nil {
 			fmt.Printf("failed to close file: %v\n", closeErr)
 		}
 	}()
-
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ")
-
-	if err := encoder.Encode(items); err != nil {
-		return fmt.Errorf("failed to encode JSON: %w", err)
-	}
-
-	return nil
+	return encoder.Encode(items)
 }
