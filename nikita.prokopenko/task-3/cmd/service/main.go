@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"log"
-	"sort"
 
 	"github.com/Czeeen/lets-go-programming-v2025-autumn-spbstu-40008/prokopenko.nikita/task-3/internal/config"
 	"github.com/Czeeen/lets-go-programming-v2025-autumn-spbstu-40008/prokopenko.nikita/task-3/internal/currency"
@@ -11,12 +10,7 @@ import (
 
 func main() {
 	var cfgPath string
-	flag.StringVar(
-		&cfgPath,
-		"config",
-		"configs/config.yaml",
-		"path to YAML config file",
-	)
+	flag.StringVar(&cfgPath, "config", "configs/config.yaml", "")
 	flag.Parse()
 
 	cfg, err := config.LoadConfig(cfgPath)
@@ -28,10 +22,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	sort.Slice(items, func(i, j int) bool {
-		return items[i].Value > items[j].Value
-	})
 
 	if err := currency.SaveAsJSON(cfg.OutputFile, items); err != nil {
 		log.Fatal(err)
