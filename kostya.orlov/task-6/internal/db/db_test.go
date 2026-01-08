@@ -6,7 +6,8 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/require"
-	"github.com/TWChromeTW/task-6/internal/db"
+
+	"github.com/task-6/internal/db"
 )
 
 var (
@@ -15,7 +16,7 @@ var (
 	errFatal     = errors.New("fatal error")
 )
 
-type dbTestestase struct {
+type dbTestCase struct {
 	name          string
 	query         string
 	mockBehavior  func(mock sqlmock.Sqlmock)
@@ -36,7 +37,7 @@ func TestGetNames(t *testing.T) {
 
 	query := "SELECT name FROM users"
 
-	testTable := []dbTestestase{
+	testTable := []dbTestCase{
 		{
 			name:  "Success Query",
 			query: query,
@@ -109,7 +110,7 @@ func TestGetUniqueNames(t *testing.T) {
 
 	query := "SELECT DISTINCT name FROM users"
 
-	testTable := []dbTestestase{
+	testTable := []dbTestCase{
 		{
 			name:  "Success Query",
 			query: query,
