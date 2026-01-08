@@ -2,6 +2,7 @@ package currency
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -9,17 +10,24 @@ import (
 func ExportToJSON(items []CurrencyItem, outputPath string) error {
 	dir := filepath.Dir(outputPath)
 	if err := os.MkdirAll(dir, 0750); err != nil {
-		return err
+		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
 	file, err := os.Create(outputPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create output file: %w", err)
 	}
-	defer file.Close()
+
+	defer func() {
+		_ = file.Close()
+	}()
 
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ")
-	
-	return encoder.Encode(items)
+
+	if err := encoder.Encode(items); err != nil {
+		return fmt.Errorf("failed to encode items: %w", err)
+	}
+
+	return nil
 }
