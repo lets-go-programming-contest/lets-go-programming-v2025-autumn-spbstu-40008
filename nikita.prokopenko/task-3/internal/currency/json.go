@@ -9,7 +9,8 @@ import (
 
 func ExportToJSON(items []CurrencyItem, outputPath string) error {
 	dir := filepath.Dir(outputPath)
-	if err := os.MkdirAll(dir, 0750); err != nil {
+    // Fix: Changed 0750 to 0o750 for gofumpt compliance
+	if err := os.MkdirAll(dir, 0o750); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
