@@ -80,8 +80,9 @@ func Run(cfg *Config) error {
 		if err != nil {
 			continue
 		}
+		nominalStr := strings.ReplaceAll(valute.Nominal, ".", "")
 
-		nominal, err := strconv.Atoi(valute.Nominal)
+		nominal, err := strconv.Atoi(nominalStr)
 		if err != nil || nominal == 0 {
 			continue
 		}
@@ -99,7 +100,7 @@ func Run(cfg *Config) error {
 	}
 
 	sort.Slice(outputData, func(i, j int) bool {
-		return outputData[i].Value > outputData[j].Value
+		return outputData[i].Value < outputData[j].Value
 	})
 
 	if err := saveAsJSON(cfg.OutputFile, outputData); err != nil {
@@ -133,7 +134,7 @@ func cleanString(input string) string {
 	input = strings.ReplaceAll(input, "\r", "")
 	input = strings.ReplaceAll(input, "\t", "")
 	input = strings.ReplaceAll(input, " ", "")
-	input = strings.ReplaceAll(input, "\u00A0", "")
+	input = strings.ReplaceAll(input, "\u00A0", "") // Неразрывный пробел
 
 	return strings.TrimSpace(input)
 }
