@@ -62,6 +62,7 @@ func Run(cfg *Config) error {
 	}
 
 	outputData := make([]CurrencyOutput, 0, len(valCurs.Valutes))
+
 	for _, valute := range valCurs.Valutes {
 		valueStr := strings.Replace(valute.Value, ",", ".", 1)
 
@@ -99,6 +100,7 @@ func saveAsJSON(path string, data []CurrencyOutput) error {
 	if err != nil {
 		return fmt.Errorf("ошибка создания файла: %w", err)
 	}
+
 	defer func() {
 		_ = file.Close()
 	}()
@@ -106,5 +108,9 @@ func saveAsJSON(path string, data []CurrencyOutput) error {
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ")
 
-	return encoder.Encode(data)
+	if err := encoder.Encode(data); err != nil {
+		return fmt.Errorf("ошибка кодирования JSON: %w", err)
+	}
+
+	return nil
 }
