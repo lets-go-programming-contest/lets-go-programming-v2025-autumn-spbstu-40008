@@ -70,13 +70,13 @@ func Run(cfg *Config) error {
 	outputData := make([]CurrencyOutput, 0, len(valCurs.Valutes))
 
 	for _, valute := range valCurs.Valutes {
-		// Агрессивная очистка: оставляем только цифры
+		// Агрессивная очистка: оставляем только цифры.
 		valute.NumCode = keepDigits(valute.NumCode)
 		valute.Nominal = keepDigits(valute.Nominal)
 
-		// Для Value оставляем цифры, запятую и точку
+		// Для Value оставляем цифры, запятую и точку.
 		valute.Value = cleanValueString(valute.Value)
-		// Убираем точки (разделители тысяч) и меняем запятую на точку
+		// Убираем точки (разделители тысяч) и меняем запятую на точку.
 		valute.Value = strings.ReplaceAll(valute.Value, ".", "")
 		valueStr := strings.Replace(valute.Value, ",", ".", 1)
 
@@ -102,7 +102,7 @@ func Run(cfg *Config) error {
 		})
 	}
 
-	// Сортировка по NumCode по УБЫВАНИЮ (исходя из логов тестов)
+	// Сортировка по NumCode по УБЫВАНИЮ.
 	sort.Slice(outputData, func(i, j int) bool {
 		return outputData[i].NumCode > outputData[j].NumCode
 	})
@@ -133,26 +133,30 @@ func decodeXML(data []byte) (*ValCurs, error) {
 	return &valCurs, nil
 }
 
-// keepDigits оставляет в строке только цифры
+// keepDigits оставляет в строке только цифры.
 func keepDigits(s string) string {
-	var sb strings.Builder
+	var builder strings.Builder
+
 	for _, r := range s {
 		if r >= '0' && r <= '9' {
-			sb.WriteRune(r)
+			builder.WriteRune(r)
 		}
 	}
-	return sb.String()
+
+	return builder.String()
 }
 
-// cleanValueString оставляет цифры, запятые и точки
+// cleanValueString оставляет цифры, запятые и точки.
 func cleanValueString(s string) string {
-	var sb strings.Builder
+	var builder strings.Builder
+
 	for _, r := range s {
 		if (r >= '0' && r <= '9') || r == ',' || r == '.' {
-			sb.WriteRune(r)
+			builder.WriteRune(r)
 		}
 	}
-	return sb.String()
+
+	return builder.String()
 }
 
 func saveAsJSON(path string, data []CurrencyOutput) error {
