@@ -104,7 +104,13 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 
 	go func() {
 		waitGroup.Wait()
-		close(output)
+
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			close(output)
+		}
 	}()
 
 	<-ctx.Done()
