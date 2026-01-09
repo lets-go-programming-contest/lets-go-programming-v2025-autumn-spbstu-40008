@@ -147,11 +147,7 @@ func (c *Conveyer) Run(ctx context.Context) error {
 	defer c.mu.Unlock()
 
 	for _, channel := range c.channels {
-		select {
-		case <-channel:
-		default:
-			close(channel)
-		}
+		close(channel)
 	}
 
 	return nil
