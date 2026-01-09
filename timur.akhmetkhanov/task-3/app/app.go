@@ -62,17 +62,18 @@ func Run(cfg *Config) error {
 	}
 
 	outputData := make([]CurrencyOutput, 0, len(valCurs.Valutes))
-	for _, v := range valCurs.Valutes {
-		valueStr := strings.Replace(v.Value, ",", ".", 1)
+	for _, valute := range valCurs.Valutes {
+		valueStr := strings.Replace(valute.Value, ",", ".", 1)
+
 		value, err := strconv.ParseFloat(valueStr, 64)
 		if err != nil {
 			continue
 		}
 
 		outputData = append(outputData, CurrencyOutput{
-			NumCode:  v.NumCode,
-			CharCode: v.CharCode,
-			Value:    value / float64(v.Nominal),
+			NumCode:  valute.NumCode,
+			CharCode: valute.CharCode,
+			Value:    value / float64(valute.Nominal),
 		})
 	}
 
@@ -85,21 +86,25 @@ func Run(cfg *Config) error {
 	}
 
 	fmt.Printf("Результат успешно сохранен в %s\n", cfg.OutputFile)
+
 	return nil
 }
 
 func saveAsJSON(path string, data []CurrencyOutput) error {
 	if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
-		return err
+		return fmt.Errorf("ошибка создания директории: %w", err)
 	}
 
 	file, err := os.Create(path)
 	if err != nil {
-		return err
+		return fmt.Errorf("ошибка создания файла: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ")
+
 	return encoder.Encode(data)
 }
