@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"log"
 
 	"github.com/task-3/app"
 )
@@ -19,9 +18,6 @@ func main() {
 
 	cfg, err := app.LoadConfig(*configPath)
 	handleError(err)
-
-	log.Printf("Входной файл: %s", cfg.InputFile)
-	log.Printf("Выходной файл: %s", cfg.OutputFile)
 
 	err = app.Run(cfg)
 	handleError(err)

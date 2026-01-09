@@ -102,8 +102,6 @@ func Run(cfg *Config) error {
 		return fmt.Errorf("ошибка сохранения JSON файла: %w", err)
 	}
 
-	fmt.Printf("Результат успешно сохранен в %s\n", cfg.OutputFile)
-
 	return nil
 }
 
