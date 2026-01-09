@@ -37,7 +37,7 @@ type Valute struct {
 }
 
 type CurrencyOutput struct {
-	NumCode  string  `json:"num_code"`
+	NumCode  int     `json:"num_code"` // Исправлено: string -> int
 	CharCode string  `json:"char_code"`
 	Value    float64 `json:"value"`
 }
@@ -87,8 +87,13 @@ func Run(cfg *Config) error {
 			continue
 		}
 
+		numCode, err := strconv.Atoi(valute.NumCode)
+		if err != nil {
+			continue
+		}
+
 		outputData = append(outputData, CurrencyOutput{
-			NumCode:  valute.NumCode,
+			NumCode:  numCode,
 			CharCode: valute.CharCode,
 			Value:    value / float64(valute.Nominal),
 		})
