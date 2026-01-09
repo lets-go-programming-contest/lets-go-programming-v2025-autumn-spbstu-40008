@@ -85,6 +85,7 @@ func Run(cfg *Config) error {
 		valute.Nominal = strings.TrimSpace(valute.Nominal)
 
 		valueStr := strings.Replace(valute.Value, ",", ".", 1)
+
 		value, err := strconv.ParseFloat(valueStr, 64)
 		if err != nil {
 			continue
@@ -108,7 +109,7 @@ func Run(cfg *Config) error {
 	}
 
 	sort.Slice(outputData, func(i, j int) bool {
-		return outputData[i].Value > outputData[j].Value
+		return outputData[i].Value < outputData[j].Value
 	})
 
 	if err := saveAsJSON(cfg.OutputFile, outputData); err != nil {
