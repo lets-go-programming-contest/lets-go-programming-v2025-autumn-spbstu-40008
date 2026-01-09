@@ -32,7 +32,7 @@ type ValCurs struct {
 type Valute struct {
 	NumCode  string `xml:"NumCode"`
 	CharCode string `xml:"CharCode"`
-	Nominal  int    `xml:"Nominal"`
+	Nominal  string `xml:"Nominal"`
 	Value    string `xml:"Value"`
 }
 
@@ -82,11 +82,16 @@ func Run(cfg *Config) error {
 	for _, valute := range valCurs.Valutes {
 		valute.Value = strings.TrimSpace(valute.Value)
 		valute.NumCode = strings.TrimSpace(valute.NumCode)
+		valute.Nominal = strings.TrimSpace(valute.Nominal)
 
 		valueStr := strings.Replace(valute.Value, ",", ".", 1)
-
 		value, err := strconv.ParseFloat(valueStr, 64)
 		if err != nil {
+			continue
+		}
+
+		nominal, err := strconv.Atoi(valute.Nominal)
+		if err != nil || nominal == 0 {
 			continue
 		}
 
@@ -98,12 +103,12 @@ func Run(cfg *Config) error {
 		outputData = append(outputData, CurrencyOutput{
 			NumCode:  numCode,
 			CharCode: valute.CharCode,
-			Value:    value / float64(valute.Nominal),
+			Value:    value / float64(nominal),
 		})
 	}
 
 	sort.Slice(outputData, func(i, j int) bool {
-		return outputData[i].Value < outputData[j].Value
+		return outputData[i].Value > outputData[j].Value
 	})
 
 	if err := saveAsJSON(cfg.OutputFile, outputData); err != nil {
