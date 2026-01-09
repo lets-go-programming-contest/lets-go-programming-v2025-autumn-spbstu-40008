@@ -37,7 +37,7 @@ type Valute struct {
 }
 
 type CurrencyOutput struct {
-	NumCode  int     `json:"num_code"` // Исправлено: string -> int
+	NumCode  int     `json:"num_code"`
 	CharCode string  `json:"char_code"`
 	Value    float64 `json:"value"`
 }
@@ -80,6 +80,9 @@ func Run(cfg *Config) error {
 	outputData := make([]CurrencyOutput, 0, len(valCurs.Valutes))
 
 	for _, valute := range valCurs.Valutes {
+		valute.Value = strings.TrimSpace(valute.Value)
+		valute.NumCode = strings.TrimSpace(valute.NumCode)
+
 		valueStr := strings.Replace(valute.Value, ",", ".", 1)
 
 		value, err := strconv.ParseFloat(valueStr, 64)
@@ -100,7 +103,7 @@ func Run(cfg *Config) error {
 	}
 
 	sort.Slice(outputData, func(i, j int) bool {
-		return outputData[i].Value > outputData[j].Value
+		return outputData[i].Value < outputData[j].Value
 	})
 
 	if err := saveAsJSON(cfg.OutputFile, outputData); err != nil {
