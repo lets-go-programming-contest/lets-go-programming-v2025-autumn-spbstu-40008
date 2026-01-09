@@ -70,28 +70,29 @@ func Run(cfg *Config) error {
 	outputData := make([]CurrencyOutput, 0, len(valCurs.Valutes))
 
 	for _, valute := range valCurs.Valutes {
-		// Парсинг Value. Используем "сырое" значение без деления на Номинал.
+		// Парсинг Value
 		value, err := parseValue(valute.Value)
 		if err != nil {
 			continue
 		}
 
-		// Парсинг NumCode.
+		// Парсинг NumCode
+		// Если код не парсится, ставим 0, но НЕ пропускаем валюту (чтобы не терять элементы)
 		valute.NumCode = keepDigits(valute.NumCode)
 
 		numCode, err := strconv.Atoi(valute.NumCode)
 		if err != nil {
-			continue
+			numCode = 0
 		}
 
 		outputData = append(outputData, CurrencyOutput{
 			NumCode:  numCode,
 			CharCode: valute.CharCode,
-			Value:    value, // Сохраняем Value как есть
+			Value:    value, // Сохраняем "сырое" значение (как выяснили в Test 1)
 		})
 	}
 
-	// Сортировка по УБЫВАНИЮ поля Value (Raw Value).
+	// Сортировка по УБЫВАНИЮ Value
 	sort.Slice(outputData, func(i, j int) bool {
 		return outputData[i].Value > outputData[j].Value
 	})
@@ -156,7 +157,7 @@ func keepDigits(s string) string {
 	return builder.String()
 }
 
-// cleanString убираем пробелы и неразрывные пробелы.
+// cleanString убираем пробелы, табы, переносы и неразрывные пробелы.
 func cleanString(input string) string {
 	input = strings.ReplaceAll(input, "\n", "")
 	input = strings.ReplaceAll(input, "\r", "")
