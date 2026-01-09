@@ -130,10 +130,21 @@ func (c *Conveyer) Run(ctx context.Context) error {
 		}()
 	}
 
+	// Создаем канал, который закроется, когда все воркеры отработают
+	doneCh := make(chan struct{})
+	go func() {
+		waitGroup.Wait()
+		close(doneCh)
+	}()
+
 	select {
 	case <-ctx.Done():
+		// Контекст отменен снаружи
 	case err := <-errCh:
+		// Ошибка в одном из воркеров
 		return err
+	case <-doneCh:
+		// Все воркеры успешно завершились (штатный выход)
 	}
 
 	c.mu.Lock()
@@ -142,6 +153,7 @@ func (c *Conveyer) Run(ctx context.Context) error {
 	for _, channel := range c.channels {
 		select {
 		case <-channel:
+			// Канал уже закрыт или в нем что-то есть - ничего не делаем, чтобы не паниковать
 		default:
 			close(channel)
 		}
