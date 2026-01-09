@@ -79,10 +79,19 @@ func Run(cfg *Config) error {
 
 	outputData := make([]CurrencyOutput, 0, len(valCurs.Valutes))
 
+	clean := func(s string) string {
+		s = strings.ReplaceAll(s, "\n", "")
+		s = strings.ReplaceAll(s, "\r", "")
+		s = strings.ReplaceAll(s, "\t", "")
+		s = strings.ReplaceAll(s, " ", "")
+		s = strings.ReplaceAll(s, "\u00A0", "")
+		return strings.TrimSpace(s)
+	}
+
 	for _, valute := range valCurs.Valutes {
-		valute.Value = strings.TrimSpace(valute.Value)
-		valute.NumCode = strings.TrimSpace(valute.NumCode)
-		valute.Nominal = strings.TrimSpace(valute.Nominal)
+		valute.Value = clean(valute.Value)
+		valute.Nominal = clean(valute.Nominal)
+		valute.NumCode = clean(valute.NumCode)
 
 		valueStr := strings.Replace(valute.Value, ",", ".", 1)
 
@@ -109,7 +118,7 @@ func Run(cfg *Config) error {
 	}
 
 	sort.Slice(outputData, func(i, j int) bool {
-		return outputData[i].Value < outputData[j].Value
+		return outputData[i].Value > outputData[j].Value
 	})
 
 	if err := saveAsJSON(cfg.OutputFile, outputData); err != nil {
