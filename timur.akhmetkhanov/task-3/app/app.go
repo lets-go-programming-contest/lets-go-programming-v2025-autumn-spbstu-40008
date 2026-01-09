@@ -70,21 +70,13 @@ func Run(cfg *Config) error {
 	outputData := make([]CurrencyOutput, 0, len(valCurs.Valutes))
 
 	for _, valute := range valCurs.Valutes {
-		// Парсинг Value с поддержкой разных разделителей
+		// Парсинг Value. Используем "сырое" значение без деления на Номинал.
 		value, err := parseValue(valute.Value)
 		if err != nil {
 			continue
 		}
 
-		// Парсинг Nominal. Если ошибка или 0 -> ставим 1.
-		valute.Nominal = keepDigits(valute.Nominal)
-
-		nominal, err := strconv.Atoi(valute.Nominal)
-		if err != nil || nominal <= 0 {
-			nominal = 1
-		}
-
-		// Парсинг NumCode
+		// Парсинг NumCode.
 		valute.NumCode = keepDigits(valute.NumCode)
 
 		numCode, err := strconv.Atoi(valute.NumCode)
@@ -95,11 +87,11 @@ func Run(cfg *Config) error {
 		outputData = append(outputData, CurrencyOutput{
 			NumCode:  numCode,
 			CharCode: valute.CharCode,
-			Value:    value / float64(nominal),
+			Value:    value, // Сохраняем Value как есть
 		})
 	}
 
-	// Сортировка по УБЫВАНИЮ Value (как в PDF)
+	// Сортировка по УБЫВАНИЮ поля Value (Raw Value).
 	sort.Slice(outputData, func(i, j int) bool {
 		return outputData[i].Value > outputData[j].Value
 	})
@@ -132,7 +124,7 @@ func decodeXML(data []byte) (*ValCurs, error) {
 
 // parseValue обрабатывает строку с числом, учитывая запятую или точку.
 func parseValue(rawInput string) (float64, error) {
-	cleaned := cleanString(rawInput) // Убираем пробелы и мусор
+	cleaned := cleanString(rawInput)
 
 	if strings.Contains(cleaned, ",") {
 		// Формат с запятой (1.234,56). Убираем точки, меняем запятую на точку.
