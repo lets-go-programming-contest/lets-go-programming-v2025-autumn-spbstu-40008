@@ -1,15 +1,18 @@
 package app
 
 import (
+	"bytes"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 
+	"golang.org/x/text/encoding/charmap"
 	"gopkg.in/yaml.v3"
 )
 
@@ -56,8 +59,18 @@ func Run(cfg *Config) error {
 		return fmt.Errorf("ошибка чтения XML файла: %w", err)
 	}
 
+	decoder := xml.NewDecoder(bytes.NewReader(xmlData))
+	decoder.CharsetReader = func(charset string, input io.Reader) (io.Reader, error) {
+		switch charset {
+		case "windows-1251":
+			return charmap.Windows1251.NewDecoder().Reader(input), nil
+		default:
+			return nil, fmt.Errorf("неподдерживаемая кодировка: %s", charset)
+		}
+	}
+
 	var valCurs ValCurs
-	if err := xml.Unmarshal(xmlData, &valCurs); err != nil {
+	if err := decoder.Decode(&valCurs); err != nil {
 		return fmt.Errorf("ошибка декодирования XML: %w", err)
 	}
 
