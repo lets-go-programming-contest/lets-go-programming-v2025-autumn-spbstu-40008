@@ -62,36 +62,17 @@ func Run(cfg *Config) error {
 		return fmt.Errorf("ошибка чтения XML файла: %w", err)
 	}
 
-	decoder := xml.NewDecoder(bytes.NewReader(xmlData))
-	decoder.CharsetReader = func(charset string, input io.Reader) (io.Reader, error) {
-		switch charset {
-		case "windows-1251":
-			return charmap.Windows1251.NewDecoder().Reader(input), nil
-		default:
-			return nil, fmt.Errorf("%w: %s", ErrUnsupportedCharset, charset)
-		}
-	}
-
-	var valCurs ValCurs
-	if err := decoder.Decode(&valCurs); err != nil {
+	valCurs, err := decodeXML(xmlData)
+	if err != nil {
 		return fmt.Errorf("ошибка декодирования XML: %w", err)
 	}
 
 	outputData := make([]CurrencyOutput, 0, len(valCurs.Valutes))
 
-	clean := func(s string) string {
-		s = strings.ReplaceAll(s, "\n", "")
-		s = strings.ReplaceAll(s, "\r", "")
-		s = strings.ReplaceAll(s, "\t", "")
-		s = strings.ReplaceAll(s, " ", "")
-		s = strings.ReplaceAll(s, "\u00A0", "")
-		return strings.TrimSpace(s)
-	}
-
 	for _, valute := range valCurs.Valutes {
-		valute.Value = clean(valute.Value)
-		valute.Nominal = clean(valute.Nominal)
-		valute.NumCode = clean(valute.NumCode)
+		valute.Value = cleanString(valute.Value)
+		valute.Nominal = cleanString(valute.Nominal)
+		valute.NumCode = cleanString(valute.NumCode)
 
 		valueStr := strings.Replace(valute.Value, ",", ".", 1)
 
@@ -126,6 +107,35 @@ func Run(cfg *Config) error {
 	}
 
 	return nil
+}
+
+func decodeXML(data []byte) (*ValCurs, error) {
+	decoder := xml.NewDecoder(bytes.NewReader(data))
+	decoder.CharsetReader = func(charset string, input io.Reader) (io.Reader, error) {
+		switch charset {
+		case "windows-1251":
+			return charmap.Windows1251.NewDecoder().Reader(input), nil
+		default:
+			return nil, fmt.Errorf("%w: %s", ErrUnsupportedCharset, charset)
+		}
+	}
+
+	var valCurs ValCurs
+	if err := decoder.Decode(&valCurs); err != nil {
+		return nil, err
+	}
+
+	return &valCurs, nil
+}
+
+func cleanString(input string) string {
+	input = strings.ReplaceAll(input, "\n", "")
+	input = strings.ReplaceAll(input, "\r", "")
+	input = strings.ReplaceAll(input, "\t", "")
+	input = strings.ReplaceAll(input, " ", "")
+	input = strings.ReplaceAll(input, "\u00A0", "")
+
+	return strings.TrimSpace(input)
 }
 
 func saveAsJSON(path string, data []CurrencyOutput) error {
