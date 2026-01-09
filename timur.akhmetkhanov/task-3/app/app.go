@@ -122,7 +122,7 @@ func decodeXML(data []byte) (*ValCurs, error) {
 
 	var valCurs ValCurs
 	if err := decoder.Decode(&valCurs); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("xml decode error: %w", err)
 	}
 
 	return &valCurs, nil
