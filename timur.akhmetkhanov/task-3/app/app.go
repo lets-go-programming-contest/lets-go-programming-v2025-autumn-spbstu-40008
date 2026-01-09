@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -15,6 +16,8 @@ import (
 	"golang.org/x/text/encoding/charmap"
 	"gopkg.in/yaml.v3"
 )
+
+var ErrUnsupportedCharset = errors.New("неподдерживаемая кодировка")
 
 type Config struct {
 	InputFile  string `yaml:"input-file"`
@@ -65,7 +68,7 @@ func Run(cfg *Config) error {
 		case "windows-1251":
 			return charmap.Windows1251.NewDecoder().Reader(input), nil
 		default:
-			return nil, fmt.Errorf("неподдерживаемая кодировка: %s", charset)
+			return nil, fmt.Errorf("%w: %s", ErrUnsupportedCharset, charset)
 		}
 	}
 
