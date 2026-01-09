@@ -78,6 +78,7 @@ func Run(cfg *Config) error {
 
 		// Парсинг Nominal. Если ошибка или 0 -> ставим 1.
 		valute.Nominal = keepDigits(valute.Nominal)
+
 		nominal, err := strconv.Atoi(valute.Nominal)
 		if err != nil || nominal <= 0 {
 			nominal = 1
@@ -85,6 +86,7 @@ func Run(cfg *Config) error {
 
 		// Парсинг NumCode
 		valute.NumCode = keepDigits(valute.NumCode)
+
 		numCode, err := strconv.Atoi(valute.NumCode)
 		if err != nil {
 			continue
@@ -129,19 +131,24 @@ func decodeXML(data []byte) (*ValCurs, error) {
 }
 
 // parseValue обрабатывает строку с числом, учитывая запятую или точку.
-func parseValue(s string) (float64, error) {
-	s = cleanString(s) // Убираем пробелы и мусор
+func parseValue(rawInput string) (float64, error) {
+	cleaned := cleanString(rawInput) // Убираем пробелы и мусор
 
-	if strings.Contains(s, ",") {
+	if strings.Contains(cleaned, ",") {
 		// Формат с запятой (1.234,56). Убираем точки, меняем запятую на точку.
-		s = strings.ReplaceAll(s, ".", "")
-		s = strings.ReplaceAll(s, ",", ".")
+		cleaned = strings.ReplaceAll(cleaned, ".", "")
+		cleaned = strings.ReplaceAll(cleaned, ",", ".")
 	} else {
 		// Формат с точкой (1,234.56). Убираем запятые.
-		s = strings.ReplaceAll(s, ",", "")
+		cleaned = strings.ReplaceAll(cleaned, ",", "")
 	}
 
-	return strconv.ParseFloat(s, 64)
+	val, err := strconv.ParseFloat(cleaned, 64)
+	if err != nil {
+		return 0, fmt.Errorf("ошибка парсинга числа: %w", err)
+	}
+
+	return val, nil
 }
 
 // keepDigits оставляет в строке только цифры.
