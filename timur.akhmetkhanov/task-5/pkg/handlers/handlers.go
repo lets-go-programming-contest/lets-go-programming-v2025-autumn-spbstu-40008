@@ -7,6 +7,8 @@ import (
 	"sync"
 )
 
+var ErrCantBeDecorated = errors.New("can't be decorated")
+
 func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan string) error {
 	for {
 		select {
@@ -15,11 +17,12 @@ func PrefixDecoratorFunc(ctx context.Context, input chan string, output chan str
 		case item, ok := <-input:
 			if !ok {
 				close(output)
+
 				return nil
 			}
 
 			if strings.Contains(item, "no decorator") {
-				return errors.New("can't be decorated")
+				return ErrCantBeDecorated
 			}
 
 			if !strings.HasPrefix(item, "decorated: ") {
@@ -39,21 +42,24 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 	if len(outputs) == 0 {
 		return nil
 	}
-	i := 0
+
+	index := 0
+
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
 		case item, ok := <-input:
 			if !ok {
-				for _, ch := range outputs {
-					close(ch)
+				for _, channel := range outputs {
+					close(channel)
 				}
+
 				return nil
 			}
 
-			targetCh := outputs[i%len(outputs)]
-			i++
+			targetCh := outputs[index%len(outputs)]
+			index++
 
 			select {
 			case targetCh <- item:
@@ -65,23 +71,27 @@ func SeparatorFunc(ctx context.Context, input chan string, outputs []chan string
 }
 
 func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan string) error {
-	var wg sync.WaitGroup
+	var waitGroup sync.WaitGroup
 
-	for _, ch := range inputs {
-		wg.Add(1)
-		go func(c chan string) {
-			defer wg.Done()
+	for _, channel := range inputs {
+		waitGroup.Add(1)
+
+		go func(workerChan chan string) {
+			defer waitGroup.Done()
+
 			for {
 				select {
 				case <-ctx.Done():
 					return
-				case item, ok := <-c:
+				case item, ok := <-workerChan:
 					if !ok {
 						return
 					}
+
 					if strings.Contains(item, "no multiplexer") {
 						continue
 					}
+
 					select {
 					case output <- item:
 					case <-ctx.Done():
@@ -89,14 +99,15 @@ func MultiplexerFunc(ctx context.Context, inputs []chan string, output chan stri
 					}
 				}
 			}
-		}(ch)
+		}(channel)
 	}
 
 	go func() {
-		wg.Wait()
+		waitGroup.Wait()
 		close(output)
 	}()
 
 	<-ctx.Done()
+
 	return nil
 }
