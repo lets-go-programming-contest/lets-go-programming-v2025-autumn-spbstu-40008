@@ -70,16 +70,14 @@ func Run(cfg *Config) error {
 	outputData := make([]CurrencyOutput, 0, len(valCurs.Valutes))
 
 	for _, valute := range valCurs.Valutes {
-		// 1. Сначала чистим от мусора и точек (разделителей тысяч)
-		valute.Value = cleanString(valute.Value)
-		valute.Value = strings.ReplaceAll(valute.Value, ".", "") // Убираем разделители тысяч
+		// Агрессивная очистка: оставляем только цифры
+		valute.NumCode = keepDigits(valute.NumCode)
+		valute.Nominal = keepDigits(valute.Nominal)
 
-		valute.Nominal = cleanString(valute.Nominal)
-		valute.Nominal = strings.ReplaceAll(valute.Nominal, ".", "")
-
-		valute.NumCode = cleanString(valute.NumCode)
-
-		// 2. Теперь безопасно меняем запятую на точку для Float
+		// Для Value оставляем цифры, запятую и точку
+		valute.Value = cleanValueString(valute.Value)
+		// Убираем точки (разделители тысяч) и меняем запятую на точку
+		valute.Value = strings.ReplaceAll(valute.Value, ".", "")
 		valueStr := strings.Replace(valute.Value, ",", ".", 1)
 
 		value, err := strconv.ParseFloat(valueStr, 64)
@@ -104,9 +102,9 @@ func Run(cfg *Config) error {
 		})
 	}
 
-	// Сортировка по УБЫВАНИЮ (как в PDF)
+	// Сортировка по NumCode по УБЫВАНИЮ (исходя из логов тестов)
 	sort.Slice(outputData, func(i, j int) bool {
-		return outputData[i].Value > outputData[j].Value
+		return outputData[i].NumCode > outputData[j].NumCode
 	})
 
 	if err := saveAsJSON(cfg.OutputFile, outputData); err != nil {
@@ -135,14 +133,26 @@ func decodeXML(data []byte) (*ValCurs, error) {
 	return &valCurs, nil
 }
 
-func cleanString(input string) string {
-	input = strings.ReplaceAll(input, "\n", "")
-	input = strings.ReplaceAll(input, "\r", "")
-	input = strings.ReplaceAll(input, "\t", "")
-	input = strings.ReplaceAll(input, " ", "")
-	input = strings.ReplaceAll(input, "\u00A0", "")
+// keepDigits оставляет в строке только цифры
+func keepDigits(s string) string {
+	var sb strings.Builder
+	for _, r := range s {
+		if r >= '0' && r <= '9' {
+			sb.WriteRune(r)
+		}
+	}
+	return sb.String()
+}
 
-	return strings.TrimSpace(input)
+// cleanValueString оставляет цифры, запятые и точки
+func cleanValueString(s string) string {
+	var sb strings.Builder
+	for _, r := range s {
+		if (r >= '0' && r <= '9') || r == ',' || r == '.' {
+			sb.WriteRune(r)
+		}
+	}
+	return sb.String()
 }
 
 func saveAsJSON(path string, data []CurrencyOutput) error {
