@@ -70,19 +70,24 @@ func Run(cfg *Config) error {
 	outputData := make([]CurrencyOutput, 0, len(valCurs.Valutes))
 
 	for _, valute := range valCurs.Valutes {
+		// 1. Сначала чистим от мусора и точек (разделителей тысяч)
 		valute.Value = cleanString(valute.Value)
+		valute.Value = strings.ReplaceAll(valute.Value, ".", "") // Убираем разделители тысяч
+
 		valute.Nominal = cleanString(valute.Nominal)
+		valute.Nominal = strings.ReplaceAll(valute.Nominal, ".", "")
+
 		valute.NumCode = cleanString(valute.NumCode)
 
+		// 2. Теперь безопасно меняем запятую на точку для Float
 		valueStr := strings.Replace(valute.Value, ",", ".", 1)
 
 		value, err := strconv.ParseFloat(valueStr, 64)
 		if err != nil {
 			continue
 		}
-		nominalStr := strings.ReplaceAll(valute.Nominal, ".", "")
 
-		nominal, err := strconv.Atoi(nominalStr)
+		nominal, err := strconv.Atoi(valute.Nominal)
 		if err != nil || nominal == 0 {
 			continue
 		}
@@ -99,8 +104,9 @@ func Run(cfg *Config) error {
 		})
 	}
 
+	// Сортировка по УБЫВАНИЮ (как в PDF)
 	sort.Slice(outputData, func(i, j int) bool {
-		return outputData[i].Value < outputData[j].Value
+		return outputData[i].Value > outputData[j].Value
 	})
 
 	if err := saveAsJSON(cfg.OutputFile, outputData); err != nil {
@@ -134,7 +140,7 @@ func cleanString(input string) string {
 	input = strings.ReplaceAll(input, "\r", "")
 	input = strings.ReplaceAll(input, "\t", "")
 	input = strings.ReplaceAll(input, " ", "")
-	input = strings.ReplaceAll(input, "\u00A0", "") // Неразрывный пробел
+	input = strings.ReplaceAll(input, "\u00A0", "")
 
 	return strings.TrimSpace(input)
 }
