@@ -1,4 +1,4 @@
-module github.com/task-6
+module task-6
 
 go 1.22
 
