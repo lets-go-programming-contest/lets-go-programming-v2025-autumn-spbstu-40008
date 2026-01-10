@@ -9,18 +9,25 @@ import (
 
 type DishesHeap []int
 
-func (h DishesHeap) Len() int { return len(h) }
-
-func (heapSlice DishesHeap) Less(i, j int) bool {
-	return heapSlice[i] > heapSlice[j]
+func (heapSlice *DishesHeap) Len() int {
+	return len(*heapSlice)
 }
 
-func (heapSlice DishesHeap) Swap(i, j int) {
-	heapSlice[i], heapSlice[j] = heapSlice[j], heapSlice[i]
+func (heapSlice *DishesHeap) Less(i, j int) bool {
+	return (*heapSlice)[i] > (*heapSlice)[j]
+}
+
+func (heapSlice *DishesHeap) Swap(i, j int) {
+	(*heapSlice)[i], (*heapSlice)[j] = (*heapSlice)[j], (*heapSlice)[i]
 }
 
 func (heapSlice *DishesHeap) Push(x any) {
-	*heapSlice = append(*heapSlice, x.(int))
+	val, ok := x.(int)
+	if !ok {
+		return
+	}
+
+	*heapSlice = append(*heapSlice, val)
 }
 
 func (heapSlice *DishesHeap) Pop() any {
@@ -28,6 +35,7 @@ func (heapSlice *DishesHeap) Pop() any {
 	length := len(oldSlice)
 	element := oldSlice[length-1]
 	*heapSlice = oldSlice[0 : length-1]
+
 	return element
 }
 
@@ -51,6 +59,7 @@ func main() {
 		if _, err := fmt.Fscan(reader, &preferenceValue); err != nil {
 			break
 		}
+
 		dishes = append(dishes, preferenceValue)
 	}
 
