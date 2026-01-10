@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	internalDb "task-6/internal/db"
+	internalDb "timur.akhmetkhanov/task-6/internal/db"
 )
 
 var (
@@ -172,5 +172,28 @@ func TestDBService_GetUniqueNames(t *testing.T) {
 		require.Error(t, err)
 		assert.Nil(t, names)
 		assert.Contains(t, err.Error(), "rows scanning")
+	})
+
+	t.Run("rows iteration error", func(t *testing.T) {
+		t.Parallel()
+
+		db, mock, err := sqlmock.New()
+		require.NoError(t, err)
+
+		defer db.Close()
+
+		service := internalDb.New(db)
+
+		rows := sqlmock.NewRows([]string{"name"}).
+			AddRow("Charlie").
+			RowError(1, errRow)
+
+		mock.ExpectQuery(query).WillReturnRows(rows)
+
+		names, err := service.GetUniqueNames()
+
+		require.Error(t, err)
+		assert.Nil(t, names)
+		assert.Contains(t, err.Error(), "rows error")
 	})
 }
