@@ -14,7 +14,7 @@ import (
 var (
 	errConnection = errors.New("connection failed")
 	errRow        = errors.New("row failure")
-	errDbDead     = errors.New("db dead")
+	errDBDead     = errors.New("db dead")
 )
 
 func TestDBService_GetNames(t *testing.T) {
@@ -24,8 +24,10 @@ func TestDBService_GetNames(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
+
 		db, mock, err := sqlmock.New()
 		require.NoError(t, err)
+
 		defer db.Close()
 
 		service := internalDb.New(db)
@@ -44,8 +46,10 @@ func TestDBService_GetNames(t *testing.T) {
 
 	t.Run("query error", func(t *testing.T) {
 		t.Parallel()
+
 		db, mock, err := sqlmock.New()
 		require.NoError(t, err)
+
 		defer db.Close()
 
 		service := internalDb.New(db)
@@ -61,8 +65,10 @@ func TestDBService_GetNames(t *testing.T) {
 
 	t.Run("rows iteration error", func(t *testing.T) {
 		t.Parallel()
+
 		db, mock, err := sqlmock.New()
 		require.NoError(t, err)
+
 		defer db.Close()
 
 		service := internalDb.New(db)
@@ -88,8 +94,10 @@ func TestDBService_GetUniqueNames(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
+
 		db, mock, err := sqlmock.New()
 		require.NoError(t, err)
+
 		defer db.Close()
 
 		service := internalDb.New(db)
@@ -108,13 +116,15 @@ func TestDBService_GetUniqueNames(t *testing.T) {
 
 	t.Run("query error", func(t *testing.T) {
 		t.Parallel()
+
 		db, mock, err := sqlmock.New()
 		require.NoError(t, err)
+
 		defer db.Close()
 
 		service := internalDb.New(db)
 
-		mock.ExpectQuery(query).WillReturnError(errDbDead)
+		mock.ExpectQuery(query).WillReturnError(errDBDead)
 
 		names, err := service.GetUniqueNames()
 

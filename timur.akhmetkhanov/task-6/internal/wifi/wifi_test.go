@@ -12,12 +12,16 @@ import (
 	internalWifi "task-6/internal/wifi"
 )
 
+var (
+	errDriver = errors.New("driver error")
+	errFail   = errors.New("fail")
+)
+
 func TestWiFiService_GetAddresses(t *testing.T) {
 	t.Parallel()
 
 	hwAddr1, _ := net.ParseMAC("00:00:5e:00:53:01")
 	hwAddr2, _ := net.ParseMAC("00:00:5e:00:53:02")
-	expectedErr := errors.New("driver error")
 
 	mockInterfaces := []*wifi.Interface{
 		{HardwareAddr: hwAddr1, Name: "wlan0"},
@@ -26,6 +30,7 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
+
 		mockWiFi := new(MockWiFiHandle)
 		service := internalWifi.New(mockWiFi)
 
@@ -41,10 +46,11 @@ func TestWiFiService_GetAddresses(t *testing.T) {
 
 	t.Run("error", func(t *testing.T) {
 		t.Parallel()
+
 		mockWiFi := new(MockWiFiHandle)
 		service := internalWifi.New(mockWiFi)
 
-		mockWiFi.On("Interfaces").Return(nil, expectedErr).Once()
+		mockWiFi.On("Interfaces").Return(nil, errDriver).Once()
 
 		addrs, err := service.GetAddresses()
 
@@ -61,10 +67,10 @@ func TestWiFiService_GetNames(t *testing.T) {
 		{Name: "eth0"},
 		{Name: "wlan0"},
 	}
-	expectedErr := errors.New("fail")
 
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
+
 		mockWiFi := new(MockWiFiHandle)
 		service := internalWifi.New(mockWiFi)
 
@@ -80,10 +86,11 @@ func TestWiFiService_GetNames(t *testing.T) {
 
 	t.Run("error", func(t *testing.T) {
 		t.Parallel()
+
 		mockWiFi := new(MockWiFiHandle)
 		service := internalWifi.New(mockWiFi)
 
-		mockWiFi.On("Interfaces").Return(nil, expectedErr).Once()
+		mockWiFi.On("Interfaces").Return(nil, errFail).Once()
 
 		names, err := service.GetNames()
 
