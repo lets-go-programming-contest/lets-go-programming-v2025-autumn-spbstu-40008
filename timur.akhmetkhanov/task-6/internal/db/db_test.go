@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	internalDb "timur.akhmetkhanov/task-6/internal/db"
+	internalDb "task-6/internal/db"
 )
 
 var (

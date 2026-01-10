@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	internalWifi "timur.akhmetkhanov/task-6/internal/wifi"
+	internalWifi "task-6/internal/wifi"
 )
 
 func TestWiFiService_GetAddresses(t *testing.T) {
