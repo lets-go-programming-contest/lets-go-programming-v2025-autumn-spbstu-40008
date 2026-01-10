@@ -1,4 +1,4 @@
-package db
+package db_test
 
 import (
 	"errors"
@@ -6,20 +6,30 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	internalDb "timur.akhmetkhanov/task-6/internal/db"
+)
+
+var (
+	errConnection = errors.New("connection failed")
+	errRow        = errors.New("row failure")
+	errDbDead     = errors.New("db dead")
 )
 
 func TestDBService_GetNames(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
-	defer db.Close()
-
-	service := New(db)
+	t.Parallel()
 
 	query := "SELECT name FROM users"
 
 	t.Run("success", func(t *testing.T) {
+		t.Parallel()
+		db, mock, err := sqlmock.New()
+		require.NoError(t, err)
+		defer db.Close()
+
+		service := internalDb.New(db)
+
 		rows := sqlmock.NewRows([]string{"name"}).
 			AddRow("Alice").
 			AddRow("Bob")
@@ -28,47 +38,62 @@ func TestDBService_GetNames(t *testing.T) {
 
 		names, err := service.GetNames()
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, []string{"Alice", "Bob"}, names)
 	})
 
 	t.Run("query error", func(t *testing.T) {
-		mock.ExpectQuery(query).WillReturnError(errors.New("connection failed"))
+		t.Parallel()
+		db, mock, err := sqlmock.New()
+		require.NoError(t, err)
+		defer db.Close()
+
+		service := internalDb.New(db)
+
+		mock.ExpectQuery(query).WillReturnError(errConnection)
 
 		names, err := service.GetNames()
 
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Nil(t, names)
 		assert.Contains(t, err.Error(), "db query")
 	})
 
 	t.Run("rows iteration error", func(t *testing.T) {
+		t.Parallel()
+		db, mock, err := sqlmock.New()
+		require.NoError(t, err)
+		defer db.Close()
+
+		service := internalDb.New(db)
+
 		rows := sqlmock.NewRows([]string{"name"}).
 			AddRow("Alice").
-			RowError(1, errors.New("row failure"))
+			RowError(1, errRow)
 
 		mock.ExpectQuery(query).WillReturnRows(rows)
 
 		names, err := service.GetNames()
 
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Nil(t, names)
 		assert.Contains(t, err.Error(), "rows error")
 	})
 }
 
 func TestDBService_GetUniqueNames(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
-	defer db.Close()
-
-	service := New(db)
+	t.Parallel()
 
 	query := "SELECT DISTINCT name FROM users"
 
 	t.Run("success", func(t *testing.T) {
+		t.Parallel()
+		db, mock, err := sqlmock.New()
+		require.NoError(t, err)
+		defer db.Close()
+
+		service := internalDb.New(db)
+
 		rows := sqlmock.NewRows([]string{"name"}).
 			AddRow("Charlie").
 			AddRow("Dave")
@@ -77,16 +102,23 @@ func TestDBService_GetUniqueNames(t *testing.T) {
 
 		names, err := service.GetUniqueNames()
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, []string{"Charlie", "Dave"}, names)
 	})
 
 	t.Run("query error", func(t *testing.T) {
-		mock.ExpectQuery(query).WillReturnError(errors.New("db dead"))
+		t.Parallel()
+		db, mock, err := sqlmock.New()
+		require.NoError(t, err)
+		defer db.Close()
+
+		service := internalDb.New(db)
+
+		mock.ExpectQuery(query).WillReturnError(errDbDead)
 
 		names, err := service.GetUniqueNames()
 
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Nil(t, names)
 	})
 }
