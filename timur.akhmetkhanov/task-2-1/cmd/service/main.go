@@ -12,42 +12,47 @@ const (
 )
 
 func main() {
-	in := bufio.NewReader(os.Stdin)
-	out := bufio.NewWriter(os.Stdout)
-	defer out.Flush()
+	reader := bufio.NewReader(os.Stdin)
+	writer := bufio.NewWriter(os.Stdout)
 
-	var n int
-	if _, err := fmt.Fscan(in, &n); err != nil {
+	defer func() {
+		_ = writer.Flush()
+	}()
+
+	var departmentCount int
+	if _, err := fmt.Fscan(reader, &departmentCount); err != nil {
 		return
 	}
 
-	for range n {
-		var k int
-		if _, err := fmt.Fscan(in, &k); err != nil {
+	for range departmentCount {
+		var employeeCount int
+		if _, err := fmt.Fscan(reader, &employeeCount); err != nil {
 			break
 		}
 
 		minTemp := initialMinTemp
 		maxTemp := initialMaxTemp
 
-		for range k {
-			var op string
-			var val int
+		for range employeeCount {
+			var (
+				operator    string
+				temperature int
+			)
 
-			if _, err := fmt.Fscan(in, &op, &val); err != nil {
+			if _, err := fmt.Fscan(reader, &operator, &temperature); err != nil {
 				break
 			}
 
-			if op == ">=" {
-				minTemp = max(minTemp, val)
+			if operator == ">=" {
+				minTemp = max(minTemp, temperature)
 			} else {
-				maxTemp = min(maxTemp, val)
+				maxTemp = min(maxTemp, temperature)
 			}
 
 			if minTemp <= maxTemp {
-				fmt.Fprintln(out, minTemp)
+				_, _ = fmt.Fprintln(writer, minTemp)
 			} else {
-				fmt.Fprintln(out, -1)
+				_, _ = fmt.Fprintln(writer, -1)
 			}
 		}
 	}
