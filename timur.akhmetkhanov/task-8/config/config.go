@@ -1,5 +1,9 @@
 package config
 
+import (
+	yaml "gopkg.in/yaml.v3"
+)
+
 type Config struct {
 	Environment string `yaml:"environment"`
 	LogLevel    string `yaml:"log_level"`
